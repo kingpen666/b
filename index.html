@@ -58,7 +58,7 @@ button:active { transform: scale(0.96); }
 .top { display: flex; align-items: center; gap: 8px; min-height: 28px; }
 .brand {
   flex: 0 0 auto;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: #fff;
@@ -327,13 +327,6 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
   background: rgba(59, 130, 246, 0.15);
   padding: 1px 4px;
   border-radius: 4px;
-}
-.idlikes {
-  font-size: 10px;
-  color: #f87171;
-  display: none;
-  align-items: center;
-  gap: 3px;
 }
 
 /* clean swipe hints */
@@ -1122,7 +1115,6 @@ body.fs .toast { bottom: 20px; }
     <div class="idtag-box" id="idTagBox">
       <span class="idtag" id="idTag">#1</span>
       <span class="idfmt" id="idFormat"></span>
-      <span class="idlikes" id="idLikes"><span id="idLikesVal">0</span> likes</span>
     </div>
   </div>
 
@@ -1273,80 +1265,6 @@ var dlgBackdrop=$("dlgBackdrop"), dlgMsg=$("dlgMsg"), dlgInput=$("dlgInput"), dl
 var infoBackdrop=$("infoBackdrop"), infoIdEl=$("infoId"), infoMetaEl=$("infoMeta"), infoTagsEl=$("infoTags"), infoSuggEl=$("infoSuggestions");
 var tagTypeFilter=null;
 var toastEl=$("toast");
-
-var idLikesEl = $("idLikes");
-var idLikesValEl = $("idLikesVal");
-
-function updatePostBadge(id, type) {
-  if (idFormatEl) idFormatEl.textContent = type === "video" ? "MP4" : "JPG";
-  var meta = postMetaCache.get(id);
-  if (meta && meta.likes !== undefined) {
-    if (idLikesEl) idLikesEl.style.display = "inline-flex";
-    if (idLikesValEl) idLikesValEl.textContent = Number(meta.likes).toLocaleString();
-  } else {
-    if (idLikesEl) idLikesEl.style.display = "none";
-  }
-}
-
-
-var hudIdEl = $("hudId");
-var hudFmtEl = $("hudFmt");
-var hudLikesEl = $("hudLikes");
-var hudLikesValEl = $("hudLikesVal");
-var hudFavBtn = $("hudFavBtn");
-var soundBtn = $("soundBtn");
-
-function updateHUD(id, type) {
-  if (hudIdEl) hudIdEl.textContent = "#" + id;
-  if (hudFmtEl) hudFmtEl.textContent = type === "video" ? "🎬 MP4" : "🖼️ JPG";
-  if (soundBtn) soundBtn.style.display = type === "video" ? "flex" : "none";
-  if (soundBtn) soundBtn.textContent = S.muted ? "🔇" : "🔊";
-  
-  // Check likes in cache or fetch
-  var meta = postMetaCache.get(id);
-  if (meta && meta.likes !== undefined) {
-    if (hudLikesEl) hudLikesEl.style.display = "flex";
-    if (hudLikesValEl) hudLikesValEl.textContent = Number(meta.likes).toLocaleString();
-  } else {
-    if (hudLikesEl) hudLikesEl.style.display = "none";
-    r34Fetch("/post/" + id).then(function(post) {
-      if (post && post.id === current) {
-        postMetaCache.set(post.id, post);
-        if (hudLikesEl && post.likes !== undefined) {
-          hudLikesEl.style.display = "flex";
-          hudLikesValEl.textContent = Number(post.likes).toLocaleString();
-        }
-      }
-    }).catch(function() {});
-  }
-
-  // Update HUD favorite button state
-  var favPL = getFavPL();
-  var isFav = favPL && favPL.postIds && favPL.postIds.indexOf(id) !== -1;
-  if (hudFavBtn) {
-    hudFavBtn.classList.toggle("on", isFav);
-    hudFavBtn.textContent = isFav ? "❤️ Tersimpan" : "🤍 Suka";
-  }
-}
-
-function toggleMute() {
-  S.muted = !S.muted;
-  saveS();
-  var vd = zoomLayer.querySelector("video");
-  if (vd) vd.muted = S.muted;
-  if (soundBtn) soundBtn.textContent = S.muted ? "🔇" : "🔊";
-  toast(S.muted ? "Suara Video: Mati" : "Suara Video: Hidup", "ok");
-}
-
-function latestPost() {
-  exitPlaylist();
-  // Known current max on r-34.xyz is ~1,352,850+
-  var km = parseInt(lsGet("knownMaxId"), 10);
-  var target = (isFinite(km) && km > 1350000) ? km : 1352845;
-  loadPost(target, 0);
-  toast("✨ Membuka Post Terkini #" + target, "ok");
-}
-
 
 /* ---------- state ---------- */
 var sp = parseInt(lsGet("lastPost"),10);
@@ -1559,7 +1477,6 @@ function startPlaylist(pid,startId,shuffle){
 
 /* ---------- buttons state ---------- */
 function refreshBtns(){
-  if (typeof updateHUD === "function" && current) updateHUD(current, currentType);
   var any=false, fav=false;
   playlists.forEach(function(p){ if(isIn(p,current)){ any=true; if(p.id==="pl_fav") fav=true; } });
   $("plBtn").classList.toggle("on",any); $("plIco").textContent=any?"✓":"➕";
@@ -1706,8 +1623,6 @@ function present(r,tok,dir,tries){
     return;
   }
   currentURL=r.url; currentType=r.type;
-  if (typeof updatePostBadge === "function") updatePostBadge(current, r.type);
-  updateHUD(current, r.type);
   shownId=current;
   if(r.type==="mp4"){
     var el=makeVideo(current,r.url); setMedia(el);
@@ -2943,7 +2858,7 @@ return {
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
   download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ selectedTags=Array.isArray(t)?t.slice():[t]; tagView="detail"; openSheet("tags"); loadTagDetail(selectedTags,true); }, openInfo:openInfo, closeInfo:closeInfo,
-  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide, latestPost:latestPost, toggleMute:toggleMute
+  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide
 };
 })();
 </script>
