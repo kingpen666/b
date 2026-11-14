@@ -1,0 +1,19 @@
+{
+  "name": "Post Explorer",
+  "short_name": "PostExplorer",
+  "description": "Fast and minimal media explorer for r-34",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090a0f",
+  "theme_color": "#090a0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

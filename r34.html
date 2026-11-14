@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#090a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Post Explorer">
 <title>Post Explorer 6.1</title>
 <style>
 :root {
@@ -1238,6 +1243,49 @@ body.fs .toast { bottom: 20px; }
 }
 .fh-apply-btn:hover { background: var(--blue-hover); }
 
+
+/* Heart Pop Animation on Double-Tap */
+.heart-pop {
+  position: fixed;
+  font-size: 56px;
+  color: #ef4444;
+  pointer-events: none;
+  z-index: 99;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  animation: heartPopAnim 0.75s var(--ease) forwards;
+}
+@keyframes heartPopAnim {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  35% { transform: translate(-50%, -50%) scale(1.35); opacity: 1; filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.7)); }
+  75% { transform: translate(-50%, -70%) scale(1.1); opacity: 0.9; }
+  100% { transform: translate(-50%, -100%) scale(0.85); opacity: 0; }
+}
+
+/* Storage Manager Card */
+.storage-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.storage-title { font-size: 12.5px; font-weight: 700; color: #fff; }
+.storage-stats { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--text-muted); }
+.storage-stats b { color: var(--text); }
+.storage-stats span { color: var(--blue); font-weight: 600; }
+.tag-blk-btn {
+  background: transparent;
+  padding: 0 4px;
+  font-size: 10px;
+  opacity: 0.55;
+  border-radius: 4px;
+}
+.tag-blk-btn:hover { opacity: 1; background: rgba(239, 68, 68, 0.2); }
+
 </style>
 </head>
 <body>
@@ -1495,11 +1543,34 @@ var infoBackdrop=$("infoBackdrop"), infoIdEl=$("infoId"), infoMetaEl=$("infoMeta
 var tagTypeFilter=null;
 var toastEl=$("toast");
 
+function showHeartPop(x, y) {
+  var h = document.createElement("div");
+  h.className = "heart-pop";
+  h.textContent = "❤️";
+  h.style.left = (x || window.innerWidth / 2) + "px";
+  h.style.top = (y || window.innerHeight / 2) + "px";
+  document.body.appendChild(h);
+  setTimeout(function() {
+    if (h.parentNode) h.parentNode.removeChild(h);
+  }, 780);
+}
+
+
 /* ---------- state ---------- */
 var sp = parseInt(lsGet("lastPost"),10);
 var current = (isFinite(sp)&&sp>=1&&sp<=MAXID) ? sp : 1;
 var shownId = 0;                 // id terakhir yang benar-benar tampil
 var navStack = [], skipPush = false;
+
+var anchorPost = parseInt(lsGet("pe_anchor_post"), 10) || 1;
+
+function updateAnchor(id) {
+  if (!activePlaylistId && !activeTag && validId(id)) {
+    anchorPost = id;
+    lsSet("pe_anchor_post", String(id));
+  }
+}
+
 var token = 0, finalTok = 0, phTimer = null;
 var currentURL = "", currentType = "";
 var autoEnabled=false, autoTimer=null, autoStart=0, autoRAF=null, wakeLock=null, lastLbl="";
@@ -1715,14 +1786,24 @@ function refreshBtns(){
 }
 function updateBack(){
   var b=$("backBtn");
-  if(navStack.length){ b.classList.add("on"); $("backId").textContent="#"+navStack[navStack.length-1]; }
-  else b.classList.remove("on");
+  var show = (activePlaylistId || activeTag || (anchorPost && anchorPost !== current));
+  if (show && anchorPost) {
+    b.classList.add("on");
+    b.title = "Kembali ke posisi utama #" + anchorPost;
+    $("backId").textContent = "#" + anchorPost;
+  } else {
+    b.classList.remove("on");
+  }
 }
 function back(){
-  if(!navStack.length) return;
-  var id=navStack.pop();
-  skipPush=true; try{ loadPost(id,0); } finally{ skipPush=false; }
-  updateBack();
+  if (anchorPost && anchorPost !== current) {
+    var target = anchorPost;
+    exitPlaylist();
+    loadPost(target, 0);
+    toast("Kembali ke progress utama #" + target, "ok");
+  } else {
+    toast("Sudah di posisi utama #" + current);
+  }
 }
 function toggleFav(){
   var p=getPL("pl_fav");
@@ -1809,7 +1890,7 @@ function commit(id){
   if(!skipPush&&shownId&&shownId!==id&&navStack[navStack.length-1]!==shownId){
     navStack.push(shownId); if(navStack.length>60) navStack.shift();
   }
-  current=id; input.value=id; lsSet("lastPost",String(id));
+  current=id; input.value=id; lsSet("lastPost",String(id)); updateAnchor(id);
   refreshBtns(); updateChip(); updateBack();
   if(activePlaylistId){
     var ap=getPL(activePlaylistId);
@@ -2397,7 +2478,18 @@ async function loadTagDetail(tags, reset) {
     }
     if (tagCursor) payload.cursor = String(tagCursor);
     var data = await r34Fetch("/post/search/root", { method: "POST", body: payload });
-    var items = data && data.items ? data.items : [];
+        var items = data && data.items ? data.items : [];
+    if (blacklistTags.length > 0) {
+      items = items.filter(function(item) {
+        if (!item) return false;
+        if (item.tags && Array.isArray(item.tags)) {
+          for (var b = 0; b < blacklistTags.length; b++) {
+            if (item.tags.indexOf(blacklistTags[b]) !== -1) return false;
+          }
+        }
+        return true;
+      });
+    }
     if (items.length > 0) {
       items.forEach(function(item) {
         if (item.id) {
@@ -2887,6 +2979,55 @@ function renderSettings(){
   row.appendChild(pill("↗ Bagikan","",shareURL));
   row.appendChild(pill("🧹 Bersihkan cache","",function(){ cache.clear(); queue.length=0; toast("Cache dibersihkan","ok"); }));
   b.appendChild(row);
+
+  // Storage Manager Card
+  var sBox = el("div", "storage-card");
+  var sTitle = el("div", "storage-title", "📦 Pengelola Penyimpanan & Cache");
+  sBox.appendChild(sTitle);
+  
+  var lsBytes = 0;
+  try {
+    for (var k in localStorage) {
+      if (localStorage.hasOwnProperty(k)) {
+        lsBytes += (localStorage[k].length + k.length) * 2;
+      }
+    }
+  } catch(e) {}
+  var lsKb = (lsBytes / 1024).toFixed(1);
+
+  var sStats = el("div", "storage-stats");
+  sStats.innerHTML = "<div>💾 <b>Data Aplikasi (Playlists, Setelan):</b> <span>" + lsKb + " KB</span></div>" +
+                     "<div>🖼️ <b>Cache RAM:</b> <span>" + cache.size + " / " + MAX_CACHE + " post</span></div>" +
+                     "<div>🌐 <b>Cache Disk Browser:</b> <span id='storageQuotaVal'>Memeriksa...</span></div>";
+  sBox.appendChild(sStats);
+
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(function(est) {
+      var qRow = $("storageQuotaVal");
+      if (qRow && est.usage !== undefined) {
+        var mb = (est.usage / (1024 * 1024)).toFixed(1);
+        qRow.textContent = mb + " MB";
+      }
+    }).catch(function() {});
+  }
+
+  var sActs = el("div", "arow");
+  sActs.style.marginTop = "6px";
+  sActs.appendChild(pill("🧹 Bersihkan Cache", "pri", function() {
+    cache.clear();
+    queue.length = 0;
+    toast("Cache RAM dibersihkan", "ok");
+    renderSettings();
+  }));
+  sActs.appendChild(pill("🗑️ Kosongkan Riwayat", "", function() {
+    hist = [];
+    jset("pe_hist", hist);
+    toast("Riwayat dikosongkan", "ok");
+    renderSettings();
+  }));
+  sBox.appendChild(sActs);
+  b.appendChild(sBox);
+
   var gRow=el("div","arow"); gRow.style.marginTop="8px";
   gRow.appendChild(pill("📖 Buka Panduan Gestur & Fitur","pri",openGuide));
   b.appendChild(gRow);
