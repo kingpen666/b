@@ -74,7 +74,16 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .sbtn{top:8px;width:34px;height:34px;border-radius:10px;font-size:15px;color:var(--dim);padding:0;display:flex;align-items:center;justify-content:center}
 .sbtn:hover{color:#fff}
-#fsBtn{right:8px}#fitBtn{right:48px}
+#fsBtn{right:8px}#fitBtn{right:48px}#infoBtn{right:88px}
+.infotag-sec{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.infotag-title{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--faint);letter-spacing:.5px}
+.infotag-chips{display:flex;flex-wrap:wrap;gap:5px}
+.tagchip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;font-size:11.5px;font-weight:600;background:var(--surface3);border:1px solid var(--line);color:var(--text);cursor:pointer;transition:transform .1s,background .15s}
+.tagchip:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tagchip.artist{border-color:rgba(139,92,246,.5);color:#c4b5fd;background:rgba(139,92,246,.14)}
+.tagchip.character{border-color:rgba(16,185,129,.5);color:#6ee7b7;background:rgba(16,185,129,.14)}
+.tagchip.copyright{border-color:rgba(245,158,11,.5);color:#fcd34d;background:rgba(245,158,11,.14)}
+.sugg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
 .zoom-badge{top:12px;left:8px;border-radius:8px;padding:3px 9px;font:700 11px monospace;color:var(--blue2);opacity:0;pointer-events:none;transition:opacity .2s}
 .zoom-badge.visible{opacity:1}
 .idtag{left:8px;bottom:8px;border-radius:8px;padding:3px 9px;font:700 11px monospace;color:var(--dim);pointer-events:none}
@@ -245,6 +254,7 @@ body.fs .toast{bottom:24px}
     <div class="spin" id="spin"></div>
     <div class="glass zoom-badge" id="zoomBadge">1.0x</div>
     <div class="glass idtag" id="idTag">#1</div>
+    <button class="glass sbtn" id="infoBtn" onclick="PE.openInfo()" title="Info & Tag">ℹ</button>
     <button class="glass sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / Penuhi layar">◫</button>
     <button class="glass sbtn" id="fsBtn" onclick="PE.toggleFs()" title="Fullscreen">⛶</button>
   </div>
@@ -277,6 +287,21 @@ body.fs .toast{bottom:24px}
   <div class="sbody" id="sheetBody"></div>
 </div>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+
+<!-- info / tag modal -->
+<div class="modal" id="infoBackdrop" onclick="PE.closeInfo(event)">
+  <div class="box" style="max-width:440px;max-height:82vh" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h4 id="infoTitle" style="margin:0;font-size:14px;font-weight:800">Post #<span id="infoId"></span></h4>
+      <button class="hb" onclick="PE.closeInfo()" style="width:28px;height:28px">✕</button>
+    </div>
+    <div id="infoMeta" style="display:flex;gap:10px;font-size:12px;color:var(--dim);margin-bottom:10px;flex-wrap:wrap"></div>
+    <div id="infoBody" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;padding-right:2px">
+      <div id="infoTags"></div>
+      <div id="infoSuggestions"></div>
+    </div>
+  </div>
+</div>
 
 <!-- popup tambah / pilih playlist -->
 <div class="modal" id="popupBackdrop" onclick="PE.closePopup(event)">
@@ -327,7 +352,7 @@ function jset(k,v){ try{ lsSet(k,JSON.stringify(v)); }catch(e){} }
 
 /* ---------- settings ---------- */
 var S = (function(){
-  var d = {interval:5, skipMissing:true, fit:"contain", muted:true, saver:false, keepZoom:false, speed:1};
+  var d = {interval:5, skipMissing:true, fit:"contain", muted:true, saver:false, keepZoom:false, speed:1, filterAi:false};
   var s = jget("pe_settings",{}) || {};
   for (var k in d) if (s[k]!==undefined) d[k]=s[k];
   return d;
@@ -342,6 +367,8 @@ var autoBar=$("autoBar"), autoFill=$("autoFill"), autoLbl=$("autoLbl");
 var sheet=$("sheet"), sheetBackdrop=$("sheetBackdrop"), sheetBody=$("sheetBody"), sheetBackBtn=$("sheetBack");
 var popupBackdrop=$("popupBackdrop"), popupList=$("popupList"), popupNewRow=$("popupNewRow"), popupNewInput=$("popupNewInput");
 var dlgBackdrop=$("dlgBackdrop"), dlgMsg=$("dlgMsg"), dlgInput=$("dlgInput"), dlgOk=$("dlgOk");
+var infoBackdrop=$("infoBackdrop"), infoIdEl=$("infoId"), infoMetaEl=$("infoMeta"), infoTagsEl=$("infoTags"), infoSuggEl=$("infoSuggestions");
+var tagTypeFilter=null;
 var toastEl=$("toast");
 
 /* ---------- state ---------- */
@@ -1061,6 +1088,92 @@ function confirmNewPl(){
 }
 popupNewInput.addEventListener("keydown",function(e){ if(e.key==="Enter") confirmNewPl(); });
 
+/* ---------- Info & Tag Modal ---------- */
+function openInfo(id){
+  id = id || current;
+  infoIdEl.textContent = id;
+  infoMetaEl.innerHTML = "⏳ Mengambil detail post...";
+  infoTagsEl.innerHTML = "";
+  infoSuggEl.innerHTML = "";
+  infoBackdrop.classList.add("open");
+
+  // 1. Fetch Post Detail & Tags
+  r34Fetch("/post/" + id).then(function(post){
+    if(!post) return;
+    infoMetaEl.innerHTML = "";
+    if(post.likes !== undefined){
+      var lk = el("span", "", "❤️ " + post.likes + " suka");
+      infoMetaEl.appendChild(lk);
+    }
+    if(post.width && post.height){
+      var sz = el("span", "", "📐 " + post.width + " × " + post.height);
+      infoMetaEl.appendChild(sz);
+    }
+    if(post.type === 1){
+      var vt = el("span", "", "🎬 Video" + (post.duration ? " (" + post.duration + "s)" : ""));
+      vt.style.color = "var(--blue2)";
+      infoMetaEl.appendChild(vt);
+    }
+
+    var tags = post.tags || [];
+    if(!tags.length){
+      infoTagsEl.innerHTML = '<div style="font-size:12px;color:var(--faint);font-style:italic">Tidak ada metadata tag untuk post ini</div>';
+    } else {
+      infoTagsEl.innerHTML = "";
+      var cats = {
+        8: { title: "🎨 Artist", cls: "artist", items: [] },
+        4: { title: "👤 Character", cls: "character", items: [] },
+        2: { title: "📚 Copyright / Seri", cls: "copyright", items: [] },
+        1: { title: "🏷️ Tags", cls: "", items: [] }
+      };
+      tags.forEach(function(t){
+        var c = cats[t.type] || cats[1];
+        c.items.push(t);
+      });
+      [8, 4, 2, 1].forEach(function(k){
+        var cat = cats[k];
+        if(cat.items.length){
+          var sec = el("div", "infotag-sec");
+          sec.appendChild(el("div", "infotag-title", cat.title));
+          var chips = el("div", "infotag-chips");
+          cat.items.forEach(function(t){
+            var chip = el("button", "tagchip " + cat.cls, t.value);
+            chip.onclick = function(){
+              closeInfo();
+              openTag(t.value);
+            };
+            chips.appendChild(chip);
+          });
+          sec.appendChild(chips);
+          infoTagsEl.appendChild(sec);
+        }
+      });
+    }
+  }).catch(function(err){
+    infoMetaEl.textContent = "Detail post tidak tersedia";
+  });
+
+  // 2. Fetch Post Suggestions (Post Serupa)
+  r34Fetch("/post/suggestion/" + id).then(function(suggs){
+    if(!Array.isArray(suggs) || !suggs.length) return;
+    infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">✨ Post Serupa / Rekomendasi</div>';
+    var grid = el("div", "sugg-grid");
+    suggs.slice(0, 12).forEach(function(item){
+      var sid = item.id;
+      var th = thumb(sid, function(){
+        closeInfo();
+        loadPost(sid, 0);
+      });
+      grid.appendChild(th);
+    });
+    infoSuggEl.appendChild(grid);
+  }).catch(function(){});
+}
+
+function closeInfo(e){
+  if(e && e.target !== infoBackdrop) return;
+  infoBackdrop.classList.remove("open");
+}
 /* ---------- Tag & API Integration ---------- */
 var API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "/api/v2" : "https://r-34.xyz/api/v2";
 
@@ -1127,9 +1240,12 @@ async function loadTagDetail(tagName, reset) {
       includeTags: [tagName],
       status: 2,
       sortOrder: 1,
-      filterAi: false,
+      filterAi: !!S.filterAi,
       take: 30
     };
+    if (tagTypeFilter !== null && tagTypeFilter !== undefined) {
+      payload.type = tagTypeFilter;
+    }
     if (tagCursor) payload.cursor = String(tagCursor);
     var data = await r34Fetch("/post/search/root", { method: "POST", body: payload });
     var items = data && data.items ? data.items : [];
@@ -1264,6 +1380,19 @@ function renderTagDetailView() {
   head.appendChild(pill("🔀 Acak", "", function() { startTag(activeTagDetail, null, true); }));
   head.appendChild(pill("➕ Jadikan Playlist", "", function() { saveTagAsPlaylist(activeTagDetail); }));
   b.appendChild(head);
+
+  var typeRow = el("div", "arow");
+  typeRow.style.marginBottom = "8px";
+  var fSeg = seg([
+    [null, "Semua"],
+    [1, "🎬 Video Saja"],
+    [0, "🖼️ Gambar Saja"]
+  ], tagTypeFilter, function(v) {
+    tagTypeFilter = v;
+    loadTagDetail(activeTagDetail, true);
+  });
+  typeRow.appendChild(fSeg);
+  b.appendChild(typeRow);
 
   var sub = el("div", "selinfo", "🏷️ " + activeTagDetail + " · " + tagPosts.length + " post termuat");
   b.appendChild(sub);
@@ -1474,6 +1603,7 @@ function seg(opts,val,cb){
 }
 function renderSettings(){
   var b=sheetBody, onoff=[[true,"On"],[false,"Off"]];
+  b.appendChild(setRow("Filter Konten AI","Sembunyikan post buatan AI",seg(onoff,S.filterAi,function(v){ S.filterAi=v; saveS(); })));
   b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled&&!isVideo()) resetAutoTimer(); })));
   b.appendChild(setRow("Lewati post kosong","Loncat otomatis ID yang tidak ada",seg(onoff,S.skipMissing,function(v){ S.skipMissing=v; saveS(); })));
   b.appendChild(setRow("Hemat data","Pakai gambar kecil dulu",seg(onoff,S.saver,function(v){ S.saver=v; saveS(); cache.clear(); })));
@@ -1625,13 +1755,14 @@ input.addEventListener("input",function(){
     if(validId(n)&&n!==current){ exitPlaylist(); loadPost(n,0); }
   },700);
 });
-function overlayOpen(){ return sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open"); }
+function overlayOpen(){ return sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open")||infoBackdrop.classList.contains("open"); }
 document.addEventListener("keydown",function(e){
   var ae=document.activeElement;
   if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA")) return;
   if(e.key==="Escape"){
     if(dlgBackdrop.classList.contains("open")) dlgNo();
     else if(popupBackdrop.classList.contains("open")) closePopup();
+    else if(infoBackdrop.classList.contains("open")) closeInfo();
     else if(sheet.classList.contains("open")) closeSheet();
     else if(zoom.scale>1.02) resetZoom();
     else if(document.body.classList.contains("fs")) toggleFs();
@@ -1647,6 +1778,7 @@ document.addEventListener("keydown",function(e){
   else if(k==="r"||k==="R") randomPost();
   else if(k==="p"||k==="P") openPopup(current);
   else if(k==="t"||k==="T") openSheet("tags");
+  else if(k==="i"||k==="I") openInfo();
   else if(k==="b"||k==="B") back();
 });
 document.addEventListener("visibilitychange",function(){
@@ -1663,7 +1795,7 @@ return {
   randomPost:randomPost, toggleAuto:toggleAuto, toggleFav:toggleFav,
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
-  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ tagView="detail"; openSheet("tags"); loadTagDetail(t,true); },
+  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ tagView="detail"; openSheet("tags"); loadTagDetail(t,true); }, openInfo:openInfo, closeInfo:closeInfo,
   dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist
 };
 })();
