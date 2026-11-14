@@ -115,6 +115,14 @@ body.fs .stage{border-radius:0;border:0}
 .dock{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .tagitem{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:background .15s}
 .tagitem:hover{background:var(--surface3);border-color:var(--line2)}
+.tagitem.sel{border-color:var(--violet);background:rgba(139,92,246,.14)}
+.tag-sel-box{background:var(--surface3);border:1px solid var(--line2);border-radius:12px;padding:8px 10px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.tag-sel-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sel-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,.25);border:1px solid rgba(139,92,246,.6);color:#ddd6fe;border-radius:999px;padding:4px 8px 4px 10px;font-size:11.5px;font-weight:700}
+.sel-pill button{background:rgba(255,255,255,.2);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;padding:0;cursor:pointer}
+.sel-pill button:hover{background:var(--red)}
+.tag-quickbtn{padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--dim);margin-left:6px;cursor:pointer}
+.tag-quickbtn:hover{background:var(--blue);color:#fff}
 .tagitem .tn{font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px}
 .tagitem .tc{font-size:11px;font-weight:700;color:var(--blue2);background:rgba(79,140,255,.14);padding:2px 8px;border-radius:6px}
 .tagitem .ttype{font-size:9px;text-transform:uppercase;color:var(--faint);font-weight:700;border:1px solid var(--line);padding:1px 5px;border-radius:4px}
@@ -381,6 +389,7 @@ var currentURL = "", currentType = "";
 var autoEnabled=false, autoTimer=null, autoStart=0, autoRAF=null, wakeLock=null, lastLbl="";
 var playlists=[], activePlaylistId=null, shuffleOn=false, playOrder=[], returnId=null;
 var activeTag=null, tagPosts=[], tagCursor=null, tagLoading=false, tagHasMore=true;
+var selectedTags=[], activeTagsDetail=[];
 var tagView="list", activeTagDetail="", popularTagsCache=[], searchedTags=[], tagSearchTerm="";
 var sheetTab="playlist", plView="list", plDetailId=null;
 var selMode=false, sel={}, plShown=120, sortAsc=true, selCountEl=null;
@@ -1206,10 +1215,16 @@ async function r34Fetch(endpoint, opts) {
   throw new Error("Gagal mengambil data dari API r-34.xyz");
 }
 
-function startTag(tagName, startId, shuffle) {
+function startTag(tags, startId, shuffle) {
   if (!tagPosts.length) { toast("Belum ada post untuk tag ini", "bad"); return; }
   if (!activePlaylistId && !activeTag) returnId = current;
-  activeTag = tagName;
+  if (Array.isArray(tags)) {
+    activeTagsDetail = tags.slice();
+    activeTag = tags.join(" + ");
+  } else {
+    activeTagsDetail = [tags];
+    activeTag = tags;
+  }
   activePlaylistId = null;
   shuffleOn = !!shuffle;
   if (shuffleOn) {
@@ -1222,22 +1237,27 @@ function startTag(tagName, startId, shuffle) {
   var ord = activeOrder(), target = startId || ord[0];
   closeSheet();
   loadPost(target, 0);
-  toast((shuffleOn ? "🔀 Acak Tag: " : "🏷️ Tag: ") + tagName, "ok");
+  toast((shuffleOn ? "🔀 Acak Tag: " : "🏷️ Tag: ") + activeTag, "ok");
 }
 
-async function loadTagDetail(tagName, reset) {
+async function loadTagDetail(tags, reset) {
+  if (Array.isArray(tags)) {
+    activeTagsDetail = tags.slice();
+  } else if (typeof tags === "string") {
+    activeTagsDetail = [tags];
+  }
+  activeTag = activeTagsDetail.join(" + ");
   if (reset) {
     tagPosts = [];
     tagCursor = null;
     tagHasMore = true;
-    activeTagDetail = tagName;
   }
   if (!tagHasMore || tagLoading) return;
   tagLoading = true;
   rerender();
   try {
     var payload = {
-      includeTags: [tagName],
+      includeTags: activeTagsDetail,
       status: 2,
       sortOrder: 1,
       filterAi: !!S.filterAi,
@@ -1268,16 +1288,16 @@ async function loadTagDetail(tagName, reset) {
   }
 }
 
-async function loadMoreTagPosts(tagName) {
-  await loadTagDetail(tagName, false);
-  if (activeTag === tagName) {
+async function loadMoreTagPosts() {
+  await loadTagDetail(activeTagsDetail, false);
+  if (activeTag) {
     updateChip();
   }
 }
 
-function saveTagAsPlaylist(tagName) {
+function saveTagAsPlaylist(tagTitle) {
   if (!tagPosts.length) { toast("Tidak ada post untuk disimpan", "bad"); return; }
-  var plName = "Tag: " + tagName;
+  var plName = "Tag: " + tagTitle;
   var existing = null;
   playlists.forEach(function(p) { if (p.name.toLowerCase() === plName.toLowerCase()) existing = p; });
   if (existing) {
@@ -1295,19 +1315,129 @@ function saveTagAsPlaylist(tagName) {
 }
 
 var tagDebounceT = null;
+
+function renderSelectedTagsBar() {
+  var box = $("tagSelBox");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!selectedTags.length) {
+    box.style.display = "none";
+    return;
+  }
+  box.style.display = "flex";
+  var topRow = el("div", "tag-sel-chips");
+  selectedTags.forEach(function(t) {
+    var pillEl = el("span", "sel-pill");
+    pillEl.innerHTML = "<span>🏷️</span> " + esc(t);
+    var rem = el("button", "", "✕");
+    rem.onclick = function(e) {
+      e.stopPropagation();
+      var idx = selectedTags.indexOf(t);
+      if (idx !== -1) selectedTags.splice(idx, 1);
+      renderSelectedTagsBar();
+      renderTagItemsOnly();
+    };
+    pillEl.appendChild(rem);
+    topRow.appendChild(pillEl);
+  });
+  box.appendChild(topRow);
+
+  var actRow = el("div", "arow");
+  actRow.style.marginBottom = "0";
+  var goBtn = pill("🔍 Jelajah Post (" + selectedTags.length + " Tag)", "pri", function() {
+    tagView = "detail";
+    loadTagDetail(selectedTags.slice(), true);
+  });
+  var clrBtn = pill("✕ Kosongkan", "dng", function() {
+    selectedTags = [];
+    renderSelectedTagsBar();
+    renderTagItemsOnly();
+  });
+  actRow.appendChild(goBtn);
+  actRow.appendChild(clrBtn);
+  box.appendChild(actRow);
+}
+
+function renderTagItemsOnly() {
+  var listContainer = $("tagListContainer");
+  if (!listContainer) return;
+  listContainer.innerHTML = "";
+  var tagsToShow = tagSearchTerm ? searchedTags : popularTagsCache;
+
+  if (tagSearchTerm && !searchedTags.length) {
+    listContainer.appendChild(el("div", "empty", "Mencari tag atau tidak ditemukan..."));
+  } else if (!tagsToShow.length) {
+    listContainer.appendChild(el("div", "empty", "Memuat tag populer dari r-34.xyz..."));
+    if (!popularTagsCache.length) {
+      r34Fetch("/tag").then(function(tags) {
+        if (Array.isArray(tags)) {
+          popularTagsCache = tags;
+          renderTagItemsOnly();
+        }
+      }).catch(function() {
+        renderTagItemsOnly();
+      });
+    }
+  }
+
+  tagsToShow.forEach(function(t) {
+    var isSel = selectedTags.indexOf(t.value) !== -1;
+    var item = el("div", "tagitem" + (isSel ? " sel" : ""));
+    var left = el("div", "tn");
+    left.innerHTML = "<span>" + (isSel ? "✓" : "🏷️") + "</span> " + esc(t.value);
+    if (t.type) {
+      var typeName = t.type === 1 ? "General" : t.type === 2 ? "Copyright" : t.type === 4 ? "Character" : t.type === 8 ? "Artist" : "";
+      if (typeName) {
+        var tb = el("span", "ttype", typeName);
+        left.appendChild(tb);
+      }
+    }
+    
+    var right = el("div");
+    right.style.cssText = "display:flex;align-items:center;";
+    var countBadge = el("span", "tc", (t.count ? Number(t.count).toLocaleString() : "") + " post");
+    right.appendChild(countBadge);
+
+    var qk = el("button", "tag-quickbtn", "▶");
+    qk.title = "Langsung jelajah tag ini saja";
+    qk.onclick = function(e) {
+      e.stopPropagation();
+      selectedTags = [t.value];
+      tagView = "detail";
+      loadTagDetail([t.value], true);
+    };
+    right.appendChild(qk);
+
+    item.appendChild(left);
+    item.appendChild(right);
+
+    item.onclick = function() {
+      var idx = selectedTags.indexOf(t.value);
+      if (idx !== -1) {
+        selectedTags.splice(idx, 1);
+      } else {
+        selectedTags.push(t.value);
+      }
+      renderSelectedTagsBar();
+      renderTagItemsOnly();
+    };
+    listContainer.appendChild(item);
+  });
+}
+
 function onTagSearchInput(val) {
   tagSearchTerm = val.trim();
   clearTimeout(tagDebounceT);
   tagDebounceT = setTimeout(async function() {
     if (!tagSearchTerm) {
       searchedTags = [];
-      rerender();
+      renderTagItemsOnly();
       return;
     }
     try {
       var res = await r34Fetch("/tag/search/" + encodeURIComponent(tagSearchTerm));
       searchedTags = Array.isArray(res) ? res : [];
-      rerender();
+      renderTagItemsOnly();
     } catch (e) {
       console.warn("Tag search error:", e);
     }
@@ -1320,65 +1450,50 @@ function renderTagsView() {
     renderTagDetailView();
     return;
   }
+
+  // Jika input box dan sel box sudah ada, update isinya saja agar keyboard tidak tertutup!
+  var existingInp = $("tagSearchInput");
+  if (existingInp && $("tagListContainer") && $("tagSelBox")) {
+    renderSelectedTagsBar();
+    renderTagItemsOnly();
+    return;
+  }
+
+  b.innerHTML = "";
+  
+  // Box tag yang sedang dipilih
+  var selBox = el("div", "tag-sel-box");
+  selBox.id = "tagSelBox";
+  b.appendChild(selBox);
+  renderSelectedTagsBar();
+
+  // Search input box
   var sb = el("div", "tagsearchbox");
   var inp = el("input");
+  inp.id = "tagSearchInput";
   inp.type = "text";
-  inp.placeholder = "🔍 Cari nama tag (misal: anime, marvel, roblox)...";
+  inp.placeholder = "🔍 Ketik tag (misal: armpits, nude, video)...";
   inp.value = tagSearchTerm;
   inp.oninput = function() { onTagSearchInput(inp.value); };
   sb.appendChild(inp);
   b.appendChild(sb);
 
   var listContainer = el("div");
+  listContainer.id = "tagListContainer";
   listContainer.style.cssText = "display:flex;flex-direction:column;gap:6px;";
   b.appendChild(listContainer);
 
-  var tagsToShow = tagSearchTerm ? searchedTags : popularTagsCache;
-
-  if (tagSearchTerm && !searchedTags.length) {
-    listContainer.appendChild(el("div", "empty", "Mencari tag atau tidak ditemukan..."));
-  } else if (!tagsToShow.length) {
-    listContainer.appendChild(el("div", "empty", "Memuat tag populer dari r-34.xyz..."));
-    if (!popularTagsCache.length) {
-      r34Fetch("/tag").then(function(tags) {
-        if (Array.isArray(tags)) {
-          popularTagsCache = tags;
-          rerender();
-        }
-      }).catch(function() {
-        rerender();
-      });
-    }
-  }
-
-  tagsToShow.forEach(function(t) {
-    var item = el("div", "tagitem");
-    var left = el("div", "tn");
-    left.innerHTML = "<span>🏷️</span> " + esc(t.value);
-    if (t.type) {
-      var typeName = t.type === 1 ? "General" : t.type === 2 ? "Copyright" : t.type === 4 ? "Character" : t.type === 8 ? "Artist" : "";
-      if (typeName) {
-        var tb = el("span", "ttype", typeName);
-        left.appendChild(tb);
-      }
-    }
-    var right = el("span", "tc", (t.count ? Number(t.count).toLocaleString() : "") + " post");
-    item.appendChild(left);
-    item.appendChild(right);
-    item.onclick = function() {
-      tagView = "detail";
-      loadTagDetail(t.value, true);
-    };
-    listContainer.appendChild(item);
-  });
+  renderTagItemsOnly();
 }
 
 function renderTagDetailView() {
   var b = sheetBody;
+  var titleStr = activeTagsDetail.join(" + ");
+
   var head = el("div", "arow");
-  head.appendChild(pill("▶ Putar Semua", "pri", function() { startTag(activeTagDetail, null, false); }));
-  head.appendChild(pill("🔀 Acak", "", function() { startTag(activeTagDetail, null, true); }));
-  head.appendChild(pill("➕ Jadikan Playlist", "", function() { saveTagAsPlaylist(activeTagDetail); }));
+  head.appendChild(pill("▶ Putar Semua", "pri", function() { startTag(activeTagsDetail, null, false); }));
+  head.appendChild(pill("🔀 Acak", "", function() { startTag(activeTagsDetail, null, true); }));
+  head.appendChild(pill("➕ Jadikan Playlist", "", function() { saveTagAsPlaylist(titleStr); }));
   b.appendChild(head);
 
   var typeRow = el("div", "arow");
@@ -1389,24 +1504,24 @@ function renderTagDetailView() {
     [0, "🖼️ Gambar Saja"]
   ], tagTypeFilter, function(v) {
     tagTypeFilter = v;
-    loadTagDetail(activeTagDetail, true);
+    loadTagDetail(activeTagsDetail, true);
   });
   typeRow.appendChild(fSeg);
   b.appendChild(typeRow);
 
-  var sub = el("div", "selinfo", "🏷️ " + activeTagDetail + " · " + tagPosts.length + " post termuat");
+  var sub = el("div", "selinfo", "🏷️ " + titleStr + " · " + tagPosts.length + " post termuat");
   b.appendChild(sub);
 
   var grid = el("div", "grid");
   b.appendChild(grid);
 
   if (!tagPosts.length && !tagLoading) {
-    grid.appendChild(el("div", "empty", "Tidak ada post untuk tag ini."));
+    grid.appendChild(el("div", "empty", "Tidak ada post yang cocok dengan kombinasi tag ini."));
   }
 
   tagPosts.forEach(function(id) {
     var t = thumb(id, function() {
-      startTag(activeTagDetail, id, false);
+      startTag(activeTagsDetail, id, false);
     });
     grid.appendChild(t);
   });
@@ -1416,13 +1531,11 @@ function renderTagDetailView() {
     grid.appendChild(l);
   } else if (tagHasMore && tagPosts.length > 0) {
     var moreBtn = pill("⬇ Muat 30 Lagi", "more", function() {
-      loadMoreTagPosts(activeTagDetail);
+      loadMoreTagPosts();
     });
     grid.appendChild(moreBtn);
   }
 }
-
-/* ---------- sheet ---------- */
 function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=txt; return e; }
 function pill(txt,cls,fn){ var b=el("button","pill "+(cls||""),txt); b.onclick=fn; return b; }
 function resetSel(){ selMode=false; sel={}; plShown=120; }
@@ -1795,7 +1908,7 @@ return {
   randomPost:randomPost, toggleAuto:toggleAuto, toggleFav:toggleFav,
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
-  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ tagView="detail"; openSheet("tags"); loadTagDetail(t,true); }, openInfo:openInfo, closeInfo:closeInfo,
+  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ selectedTags=Array.isArray(t)?t.slice():[t]; tagView="detail"; openSheet("tags"); loadTagDetail(selectedTags,true); }, openInfo:openInfo, closeInfo:closeInfo,
   dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist
 };
 })();
