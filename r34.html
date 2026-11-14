@@ -1062,7 +1062,7 @@ function confirmNewPl(){
 popupNewInput.addEventListener("keydown",function(e){ if(e.key==="Enter") confirmNewPl(); });
 
 /* ---------- Tag & API Integration ---------- */
-var API_BASE = "https://r-34.xyz/api/v2";
+var API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "/api/v2" : "https://r-34.xyz/api/v2";
 
 async function r34Fetch(endpoint, opts) {
   opts = opts || {};
