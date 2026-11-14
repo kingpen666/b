@@ -1621,6 +1621,37 @@ body.fs .toast { bottom: 20px; }
 .fh-sort-seg button { padding: 8px 6px; }
 .heart-pop .ic{width:56px;height:56px}
 .pli .ck .ic{width:12px;height:12px;stroke-width:3}
+
+/* ===== now-playing chip (di samping judul) ===== */
+.brand { font-size: 13px; }
+.top:has(.chip.on) .brand i { display: none; }
+.chip { margin-left: 6px; flex: 1 1 0; max-width: none; position: relative; overflow: hidden; gap: 7px; padding: 3px 4px 3px 8px; min-height: 32px; border-radius: 10px; border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.12); }
+.chip.pl { border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.12); }
+.chip .ck-ico { display: flex; color: #93c5fd; flex: 0 0 auto; }
+.chip.pl .ck-ico { color: #6ee7b7; }
+.chip .ck-ico .ic { width: 15px; height: 15px; }
+.ck-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.2; }
+.ck-txt small { font-size: 8.5px; font-weight: 700; letter-spacing: .6px; color: #93c5fd; }
+.chip.pl .ck-txt small { color: #6ee7b7; }
+.ck-txt b { font-size: 11.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-pos { font: 700 10.5px monospace; color: var(--text-muted); flex: 0 0 auto; }
+.chip button.ck-x { width: 24px; height: 24px; border-radius: 7px; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; }
+.ck-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.08); }
+.ck-bar u { display: block; height: 100%; width: 0; background: var(--blue); transition: width .2s var(--ease); }
+.chip.pl .ck-bar u { background: var(--green); }
+.helpbtn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; margin-left: auto; flex: 0 0 auto; }
+.helpbtn .ic { width: 15px; height: 15px; }
+
+/* mode Pilih / Sembunyikan */
+.tagmode { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 2px; gap: 2px; margin-bottom: 6px; }
+.tagmode button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px; border-radius: 7px; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.tagmode button.on { background: var(--surface4); color: #fff; }
+.tagmode button.on.blk { background: rgba(239,68,68,.22); color: #fca5a5; }
+.tagmode .ic { width: 14px; height: 14px; }
+.tagmode-hint { font-size: 11px; color: var(--text-faint); margin: 0 4px 8px; }
+.trow.blk { background: rgba(239,68,68,.08); }
+.trow.blk .tck { background: var(--red); border-color: var(--red); }
+.trow.blk .tck .ic { width: 12px; height: 12px; stroke-width: 2.4; }
 </style>
 </head>
 <body>
@@ -1630,8 +1661,14 @@ body.fs .toast { bottom: 20px; }
   <div class="top">
     <div class="brand">Post Explorer<i>6.1</i></div>
     <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya"><span data-ic="back"></span><span id="backId"></span></button>
-    <div class="chip" id="chip"><span id="chipTxt"></span><button onclick="PE.leavePlaylist()" title="Keluar playlist & kembali"><span data-ic="x"></span></button></div>
-    <button class="helpbtn" onclick="PE.openGuide()" title="Panduan Gestur & Fitur">Panduan</button>
+    <div class="chip" id="chip">
+      <span class="ck-ico" id="chipIco"></span>
+      <span class="ck-txt"><small id="chipKind">TAG</small><b id="chipName"></b></span>
+      <span class="ck-pos" id="chipPos"></span>
+      <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dan kembali ke post sebelumnya" aria-label="Keluar"><span data-ic="x"></span></button>
+      <i class="ck-bar"><u id="chipBar"></u></i>
+    </div>
+    <button class="helpbtn" onclick="PE.openGuide()" title="Panduan" aria-label="Panduan"><span data-ic="help"></span></button>
   </div>
 
   <div class="idrow">
@@ -1822,11 +1859,8 @@ body.fs .toast { bottom: 20px; }
 
     <div class="fh-sec">
       <label>Sembunyikan tag</label>
-      <div class="fh-input-row">
-        <input id="fhBlockInput" type="text" placeholder="Ketik tag, lalu Tambah" maxlength="50" autocapitalize="off" autocomplete="off">
-        <button onclick="PE.addHubBlockTag()">Tambah</button>
-      </div>
       <div class="fh-chips" id="fhBlockTagChips"></div>
+      <button class="fh-link" onclick="PE.pickBlockTags()"><span data-ic="ban"></span>Pilih tag yang disembunyikan</button>
     </div>
 
     <div class="fh-row">
@@ -1885,6 +1919,8 @@ var ICONS = {
   swap: '<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
   keyboard: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/>',
   shuffle: '<path d="M4 7h3.5c5 0 5 10 10 10H20M4 17h3.5c1.8 0 3-.9 4-2M13 8.2c1-.8 2.2-1.2 4.5-1.2H20M17 4l3 3-3 3M17 14l3 3-3 3"/>',
+  ban: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1.9-1.1 1.7M12 17h.01"/>',
   video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/>'
 };
 function ic(n){
@@ -2172,17 +2208,22 @@ function activeOrder(){
   return playOrder;
 }
 function updateChip(){
-  var chip=$("chip");
+  var chip=$("chip"), ord, i, kind, name, ico;
   if(activeTag){
-    var ord=activeOrder()||[], i=ord.indexOf(current);
-    $("chipTxt").textContent=(shuffleOn?"Acak · ":"Tag · ")+activeTag+(i>=0?"  "+(i+1)+"/"+ord.length:"");
-    chip.classList.add("on");
-    return;
+    kind=shuffleOn?"TAG · ACAK":"TAG"; name=activeTag; ico="tag"; chip.classList.remove("pl");
+  } else {
+    var p=activePlaylistId?getPL(activePlaylistId):null;
+    if(!p){ chip.classList.remove("on"); return; }
+    kind=shuffleOn?"PLAYLIST · ACAK":"PLAYLIST"; name=p.name; ico="layers"; chip.classList.add("pl");
   }
-  var p=activePlaylistId?getPL(activePlaylistId):null;
-  if(!p){ chip.classList.remove("on"); return; }
-  var ord=activeOrder()||[], i=ord.indexOf(current);
-  $("chipTxt").textContent=(shuffleOn?"Acak · ":"")+p.name+(i>=0?"  "+(i+1)+"/"+ord.length:"");
+  ord=activeOrder()||[]; i=ord.indexOf(current);
+  $("chipIco").innerHTML=ic(shuffleOn?"shuffle":ico);
+  $("chipKind").textContent=kind;
+  $("chipName").textContent=name;
+  var more=(activeTag&&tagHasMore)?"+":"";
+  $("chipPos").textContent=i>=0?(i+1)+"/"+ord.length+more:ord.length+more;
+  $("chipBar").style.width=(i>=0&&ord.length?((i+1)/ord.length*100):0)+"%";
+  chip.title=kind+": "+name;
   chip.classList.add("on");
 }
 function exitPlaylist(){ activeTag=null; activePlaylistId=null; shuffleOn=false; playOrder=[]; returnId=null; updateChip(); }
@@ -2219,7 +2260,7 @@ function refreshBtns(){
 }
 function updateBack(){
   var b=$("backBtn");
-  var show = (activePlaylistId || activeTag || (anchorPost && anchorPost !== current));
+  var show = !activePlaylistId && !activeTag && anchorPost && anchorPost !== current;
   if (show && anchorPost) {
     b.classList.add("on");
     b.title = "Kembali ke posisi utama #" + anchorPost;
@@ -2881,6 +2922,7 @@ async function loadTagDetail(tags, reset) {
   } else if (typeof tags === "string") {
     activeTagsDetail = [tags];
   }
+  if (reset && !activePlaylistId && !activeTag) returnId = current;
   activeTag = tagLabel(activeTagsDetail);
   if (reset) {
     tagPosts = [];
@@ -2974,7 +3016,7 @@ function saveTagAsPlaylist(tagTitle) {
 var tagDebounceT = null;
 
 
-var tagListErr = false, tagFetching = false, tagSearching = false;
+var tagListErr = false, tagFetching = false, tagSearching = false, tagPickMode = "want";
 function normTag(v){ return String(v || "").trim().toLowerCase().replace(/\s+/g, "_"); }
 function tagLabel(arr){ return arr && arr.length ? arr.join(" + ") : (tagSortMode === "popular" ? "Terpopuler" : "Semua post"); }
 function fmtN(n){ n = Number(n) || 0; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M"; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k"; return String(n); }
@@ -3040,9 +3082,25 @@ function renderTagFsum(){
   f.style.display = "flex";
   f.innerHTML = ic("filter") + "<span>Filter aktif: " + esc(a.join(" · ")) + "</span><u>Ubah</u>";
 }
+function renderBlockBar(bar){
+  if (!blacklistTags.length) { bar.classList.remove("on"); return; }
+  bar.classList.add("on");
+  var chips = el("div", "tagbar-chips");
+  blacklistTags.forEach(function(t){ chips.appendChild(chipEl(t, "block", function(){ toggleTagBlock(t); })); });
+  bar.appendChild(chips);
+  var row = el("div", "tagbar-row");
+  var ok = el("button", "bwide b-pri");
+  ok.innerHTML = ic("check") + "<span>Selesai (" + blacklistTags.length + " disembunyikan)</span>";
+  ok.onclick = function(){ closeSheet(); openFilterHub(); };
+  var clr = el("button", "bwide b-sec", "Kosongkan");
+  clr.onclick = function(){ blacklistTags = []; saveBlacklist(); syncTagUI(); };
+  row.appendChild(ok); row.appendChild(clr);
+  bar.appendChild(row);
+}
 function renderTagBar(){
   var bar = $("tagBar"); if (!bar) return;
   bar.innerHTML = "";
+  if (tagPickMode === "block") { renderBlockBar(bar); return; }
   if (!selectedTags.length) { bar.classList.remove("on"); return; }
   bar.classList.add("on");
   var chips = el("div", "tagbar-chips");
@@ -3083,9 +3141,10 @@ function renderTagList(){
   box.appendChild(el("div", "tlabel", tagSearchTerm ? "Hasil pencarian" : "Tag populer"));
   src.forEach(function(t){
     var val = t.value;
-    var isSel = selectedTags.indexOf(val) !== -1, isBlk = blacklistTags.indexOf(val) !== -1;
+    var blockMode = tagPickMode === "block";
+    var isSel = !blockMode && selectedTags.indexOf(val) !== -1, isBlk = blacklistTags.indexOf(val) !== -1;
     var row = el("div", "trow" + (isSel ? " sel" : "") + (isBlk ? " blk" : ""));
-    var ck = el("span", "tck"); if (isSel) ck.innerHTML = ic("check");
+    var ck = el("span", "tck"); if (isSel) ck.innerHTML = ic("check"); else if (blockMode && isBlk) ck.innerHTML = ic("ban");
     row.appendChild(ck);
     row.appendChild(el("span", "tnm", val));
     var kind = t.type === 8 ? ["artist", "Artist"] : t.type === 4 ? ["character", "Karakter"] : t.type === 2 ? ["copyright", "Seri"] : null;
@@ -3094,8 +3153,8 @@ function renderTagList(){
     if (t.count) row.appendChild(el("span", "tcnt", fmtN(t.count)));
     var go = el("button", "tgo"); go.innerHTML = ic("play"); go.title = "Langsung tonton";
     go.onclick = function(e){ e.stopPropagation(); selectedTags = [val]; tagView = "detail"; refreshBadges(); loadTagDetail([val], true); };
-    row.appendChild(go);
-    row.onclick = function(){ toggleTagWant(val); };
+    if (!blockMode) row.appendChild(go);
+    row.onclick = function(){ if (blockMode) toggleTagBlock(val); else toggleTagWant(val); };
     box.appendChild(row);
   });
 }
@@ -3135,6 +3194,18 @@ function renderTagsView(){
   clr.onclick = function(){ inp.value = ""; onTagSearchInput(""); inp.focus(); };
   sb.appendChild(si); sb.appendChild(inp); sb.appendChild(clr);
   b.appendChild(sb);
+
+  var md = el("div", "tagmode");
+  [["want", "tag", "Pilih tag", ""], ["block", "ban", "Sembunyikan", " blk"]].forEach(function(m){
+    var bt = el("button", (tagPickMode === m[0] ? "on" : "") + m[3]);
+    bt.innerHTML = ic(m[1]) + "<span>" + m[2] + "</span>";
+    bt.onclick = function(){ tagPickMode = m[0]; rerender(); };
+    md.appendChild(bt);
+  });
+  b.appendChild(md);
+  b.appendChild(el("div", "tagmode-hint", tagPickMode === "block"
+    ? "Tap tag yang ingin disembunyikan. Post bertag itu tidak akan tampil."
+    : "Tap tag untuk memilih, lalu tonton."));
 
   var fs = el("button", "fsum"); fs.id = "tagFsum"; fs.style.display = "none";
   fs.onclick = function(){ openFilterHub(); };
@@ -3179,10 +3250,10 @@ function renderTagDetailView(){
 function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=lead(txt); return e; }
 function pill(txt,cls,fn){ var b=el("button","pill "+(cls||""),txt); b.onclick=fn; return b; }
 function resetSel(){ selMode=false; sel={}; plShown=120; }
-function openSheet(tab){
+function openSheet(tab,mode){
   if(tab) sheetTab=tab;
   if(tab==="playlist"){ plView="list"; plDetailId=null; resetSel(); }
-  if(tab==="tags"){ tagView="list"; }
+  if(tab==="tags"){ tagView="list"; tagPickMode = mode==="block" ? "block" : "want"; }
   renderSheet(); sheet.classList.add("open"); sheetBackdrop.classList.add("open");
 }
 function closeSheet(){ sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); }
@@ -3720,6 +3791,7 @@ function setHubSort(mode) { tagSortMode = mode; renderFilterHub(); refreshBadges
 function setHubType(v) { tagTypeFilter = v; renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
 function toggleHubAi() { S.filterAi = !S.filterAi; saveS(); renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
 function pickTags() { closeFilterHub(); openSheet("tags"); }
+function pickBlockTags() { closeFilterHub(); openSheet("tags", "block"); }
 function resetFilter() {
   tagSortMode = "newest"; tagTypeFilter = null; selectedTags = []; blacklistTags = []; saveBlacklist();
   S.filterAi = false; saveS();
@@ -3824,7 +3896,7 @@ return {
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
   download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:openTag, openInfo:openInfo, closeInfo:closeInfo, toggleTagWant:toggleTagWant, toggleTagBlock:toggleTagBlock, getSelectedTags:function(){return selectedTags;}, getBlacklistTags:function(){return blacklistTags;},
-  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide, toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, addHubTag:addHubTag, addHubBlockTag:addHubBlockTag, applyFilterHub:applyFilterHub, setHubType:setHubType, pickTags:pickTags, resetFilter:resetFilter, toggleHubAi:toggleHubAi, toggleSound:toggleSound, toggleSortMenu:toggleSortMenu, setSort:setSort, toggleSound:toggleSound
+  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide, toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, addHubTag:addHubTag, addHubBlockTag:addHubBlockTag, applyFilterHub:applyFilterHub, setHubType:setHubType, pickTags:pickTags, pickBlockTags:pickBlockTags, resetFilter:resetFilter, toggleHubAi:toggleHubAi, toggleSound:toggleSound, toggleSortMenu:toggleSortMenu, setSort:setSort, toggleSound:toggleSound
 };
 })();
 </script>
