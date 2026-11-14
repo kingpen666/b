@@ -1,0 +1,1672 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#070b14">
+<title>Post Explorer 6.1</title>
+<style>
+:root{
+  --bg:#070b14;--surface:#101827;--surface2:#162033;--surface3:#202d45;
+  --line:rgba(148,163,184,.16);--line2:rgba(148,163,184,.28);
+  --text:#e8eef9;--dim:#9aa8c0;--faint:#64738d;
+  --blue:#4f8cff;--blue2:#7aa7ff;--violet:#8b5cf6;--pink:#ec4899;
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;overscroll-behavior:none}
+button,input{font:inherit;color:inherit}
+button{border:0;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .1s var(--ease),filter .15s var(--ease),background .15s var(--ease)}
+button:active{transform:scale(.95)}
+
+.app{max-width:640px;height:100vh;height:100dvh;margin:0 auto;display:flex;flex-direction:column;gap:8px;
+  padding:calc(8px + env(safe-area-inset-top,0px)) 10px calc(8px + env(safe-area-inset-bottom,0px))}
+
+/* header */
+.top{display:flex;align-items:center;gap:8px;min-height:24px}
+.brand{flex:0 0 auto;font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--blue2),var(--violet),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand i{font-style:normal;color:var(--faint);-webkit-text-fill-color:var(--faint);margin-left:4px;font-weight:600}
+.backbtn{display:none;flex:0 0 auto;padding:3px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--line2);font:700 11px monospace;color:var(--dim)}
+.backbtn.on{display:block}
+.chip{margin-left:auto;display:none;align-items:center;gap:6px;min-width:0;flex:0 1 auto;max-width:55%;
+  background:rgba(139,92,246,.16);border:1px solid rgba(139,92,246,.45);color:#c4b5fd;
+  border-radius:999px;padding:3px 4px 3px 10px;font-size:11px;font-weight:700}
+.chip.on{display:flex}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.chip button{background:rgba(255,255,255,.1);width:20px;height:20px;border-radius:50%;font-size:11px;padding:0;color:#ddd6fe;flex:0 0 auto}
+
+/* nav row */
+.idrow{display:flex;gap:6px}
+.idrow input{flex:1;min-width:0;height:44px;text-align:center;font-size:16px;font-weight:800;letter-spacing:.5px;
+  background:var(--surface);border:1px solid var(--line2);border-radius:12px;outline:none;transition:border-color .2s,box-shadow .2s}
+.idrow input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,140,255,.2)}
+.idrow input::placeholder{color:var(--faint);font-weight:400}
+input[type=number]{-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.ib{width:46px;height:44px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);font-size:20px;color:var(--dim);flex:0 0 auto}
+.ib:hover{background:var(--surface3);color:var(--text)}
+.ib.rnd{background:linear-gradient(135deg,var(--violet),#6d28d9);color:#fff;border:0;font-size:19px;box-shadow:0 4px 14px rgba(109,40,217,.35)}
+
+/* stage */
+.stage{flex:1 1 auto;min-height:0;position:relative;overflow:hidden;border-radius:18px;
+  background:radial-gradient(circle at 50% 35%,#0e172b 0%,#03050a 100%);
+  border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none}
+.swipe-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;will-change:transform,opacity;
+  transition:transform .2s var(--ease),opacity .2s var(--ease)}
+.swipe-layer.dragging{transition:none}
+.zoom-layer{width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center;will-change:transform;transition:transform .2s var(--ease)}
+.zoom-layer.dragging{transition:none}
+.zoom-layer img,.zoom-layer video{width:100%;height:100%;object-fit:contain;display:block;background:transparent}
+.fit-cover .zoom-layer img,.fit-cover .zoom-layer video{object-fit:cover}
+.zoom-layer img.ph{filter:blur(1.5px);opacity:.92}
+#status{color:var(--faint);padding:24px;text-align:center;font-size:13px}
+.spin{position:absolute;left:50%;top:44px;width:22px;height:22px;margin-left:-11px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.18);border-top-color:var(--blue2);opacity:0;pointer-events:none;z-index:6;
+  animation:rot .7s linear infinite;transition:opacity .15s}
+.spin.show{opacity:1}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.glass{position:absolute;z-index:6;background:rgba(7,11,20,.62);border:1px solid var(--line2);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.sbtn{top:8px;width:34px;height:34px;border-radius:10px;font-size:15px;color:var(--dim);padding:0;display:flex;align-items:center;justify-content:center}
+.sbtn:hover{color:#fff}
+#fsBtn{right:8px}#fitBtn{right:48px}
+.zoom-badge{top:12px;left:8px;border-radius:8px;padding:3px 9px;font:700 11px monospace;color:var(--blue2);opacity:0;pointer-events:none;transition:opacity .2s}
+.zoom-badge.visible{opacity:1}
+.idtag{left:8px;bottom:8px;border-radius:8px;padding:3px 9px;font:700 11px monospace;color:var(--dim);pointer-events:none}
+.stage.isvid .idtag{display:none}
+
+.hint{position:absolute;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:18px;opacity:0;pointer-events:none;z-index:5;background:rgba(7,11,20,.75);border:1px solid var(--line2);transition:opacity .12s,background .12s,box-shadow .12s}
+.hint.l{left:12px}.hint.r{right:12px}
+.hint.visible{opacity:1}
+.hint.armed{background:rgba(37,99,235,.92);box-shadow:0 0 20px rgba(59,130,246,.5);border-color:var(--blue2)}
+.hint.r.armed{background:rgba(236,72,153,.92);box-shadow:0 0 20px rgba(236,72,153,.5);border-color:#f9a8d4}
+.hint.l.armed{background:rgba(239,68,68,.92);box-shadow:0 0 20px rgba(239,68,68,.5);border-color:#fca5a5}
+.hintv{position:absolute;left:50%;margin-left:-28px;width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;opacity:0;pointer-events:none;z-index:5;background:rgba(7,11,20,.85);border:1px solid var(--line2);transition:opacity .12s,transform .12s,background .12s}
+.hintv.d{bottom:22px}.hintv.u{top:22px}
+.hintv.visible{opacity:1}.hintv.armed{transform:scale(1.12);background:rgba(37,99,235,.95)}
+
+/* auto bar (overlay, tidak menggeser layout) */
+.autobar{position:absolute;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.1);z-index:6;display:none;pointer-events:none}
+.autobar.on{display:block}
+.autobar .fill{position:absolute;top:0;bottom:0;left:0;width:0;background:linear-gradient(90deg,var(--violet),var(--blue2))}
+.autobar .lbl{position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:2px 9px;border-radius:8px;background:rgba(7,11,20,.62);border:1px solid var(--line2);font:800 10px monospace;letter-spacing:.8px;color:var(--text);white-space:nowrap}
+
+body.fs .top,body.fs .idrow,body.fs .dock{display:none}
+body.fs .app{padding:0;gap:0}
+body.fs .stage{border-radius:0;border:0}
+
+/* dock */
+.dock{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.tagitem{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:background .15s}
+.tagitem:hover{background:var(--surface3);border-color:var(--line2)}
+.tagitem .tn{font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px}
+.tagitem .tc{font-size:11px;font-weight:700;color:var(--blue2);background:rgba(79,140,255,.14);padding:2px 8px;border-radius:6px}
+.tagitem .ttype{font-size:9px;text-transform:uppercase;color:var(--faint);font-weight:700;border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+.tagsearchbox{display:flex;gap:6px;margin-bottom:10px}
+.tagsearchbox input{flex:1;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line2);outline:none;font-size:13px;color:var(--text)}
+.tagsearchbox input:focus{border-color:var(--blue)}
+.dk{height:52px;border-radius:13px;background:var(--surface2);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+.dk b{font-size:18px;line-height:1;font-weight:400}
+.dk small{font-size:9px;font-weight:700;letter-spacing:.4px;color:var(--dim);text-transform:uppercase}
+.dk:hover{background:var(--surface3)}
+.dk.on{border-color:rgba(16,185,129,.55);background:rgba(16,185,129,.14)}
+.dk.on small{color:#6ee7b7}
+.dk.fav.on{border-color:rgba(236,72,153,.6);background:rgba(236,72,153,.15)}
+.dk.fav.on small{color:#f9a8d4}
+.dk.auto.on{border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.16)}
+.dk.auto.on small{color:#fca5a5}
+
+/* sheet */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:39;opacity:0;pointer-events:none;transition:opacity .25s var(--ease)}
+.backdrop.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:640px;margin:0 auto;max-height:84vh;max-height:84dvh;z-index:40;
+  background:var(--surface);border-top:1px solid var(--line2);border-radius:20px 20px 0 0;
+  padding:8px 12px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;
+  transform:translateY(105%);transition:transform .3s var(--ease);box-shadow:0 -12px 40px rgba(0,0,0,.55);visibility:hidden}
+.sheet.open{transform:none;visibility:visible}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--line2);margin:0 auto 10px;flex:0 0 auto}
+.shead{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex:0 0 auto}
+.hb{width:34px;height:34px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);color:var(--dim);padding:0;font-size:15px;flex:0 0 auto}
+.hb:disabled{opacity:.3}
+.tabs{flex:1;display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
+.tabs button{flex:1;background:transparent;color:var(--dim);font-size:11px;font-weight:700;padding:7px 4px;border-radius:8px;letter-spacing:.3px}
+.tabs button.on{background:var(--surface3);color:var(--text)}
+.sbody{overflow-y:auto;min-height:80px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.sbody::-webkit-scrollbar{width:5px}.sbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+.arow{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.pill{flex:1;min-width:76px;padding:9px 8px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--dim);white-space:nowrap}
+.pill:hover{color:var(--text);background:var(--surface3)}
+.pill.pri{background:linear-gradient(135deg,var(--violet),#6d28d9);color:#fff;border:0}
+.pill.dng{color:#fca5a5;border-color:rgba(239,68,68,.35)}
+.selinfo{font-size:12px;font-weight:700;color:var(--amber);margin:0 2px 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.empty{grid-column:1/-1;text-align:center;color:var(--faint);font-style:italic;padding:22px 10px;font-size:12px}
+.more{grid-column:1/-1}
+.thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#1e293b,#334155);border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.nothumb::before{content:"🎞";font-size:26px;opacity:.4}
+.thumb.act{border-color:var(--blue2);box-shadow:0 0 0 2px var(--blue2)}
+.thumb.sel{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue)}
+.thumb.sel img{opacity:.55}
+.thumb.sel::after{content:"✓";position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.thumb .tid{position:absolute;left:0;right:0;bottom:0;padding:12px 4px 3px;text-align:center;font:700 10px monospace;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.85))}
+.thumb .x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.92);color:#fff;font-size:13px;padding:0;display:flex;align-items:center;justify-content:center}
+.card{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--surface2);border:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column}
+.card:hover{border-color:var(--violet)}
+.card .cv{flex:1;position:relative;display:flex;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(135deg,#1e293b,#334155);overflow:hidden}
+.card .cv img{width:100%;height:100%;object-fit:cover;display:block}
+.card .ci{padding:6px 9px;background:rgba(10,15,28,.96);border-top:1px solid var(--line)}
+.card .cn{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .cm{font-size:10px;color:var(--faint)}
+.card .play,.card .menu{position:absolute;top:6px;width:28px;height:28px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;font-size:12px;z-index:2}
+.card .play{right:6px;background:rgba(16,185,129,.95);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.card .menu{left:6px;background:rgba(7,11,20,.85);border:1px solid var(--line2);color:var(--dim);font-size:15px}
+.card .acts{position:absolute;inset:0;background:rgba(7,11,20,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:3}
+.card .acts.show{display:flex}
+.card .acts button{width:80%;padding:7px;font-size:11px;font-weight:700;border-radius:8px;background:var(--surface3);color:var(--text)}
+.card .acts .d{background:var(--red);color:#fff}
+
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.setrow>div:first-child{min-width:0;flex:1}
+.setrow label{font-size:13px;font-weight:600}
+.setrow small{display:block;color:var(--faint);font-size:11px;font-weight:400}
+.seg{display:flex;flex-wrap:wrap;justify-content:flex-end;background:var(--surface2);border-radius:9px;padding:2px;gap:2px;flex:0 0 auto;max-width:62%}
+.seg button{background:transparent;color:var(--dim);padding:6px 9px;border-radius:7px;font-size:11px;font-weight:700}
+.seg button.on{background:var(--blue);color:#fff}
+
+/* popup / dialog */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+.modal.open{opacity:1;pointer-events:auto}
+#popupBackdrop{z-index:50}#dlgBackdrop{z-index:60}
+.box{background:var(--surface2);border:1px solid var(--line2);border-radius:16px;padding:16px 14px 12px;width:100%;max-width:360px;max-height:72vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.6);transform:scale(.95);transition:transform .2s var(--ease)}
+.modal.open .box{transform:none}
+.box h4{margin:0 0 10px;text-align:center;font-size:13px;font-weight:800}
+.box h4 span{color:var(--blue2)}
+.plist{overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-height:50px}
+.pli{display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface3);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.pli.in{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.12)}
+.pli .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;flex:0 0 auto}
+.pli.in .ck{background:var(--green);border-color:var(--green);color:#fff}
+.pli.pick .ck{display:none}
+.pli .nm{flex:1;font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pli .ct{font-size:10px;color:var(--faint)}
+.newrow{display:none;gap:6px;margin-bottom:10px}.newrow.show{display:flex}
+.box input.t{flex:1;width:100%;padding:10px;border-radius:9px;background:var(--bg);border:1px solid var(--line2);outline:none;font-size:14px;text-align:left}
+.bwide{width:100%;padding:11px;border-radius:10px;font-size:12px;font-weight:700}
+.b-pri{background:linear-gradient(135deg,var(--violet),#6d28d9);color:#fff}
+.b-sec{background:var(--surface3);color:var(--dim);border:1px solid var(--line);margin-top:6px}
+.dmsg{margin:0 0 12px;text-align:center;line-height:1.5;font-size:14px}.dmsg b{color:var(--amber)}
+.dact{display:flex;gap:8px}.dact button{flex:1;padding:11px;border-radius:10px;font-size:12px;font-weight:700}
+.d-no{background:var(--surface3);color:var(--dim);border:1px solid var(--line)}
+.d-ok{background:linear-gradient(135deg,var(--blue),#2563eb);color:#fff}
+.d-ok.danger{background:linear-gradient(135deg,var(--red),#dc2626)}
+#dlgInput{display:none;margin-bottom:12px}
+
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);z-index:70;
+  background:var(--surface3);border:1px solid var(--line2);border-radius:11px;padding:9px 16px;font-size:13px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-color:rgba(16,185,129,.55);color:#6ee7b7}
+.toast.bad{border-color:rgba(239,68,68,.55);color:#fca5a5}
+body.fs .toast{bottom:24px}
+@media (max-width:380px){.dk small{font-size:8px}.ib{width:40px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <div class="brand">Post Explorer<i>6.1</i></div>
+    <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya">↩ <span id="backId"></span></button>
+    <div class="chip" id="chip"><span id="chipTxt"></span><button onclick="PE.leavePlaylist()" title="Keluar playlist & kembali">✕</button></div>
+  </div>
+
+  <div class="idrow">
+    <button class="ib" onclick="PE.prev()" aria-label="Sebelumnya">‹</button>
+    <input id="numberInput" type="number" inputmode="numeric" min="1" max="100000000" placeholder="ID post…">
+    <button class="ib" onclick="PE.next()" aria-label="Berikutnya">›</button>
+    <button class="ib rnd" onclick="PE.randomPost()" aria-label="Acak">🎲</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="swipe-layer" id="swipeLayer"><div class="zoom-layer" id="zoomLayer"><span id="status">Pilih nomor post</span></div></div>
+    <div class="hint l" id="hintL">🗑</div>
+    <div class="hint r" id="hintR">➕</div>
+    <div class="hintv d" id="hintD">⏭</div>
+    <div class="hintv u" id="hintU">⏮</div>
+    <div class="autobar" id="autoBar"><div class="fill" id="autoFill"></div><div class="lbl" id="autoLbl">5.0s</div></div>
+    <div class="spin" id="spin"></div>
+    <div class="glass zoom-badge" id="zoomBadge">1.0x</div>
+    <div class="glass idtag" id="idTag">#1</div>
+    <button class="glass sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / Penuhi layar">◫</button>
+    <button class="glass sbtn" id="fsBtn" onclick="PE.toggleFs()" title="Fullscreen">⛶</button>
+  </div>
+
+  <div class="dock">
+    <button class="dk auto" id="autoBtn" onclick="PE.toggleAuto()"><b id="autoIco">▶</b><small id="autoTxt">Auto</small></button>
+    <button class="dk fav" id="favBtn" onclick="PE.toggleFav()"><b id="favIco">♡</b><small>Favorit</small></button>
+    <button class="dk" id="tagBtn" onclick="PE.openSheet('tags')"><b>🏷️</b><small>Tag</small></button>
+    <button class="dk" id="plBtn" onclick="PE.togglePopup()"><b id="plIco">➕</b><small>Playlist</small></button>
+    <button class="dk" onclick="PE.openSheet('playlist')"><b>📚</b><small>Koleksi</small></button>
+    <button class="dk" onclick="PE.download()"><b>⬇</b><small>Unduh</small></button>
+    <button class="dk" onclick="PE.openSheet('settings')"><b>⚙</b><small>Setelan</small></button>
+  </div>
+</div>
+
+<!-- sheet -->
+<div class="backdrop" id="sheetBackdrop" onclick="PE.closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="shead">
+    <button class="hb" id="sheetBack" onclick="PE.sheetBack()" disabled>←</button>
+    <div class="tabs">
+      <button data-tab="tags">🏷️ Tag</button>
+      <button data-tab="playlist">Playlist</button>
+      <button data-tab="history">Riwayat</button>
+      <button data-tab="settings">Setelan</button>
+    </div>
+    <button class="hb" onclick="PE.closeSheet()">✕</button>
+  </div>
+  <div class="sbody" id="sheetBody"></div>
+</div>
+<input type="file" id="importFile" accept="application/json,.json" style="display:none">
+
+<!-- popup tambah / pilih playlist -->
+<div class="modal" id="popupBackdrop" onclick="PE.closePopup(event)">
+  <div class="box" onclick="event.stopPropagation()">
+    <h4 id="popupTitle">Simpan ke playlist</h4>
+    <div class="plist" id="popupList"></div>
+    <div class="newrow" id="popupNewRow">
+      <input class="t" type="text" id="popupNewInput" placeholder="Nama playlist baru…" maxlength="40">
+      <button class="bwide b-pri" style="width:auto;padding:0 16px" onclick="PE.confirmNewPl()">OK</button>
+    </div>
+    <button class="bwide b-pri" onclick="PE.showNewRow()">➕ Buat playlist baru</button>
+    <button class="bwide b-sec" onclick="PE.closePopup()">Tutup</button>
+  </div>
+</div>
+
+<!-- dialog -->
+<div class="modal" id="dlgBackdrop">
+  <div class="box" style="max-width:320px">
+    <p class="dmsg" id="dlgMsg"></p>
+    <input class="t" id="dlgInput" type="text" maxlength="40">
+    <div class="dact">
+      <button class="d-no" onclick="PE.dlgNo()">Batal</button>
+      <button class="d-ok" id="dlgOk" onclick="PE.dlgYes()">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var PE = (function () {
+"use strict";
+var MAXID = 100000000;
+var BASE = "https://r34xyz.b-cdn.net/posts/";
+function $(id){ return document.getElementById(id); }
+function now(){ return performance.now(); }
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function validId(n){ return typeof n==="number" && Number.isInteger(n) && n>=1 && n<=MAXID; }
+function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){ s[x]=1; o.push(x); } }); return o; }
+
+/* ---------- storage ---------- */
+var okLS = true, mem = {};
+try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); } catch(e){ okLS=false; }
+function lsGet(k){ if(okLS){ try{ return localStorage.getItem(k); }catch(e){ okLS=false; } } return k in mem ? mem[k] : null; }
+function lsSet(k,v){ if(okLS){ try{ localStorage.setItem(k,v); return; }catch(e){ okLS=false; } } mem[k]=v; }
+function jget(k,d){ try{ var r=lsGet(k); return r?JSON.parse(r):d; }catch(e){ return d; } }
+function jset(k,v){ try{ lsSet(k,JSON.stringify(v)); }catch(e){} }
+
+/* ---------- settings ---------- */
+var S = (function(){
+  var d = {interval:5, skipMissing:true, fit:"contain", muted:true, saver:false, keepZoom:false, speed:1};
+  var s = jget("pe_settings",{}) || {};
+  for (var k in d) if (s[k]!==undefined) d[k]=s[k];
+  return d;
+})();
+function saveS(){ jset("pe_settings",S); }
+
+/* ---------- elements ---------- */
+var input=$("numberInput"), stage=$("stage"), swipeLayer=$("swipeLayer"), zoomLayer=$("zoomLayer");
+var spin=$("spin"), idTag=$("idTag"), zoomBadge=$("zoomBadge");
+var hintL=$("hintL"), hintR=$("hintR"), hintU=$("hintU"), hintD=$("hintD");
+var autoBar=$("autoBar"), autoFill=$("autoFill"), autoLbl=$("autoLbl");
+var sheet=$("sheet"), sheetBackdrop=$("sheetBackdrop"), sheetBody=$("sheetBody"), sheetBackBtn=$("sheetBack");
+var popupBackdrop=$("popupBackdrop"), popupList=$("popupList"), popupNewRow=$("popupNewRow"), popupNewInput=$("popupNewInput");
+var dlgBackdrop=$("dlgBackdrop"), dlgMsg=$("dlgMsg"), dlgInput=$("dlgInput"), dlgOk=$("dlgOk");
+var toastEl=$("toast");
+
+/* ---------- state ---------- */
+var sp = parseInt(lsGet("lastPost"),10);
+var current = (isFinite(sp)&&sp>=1&&sp<=MAXID) ? sp : 1;
+var shownId = 0;                 // id terakhir yang benar-benar tampil
+var navStack = [], skipPush = false;
+var token = 0, finalTok = 0, phTimer = null;
+var currentURL = "", currentType = "";
+var autoEnabled=false, autoTimer=null, autoStart=0, autoRAF=null, wakeLock=null, lastLbl="";
+var playlists=[], activePlaylistId=null, shuffleOn=false, playOrder=[], returnId=null;
+var activeTag=null, tagPosts=[], tagCursor=null, tagLoading=false, tagHasMore=true;
+var tagView="list", activeTagDetail="", popularTagsCache=[], searchedTags=[], tagSearchTerm="";
+var sheetTab="playlist", plView="list", plDetailId=null;
+var selMode=false, sel={}, plShown=120, sortAsc=true, selCountEl=null;
+var popupPostId=null, popupMode="add", pickCb=null, pickExclude=null;
+var hist = (jget("pe_hist",[])||[]).filter(validId).slice(0,60);
+var vpos = new Map();
+
+/* ---------- toast & dialog ---------- */
+var toastT=null;
+function toast(msg,type){
+  toastEl.textContent=msg; toastEl.className="toast show"+(type?" "+type:"");
+  clearTimeout(toastT); toastT=setTimeout(function(){ toastEl.classList.remove("show"); },1800);
+}
+var dlgCb=null;
+function dialog(msg,opts,cb){
+  opts=opts||{};
+  dlgMsg.innerHTML=msg;
+  dlgInput.style.display=opts.input?"block":"none";
+  dlgInput.value=opts.value||"";
+  dlgOk.textContent=opts.ok||"OK";
+  dlgOk.className="d-ok"+(opts.danger?" danger":"");
+  dlgCb=cb; dlgBackdrop.classList.add("open");
+  if(opts.input) setTimeout(function(){ dlgInput.focus(); dlgInput.select(); },60);
+}
+function dlgYes(){ var v=dlgInput.value; dlgBackdrop.classList.remove("open"); var cb=dlgCb; dlgCb=null; if(cb) cb(v); }
+function dlgNo(){ dlgBackdrop.classList.remove("open"); dlgCb=null; }
+dlgInput.addEventListener("keydown",function(e){ if(e.key==="Enter") dlgYes(); });
+function vibe(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||8); }catch(e){} }
+function saveBlob(blob,name){
+  var u=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(u); },5000);
+}
+
+/* ---------- URL ---------- */
+function prefix(id){ return String(id).slice(0,-3)||"0"; }
+function urls(id){
+  var p=BASE+prefix(id)+"/"+id+"/"+id, full=p+".jpg", small=p+".small.jpg";
+  return { mp4:p+".mp4", small:small, full:full, imgs: S.saver?[small,full]:[full,small] };
+}
+function thumbURL(id){ return urls(id).small; }
+
+/* ---------- loader ---------- */
+var cache=new Map(), pending=new Map(), queue=[], running=0, MAX_PAR=4, MAX_CACHE=40;
+function cacheSet(id,r){ cache.delete(id); cache.set(id,r); while(cache.size>MAX_CACHE) cache.delete(cache.keys().next().value); }
+function loadImg(url,ms){
+  return new Promise(function(res){
+    var im=new Image(); im.decoding="async";
+    var t=setTimeout(function(){ im.onload=im.onerror=null; res(null); },ms||15000);
+    im.onload=function(){ clearTimeout(t); res(im); };
+    im.onerror=function(){ clearTimeout(t); res(null); };
+    im.src=url;
+  });
+}
+function probeVideo(url){
+  return new Promise(function(res){
+    var v=document.createElement("video"), d=false;
+    var t=setTimeout(function(){ fin(false); },8000);
+    function fin(ok){
+      if(d) return; d=true; clearTimeout(t);
+      v.onloadedmetadata=v.onerror=null;
+      try{ v.removeAttribute("src"); v.load(); }catch(e){}
+      res(ok===true);
+    }
+    v.onloadedmetadata=function(){ fin(true); };
+    v.onerror=function(){ fin(false); };
+    v.preload="metadata"; v.muted=true; v.src=url;
+  });
+}
+function startResolve(id){
+  running++;
+  var u=urls(id);
+  var p=new Promise(function(resolve){
+    var vDone=false,vOk=false,iDone=false,img=null,imgUrl=null,fin=false,wait=null;
+    function finish(r){ if(fin) return; fin=true; clearTimeout(wait); cacheSet(id,r); resolve(r); }
+    function check(){
+      if(fin) return;
+      if(vDone&&vOk) return finish({type:"mp4",url:u.mp4});
+      if(vDone&&iDone) return finish(img?{type:"jpg",url:imgUrl,el:img}:{type:null,url:null,miss:true});
+      /* Image sudah ada tapi video belum selesai probe: tunggu 800ms sebelum anggap tidak ada video */
+      if(iDone&&img&&!vDone&&!wait) wait=setTimeout(function(){ vDone=true; check(); },800);
+    }
+    /* Probe video & image secara paralel - video tetap diprioritaskan jika ada */
+    probeVideo(u.mp4).then(function(ok){ vDone=true; vOk=ok; check(); });
+    loadImg(u.imgs[0]).then(function(im){
+      if(im){ img=im; imgUrl=u.imgs[0]; return; }
+      return loadImg(u.imgs[1]).then(function(im2){ if(im2){ img=im2; imgUrl=u.imgs[1]; } });
+    }).then(function(){ iDone=true; check(); });
+  });
+  function done(){ running--; pending.delete(id); pump(); }
+  p.then(done,done);
+  pending.set(id,p);
+  return p;
+}
+function get(id){
+  if(id<1||id>MAXID) return Promise.resolve({type:null,miss:true});
+  if(cache.has(id)){ var r=cache.get(id); cacheSet(id,r); return Promise.resolve(r); }
+  if(pending.has(id)) return pending.get(id);
+  var qi=queue.indexOf(id); if(qi>-1) queue.splice(qi,1);
+  return startResolve(id);
+}
+function schedule(id){
+  if(id<1||id>MAXID||cache.has(id)||pending.has(id)||queue.indexOf(id)>-1) return;
+  queue.push(id); pump();
+}
+function pump(){ while(running<MAX_PAR&&queue.length) startResolve(queue.shift()); }
+function neighbors(id){
+  var out=[], offs=[1,-1,2,3,4,-2], ord=activeOrder();
+  if(ord){
+    var i=ord.indexOf(id); if(i<0) return out;
+    offs.forEach(function(o){ var j=i+o; if(j>=0&&j<ord.length) out.push(ord[j]); });
+  } else offs.forEach(function(o){ out.push(id+o); });
+  return out;
+}
+function preloadAround(id){ queue.length=0; neighbors(id).forEach(schedule); }
+
+/* ---------- playlists ---------- */
+function loadPlaylists(){
+  var arr=jget("playlists_v1",[]); if(!Array.isArray(arr)) return [];
+  var out=[];
+  arr.forEach(function(p){
+    if(p&&typeof p.id==="string"&&typeof p.name==="string"&&Array.isArray(p.postIds))
+      out.push({id:p.id,name:p.name,postIds:uniq(p.postIds.filter(validId)),last:validId(p.last)?p.last:null});
+  });
+  return out;
+}
+var persistT=null;
+function persist(){ clearTimeout(persistT); jset("playlists_v1",playlists); }
+function persistSoon(){ clearTimeout(persistT); persistT=setTimeout(persist,800); }
+playlists=loadPlaylists();
+function getPL(id){ for(var i=0;i<playlists.length;i++) if(playlists[i].id===id) return playlists[i]; return null; }
+function genId(){ return "pl_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8); }
+function isIn(p,id){ return p.postIds.indexOf(id)!==-1; }
+function addTo(pid,id){ var p=getPL(pid); if(!p||isIn(p,id)) return false; p.postIds.push(id); persist(); return true; }
+function removeFrom(pid,id){ var p=getPL(pid); if(!p) return false; var i=p.postIds.indexOf(id); if(i<0) return false; p.postIds.splice(i,1); persist(); return true; }
+function shuffleArr(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function activeOrder(){
+  if(activeTag){
+    if(!shuffleOn) return tagPosts;
+    if(playOrder.length!==tagPosts.length){
+      var set={},have={}; tagPosts.forEach(function(id){ set[id]=1; });
+      playOrder=playOrder.filter(function(id){ return set[id]===1; });
+      playOrder.forEach(function(id){ have[id]=1; });
+      tagPosts.forEach(function(id){ if(!have[id]) playOrder.push(id); });
+    }
+    return playOrder;
+  }
+  if(!activePlaylistId) return null;
+  var p=getPL(activePlaylistId); if(!p) return null;
+  if(!shuffleOn) return p.postIds;
+  if(playOrder.length!==p.postIds.length){
+    var set={},have={}; p.postIds.forEach(function(id){ set[id]=1; });
+    playOrder=playOrder.filter(function(id){ return set[id]===1; });
+    playOrder.forEach(function(id){ have[id]=1; });
+    p.postIds.forEach(function(id){ if(!have[id]) playOrder.push(id); });
+  }
+  return playOrder;
+}
+function updateChip(){
+  var chip=$("chip");
+  if(activeTag){
+    var ord=activeOrder()||[], i=ord.indexOf(current);
+    $("chipTxt").textContent=(shuffleOn?"🔀 ":"🏷️ ")+activeTag+(i>=0?"  "+(i+1)+"/"+ord.length:"");
+    chip.classList.add("on");
+    return;
+  }
+  var p=activePlaylistId?getPL(activePlaylistId):null;
+  if(!p){ chip.classList.remove("on"); return; }
+  var ord=activeOrder()||[], i=ord.indexOf(current);
+  $("chipTxt").textContent=(shuffleOn?"🔀 ":"▶ ")+p.name+(i>=0?"  "+(i+1)+"/"+ord.length:"");
+  chip.classList.add("on");
+}
+function exitPlaylist(){ activeTag=null; activePlaylistId=null; shuffleOn=false; playOrder=[]; returnId=null; updateChip(); }
+function leavePlaylist(){
+  var back=returnId;
+  exitPlaylist();
+  if(back&&back!==current){ loadPost(back,0); toast("Kembali ke #"+back,"ok"); }
+}
+function startPlaylist(pid,startId,shuffle){
+  var p=getPL(pid); if(!p) return;
+  if(!p.postIds.length){ toast("Playlist kosong"); return; }
+  if(!activePlaylistId) returnId=current;
+  activePlaylistId=pid; shuffleOn=!!shuffle;
+  if(shuffleOn){
+    playOrder=shuffleArr(p.postIds.slice());
+    if(startId&&isIn(p,startId)){ playOrder.splice(playOrder.indexOf(startId),1); playOrder.unshift(startId); }
+  }
+  var ord=activeOrder(), target, resumed=false;
+  if(startId&&isIn(p,startId)) target=startId;
+  else if(!shuffleOn&&p.last&&isIn(p,p.last)){ target=p.last; resumed=true; }
+  else target=ord[0];
+  closeSheet();
+  loadPost(target,0);
+  toast(resumed&&target!==ord[0]?"▶ Lanjut dari #"+target:(shuffleOn?"🔀 Acak: ":"▶ Memutar: ")+p.name,"ok");
+}
+
+/* ---------- buttons state ---------- */
+function refreshBtns(){
+  var any=false, fav=false;
+  playlists.forEach(function(p){ if(isIn(p,current)){ any=true; if(p.id==="pl_fav") fav=true; } });
+  $("plBtn").classList.toggle("on",any); $("plIco").textContent=any?"✓":"➕";
+  $("favBtn").classList.toggle("on",fav); $("favIco").textContent=fav?"♥":"♡";
+  idTag.textContent="#"+current;
+}
+function updateBack(){
+  var b=$("backBtn");
+  if(navStack.length){ b.classList.add("on"); $("backId").textContent="#"+navStack[navStack.length-1]; }
+  else b.classList.remove("on");
+}
+function back(){
+  if(!navStack.length) return;
+  var id=navStack.pop();
+  skipPush=true; try{ loadPost(id,0); } finally{ skipPush=false; }
+  updateBack();
+}
+function toggleFav(){
+  var p=getPL("pl_fav");
+  if(!p){ p={id:"pl_fav",name:"Favorit",postIds:[],last:null}; playlists.unshift(p); }
+  if(isIn(p,current)){ removeFrom("pl_fav",current); toast("Dihapus dari Favorit","bad"); }
+  else { addTo("pl_fav",current); toast("♥ Masuk Favorit","ok"); vibe(12); }
+  refreshBtns(); updateChip();
+  if(sheet.classList.contains("open")) rerender();
+}
+
+/* ---------- media ---------- */
+var pendingEnter=null, enterTimer=null;
+function TR(){ return "transform 180ms cubic-bezier(.25,.1,.25,1),opacity 180ms cubic-bezier(.25,.1,.25,1)"; }
+function clearSwipeStyles(){
+  swipeLayer.style.transition=""; swipeLayer.style.transform=""; swipeLayer.style.opacity="";
+  swipeLayer.classList.remove("dragging");
+}
+function playEnter(from){
+  swipeLayer.style.transition="none"; swipeLayer.style.transform=from; swipeLayer.style.opacity="0";
+  void swipeLayer.offsetWidth;
+  swipeLayer.style.transition=TR(); swipeLayer.style.transform="translate(0,0) scale(1)"; swipeLayer.style.opacity="1";
+  setTimeout(clearSwipeStyles,200);
+}
+function settleEnter(){
+  if(!pendingEnter) return;
+  var t=pendingEnter; pendingEnter=null; clearTimeout(enterTimer); playEnter(t);
+}
+function isVideo(){ return !!zoomLayer.querySelector("video"); }
+function vposSet(id,t){ vpos.delete(id); vpos.set(id,t); if(vpos.size>100) vpos.delete(vpos.keys().next().value); }
+function teardownVideo(v){
+  if(!v) return;
+  try{
+    if(v._pid&&v.currentTime>2&&!v.ended) vposSet(v._pid,v.currentTime);
+    v.pause(); v.removeAttribute("src"); v.load();
+  }catch(e){}
+}
+function emptyStage(){
+  var old=zoomLayer.querySelector("video");
+  while(zoomLayer.firstChild) zoomLayer.removeChild(zoomLayer.firstChild);
+  teardownVideo(old);
+}
+function setMedia(el,kind){
+  emptyStage();
+  if(el.tagName==="IMG"){ el.alt="Post "+current; el.className=kind==="ph"?"ph":""; el.draggable=false; }
+  zoomLayer.appendChild(el);
+  stage.classList.toggle("isvid",el.tagName==="VIDEO");
+  if(S.keepZoom&&zoom.scale>1.02&&el.tagName==="IMG"){ zoom.tx=0; zoom.ty=0; clampPan(); applyZoom(); }
+  else resetZoom();
+  if(pendingEnter) settleEnter();
+}
+function showStatus(msg){
+  emptyStage();
+  var s=document.createElement("span"); s.id="status"; s.textContent=msg; zoomLayer.appendChild(s);
+  stage.classList.remove("isvid");
+  resetZoom(); settleEnter();
+}
+function makeVideo(id,url){
+  var v=document.createElement("video");
+  v._pid=id;
+  v.controls=true; v.playsInline=true; v.setAttribute("playsinline","");
+  v.preload="auto"; v.muted=S.muted; v.loop=!autoEnabled;
+  v.defaultPlaybackRate=S.speed; v.playbackRate=S.speed;
+  v.addEventListener("loadedmetadata",function(){
+    var t=vpos.get(id);
+    if(t&&isFinite(v.duration)&&t<v.duration-2){ try{ v.currentTime=t; }catch(e){} }
+    v.playbackRate=S.speed;
+  });
+  v.addEventListener("ended",function(){ if(autoEnabled&&v.parentNode) change(1); });
+  v.addEventListener("error",function(){ if(autoEnabled&&v.parentNode&&id===current) resetAutoTimer(); });
+  v.src=url;
+  return v;
+}
+function setLoading(b){ spin.classList.toggle("show",!!b); }
+function addHist(id){
+  var i=hist.indexOf(id); if(i>-1) hist.splice(i,1);
+  hist.unshift(id); if(hist.length>60) hist.length=60;
+  jset("pe_hist",hist);
+}
+
+/* ---------- load post ---------- */
+function commit(id){
+  if(!skipPush&&shownId&&shownId!==id&&navStack[navStack.length-1]!==shownId){
+    navStack.push(shownId); if(navStack.length>60) navStack.shift();
+  }
+  current=id; input.value=id; lsSet("lastPost",String(id));
+  refreshBtns(); updateChip(); updateBack();
+  if(activePlaylistId){
+    var ap=getPL(activePlaylistId);
+    if(ap&&ap.last!==id&&isIn(ap,id)){ ap.last=id; persistSoon(); }
+  }
+}
+function autoBarIdle(){
+  if(autoEnabled){ autoFill.style.width="0%"; lastLbl=S.interval.toFixed(1)+"s"; autoLbl.textContent=lastLbl; }
+}
+function loadPost(id,dir,tries){
+  if(id===undefined||id===null) id=Number(input.value);
+  if(!validId(id)){ toast("ID harus 1 – 100000000","bad"); input.value=current; return; }
+  tries=tries||0;
+  commit(id);
+  var tok=++token;
+  currentURL=""; currentType="";
+  setLoading(true); clearAutoTimer(); autoBarIdle();
+  clearTimeout(phTimer);
+  var c=cache.get(id);
+  if(c){ present(c,tok,dir,tries); return; }
+  // placeholder kecil hanya kalau loading agak lama (hemat request)
+  phTimer=setTimeout(function(){
+    if(tok!==token||finalTok===tok) return;
+    var th=new Image();
+    th.onload=function(){ if(tok===token&&finalTok!==tok) setMedia(th,"ph"); };
+    th.src=thumbURL(id);
+  },200);
+  get(id).then(function(r){ if(tok!==token) return; present(r,tok,dir,tries); });
+}
+function present(r,tok,dir,tries){
+  finalTok=tok; setLoading(false); clearTimeout(phTimer);
+  if(r.miss||!r.type){
+    if(S.skipMissing&&dir&&!activePlaylistId&&tries<25){
+      var n=current+dir;
+      if(n>=1&&n<=MAXID){
+        for(var k=2;k<=5;k++) schedule(current+dir*k);   // cek beberapa ID di depan sekaligus
+        loadPost(n,dir,tries+1); return;
+      }
+    }
+    showStatus("Post #"+current+" tidak ditemukan");
+    preloadAround(current);
+    if(autoEnabled) resetAutoTimer();
+    return;
+  }
+  currentURL=r.url; currentType=r.type;
+  shownId=current;
+  if(r.type==="mp4"){
+    var el=makeVideo(current,r.url); setMedia(el);
+    clearAutoTimer();
+    if(autoEnabled){ lastLbl="VIDEO"; autoLbl.textContent="VIDEO"; autoFill.style.width="100%"; }
+    var pr=el.play();
+    if(pr&&pr.catch) pr.catch(function(){
+      el.muted=true;
+      var p2=el.play();
+      if(p2&&p2.catch) p2.catch(function(){ if(autoEnabled&&tok===token) resetAutoTimer(); });
+    });
+  } else {
+    setMedia(r.el);
+    if(autoEnabled) resetAutoTimer();
+  }
+  addHist(current);
+  preloadAround(current);
+}
+function change(step){
+  var ord=activeOrder();
+  if(ord){
+    if(!ord.length){ exitPlaylist(); return false; }
+    var idx=ord.indexOf(current); if(idx<0) idx=0;
+    var ni=idx+step;
+    if(activeTag && ni >= ord.length - 3 && tagHasMore && !tagLoading){
+      loadMoreTagPosts(activeTag);
+    }
+    if(ni>=ord.length&&autoEnabled) ni=0;
+    if(ni<0||ni>=ord.length){ toast(step>0?"Playlist selesai":"Awal playlist"); return false; }
+    loadPost(ord[ni],step); return true;
+  }
+  var n=current+step;
+  if(n<1||n>MAXID) return false;
+  loadPost(n,step); return true;
+}
+
+/* ---------- random (3 kandidat paralel) ---------- */
+var randTries=0;
+function randomPost(){
+  randTries=0;
+  var ord=activeOrder();
+  if(ord&&ord.length){ loadPost(ord[Math.floor(Math.random()*ord.length)],0); return; }
+  tryRandom();
+}
+function tryRandom(){
+  if(++randTries>12){ setLoading(false); toast("Gagal dapat post acak, coba lagi","bad"); return; }
+  var km=parseInt(lsGet("knownMaxId"),10), upper;
+  upper=(isFinite(km)&&km>=1)?km+100:Math.max(current*2,2000000);
+  upper=Math.min(upper,MAXID);
+  var ids=[]; for(var i=0;i<3;i++) ids.push(1+Math.floor(Math.random()*upper));
+  var tok=++token, settled=0, won=false;
+  setLoading(true); clearAutoTimer(); autoBarIdle(); clearTimeout(phTimer);
+  ids.forEach(function(id){
+    get(id).then(function(r){
+      if(tok!==token||won) return;
+      settled++;
+      if(!r.miss&&r.type){
+        won=true;
+        if(id>(isFinite(km)?km:0)) lsSet("knownMaxId",String(id));
+        commit(id); present(r,tok,0,0);
+      } else if(settled===ids.length) tryRandom();
+    });
+  });
+}
+
+/* ---------- auto ---------- */
+function toggleAuto(){ autoEnabled?stopAuto():startAuto(); }
+function startAuto(){
+  autoEnabled=true;
+  $("autoBtn").classList.add("on"); $("autoIco").textContent="⏸"; $("autoTxt").textContent="Stop";
+  autoBar.classList.add("on");
+  var v=zoomLayer.querySelector("video"); if(v) v.loop=false;
+  try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){ wakeLock=l; }).catch(function(){}); }catch(e){}
+  if(isVideo()){ lastLbl="VIDEO"; autoLbl.textContent="VIDEO"; autoFill.style.width="100%"; } else resetAutoTimer();
+}
+function stopAuto(){
+  autoEnabled=false; clearAutoTimer();
+  $("autoBtn").classList.remove("on"); $("autoIco").textContent="▶"; $("autoTxt").textContent="Auto";
+  autoBar.classList.remove("on"); autoFill.style.width="0%";
+  var v=zoomLayer.querySelector("video"); if(v) v.loop=true;
+  try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){}
+}
+function clearAutoTimer(){
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  if(autoRAF){ cancelAnimationFrame(autoRAF); autoRAF=null; }
+}
+function resetAutoTimer(){
+  clearAutoTimer();
+  if(!autoEnabled){ autoFill.style.width="0%"; return; }
+  var iv=S.interval*1000;
+  autoStart=now();
+  autoTimer=setTimeout(function(){
+    autoTimer=null;
+    if(zoom.scale>1.02||overlayOpen()||document.hidden){ resetAutoTimer(); return; }
+    if(!change(1)&&current>=MAXID) stopAuto();
+  },iv);
+  tickBar(iv);
+}
+function tickBar(iv){
+  if(!autoEnabled||!autoTimer) return;
+  var e=now()-autoStart;
+  autoFill.style.width=Math.min(100,e/iv*100)+"%";
+  var t=Math.max(0,(iv-e)/1000).toFixed(1)+"s";
+  if(t!==lastLbl){ lastLbl=t; autoLbl.textContent=t; }
+  autoRAF=requestAnimationFrame(function(){ tickBar(iv); });
+}
+
+/* ---------- fullscreen / fit ---------- */
+function toggleFs(){
+  var de=document.documentElement;
+  var inFs=!!(document.fullscreenElement||document.webkitFullscreenElement);
+  if(document.body.classList.contains("fs")||inFs){
+    document.body.classList.remove("fs");
+    if(inFs){ if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); }
+    return;
+  }
+  document.body.classList.add("fs");
+  try{ var rq=de.requestFullscreen||de.webkitRequestFullscreen; if(rq){ var pr=rq.call(de); if(pr&&pr.catch) pr.catch(function(){}); } }catch(e){}
+}
+function syncFs(){ if(!document.fullscreenElement&&!document.webkitFullscreenElement) document.body.classList.remove("fs"); }
+document.addEventListener("fullscreenchange",syncFs);
+document.addEventListener("webkitfullscreenchange",syncFs);
+function applyFit(){ stage.classList.toggle("fit-cover",S.fit==="cover"); }
+function toggleFit(){ S.fit=S.fit==="cover"?"contain":"cover"; saveS(); applyFit(); toast(S.fit==="cover"?"Mode: penuhi layar":"Mode: muat gambar"); }
+applyFit();
+
+/* ---------- zoom ---------- */
+var zoom={scale:1,tx:0,ty:0};
+function applyZoom(){
+  zoomLayer.style.transform="translate("+zoom.tx+"px,"+zoom.ty+"px) scale("+zoom.scale+")";
+  var show=zoom.scale>1.05; zoomBadge.classList.toggle("visible",show);
+  if(show) zoomBadge.textContent=zoom.scale.toFixed(1)+"x";
+}
+function resetZoom(){ zoom.scale=1; zoom.tx=0; zoom.ty=0; zoomLayer.classList.remove("dragging"); applyZoom(); }
+function clampPan(){
+  if(zoom.scale<=1){ zoom.tx=0; zoom.ty=0; return; }
+  var mx=(zoom.scale-1)*stage.clientWidth/2, my=(zoom.scale-1)*stage.clientHeight/2;
+  zoom.tx=Math.max(-mx,Math.min(mx,zoom.tx)); zoom.ty=Math.max(-my,Math.min(my,zoom.ty));
+}
+
+/* ---------- gestures ---------- */
+var SW_MIN=40, SW_MS=800, SW_CD=250, DOM=1.8, VCZ=56, DT_MS=280, SNAP=180;
+var sw={active:false,sx:0,sy:0,cx:0,cy:0,t:0,id:null,axis:null,last:0,dbl:false};
+var gm=null;
+var g={d0:0,s0:1,tx0:0,ty0:0,mx:0,my:0,px:0,py:0,lastTap:0,lx:0,ly:0};
+
+function hint(el,vis,armed){ el.classList.toggle("visible",!!vis); el.classList.toggle("armed",!!armed); }
+function clearHints(){ hint(hintL,0,0); hint(hintR,0,0); hint(hintU,0,0); hint(hintD,0,0); }
+function isDbl(t){ return (now()-g.lastTap<DT_MS)&&Math.abs(t.clientX-g.lx)<30&&Math.abs(t.clientY-g.ly)<30; }
+function beginSwipe(t,dbl){
+  sw.active=true; sw.sx=sw.cx=t.clientX; sw.sy=sw.cy=t.clientY; sw.t=now(); sw.id=t.identifier; sw.axis=null; sw.dbl=dbl;
+  gm="swipe"; swipeLayer.classList.add("dragging");
+}
+function onTouchStart(e){
+  if(isVideo()){
+    if(e.touches.length!==1){ sw.active=false; return; }
+    var tv=e.touches[0], tg=e.target;
+    if(tg&&tg.closest&&tg.closest("button")) return;
+    if(tg&&tg.tagName==="VIDEO"){ var r=tg.getBoundingClientRect(); if(tv.clientY-r.top>r.height-VCZ) return; }
+    if(now()-sw.last<SW_CD) return;
+    beginSwipe(tv,isDbl(tv)); return;
+  }
+  if(e.touches.length===2){
+    sw.active=false; gm="pinch";
+    var a=e.touches[0], b=e.touches[1], dx=b.clientX-a.clientX, dy=b.clientY-a.clientY;
+    g.d0=Math.sqrt(dx*dx+dy*dy);
+    var rc=stage.getBoundingClientRect();
+    g.mx=(a.clientX+b.clientX)/2-rc.left-rc.width/2; g.my=(a.clientY+b.clientY)/2-rc.top-rc.height/2;
+    g.s0=zoom.scale; g.tx0=zoom.tx; g.ty0=zoom.ty;
+    zoomLayer.classList.add("dragging"); clearSwipeStyles(); clearHints();
+    return;
+  }
+  if(e.touches.length!==1){ sw.active=false; return; }
+  var t=e.touches[0];
+  if(e.target&&e.target.closest&&e.target.closest("button")) return;
+  if(zoom.scale>1.02){
+    gm="pan"; g.px=t.clientX; g.py=t.clientY; g.tx0=zoom.tx; g.ty0=zoom.ty; zoomLayer.classList.add("dragging"); return;
+  }
+  if(now()-sw.last<SW_CD) return;
+  beginSwipe(t,isDbl(t));
+}
+function onTouchMove(e){
+  if(gm==="pinch"&&e.touches.length===2&&!isVideo()){
+    var a=e.touches[0], b=e.touches[1], dx=b.clientX-a.clientX, dy=b.clientY-a.clientY;
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    if(g.d0>0){
+      var ns=Math.max(1,Math.min(5,g.s0*dist/g.d0)), k=ns/g.s0;
+      zoom.tx=g.mx*(1-k)+g.tx0*k; zoom.ty=g.my*(1-k)+g.ty0*k; zoom.scale=ns;
+      clampPan(); applyZoom();
+    }
+    return;
+  }
+  if(gm==="pan"&&e.touches.length===1&&!isVideo()){
+    var tp=e.touches[0];
+    zoom.tx=g.tx0+(tp.clientX-g.px); zoom.ty=g.ty0+(tp.clientY-g.py);
+    clampPan(); applyZoom(); return;
+  }
+  if(!sw.active) return;
+  var t=null;
+  for(var i=0;i<e.touches.length;i++) if(e.touches[i].identifier===sw.id){ t=e.touches[i]; break; }
+  if(!t) return;
+  sw.cx=t.clientX; sw.cy=t.clientY;
+  var dxs=sw.cx-sw.sx, dys=sw.cy-sw.sy, adx=Math.abs(dxs), ady=Math.abs(dys);
+  if(sw.axis===null&&(adx>8||ady>8)) sw.axis=adx>=ady?"h":"v";
+  if(sw.axis==="h"){
+    hint(hintU,0,0); hint(hintD,0,0);
+    var f=dxs; if(f>120) f=120+(f-120)*.35; if(f<-120) f=-120+(f+120)*.35;
+    swipeLayer.style.transform="translateX("+f+"px)";
+    if(adx>=25){
+      if(dxs>0){ hint(hintR,1,adx>=50); hint(hintL,0,0); } else { hint(hintL,1,adx>=50); hint(hintR,0,0); }
+    } else { hint(hintL,0,0); hint(hintR,0,0); }
+  } else if(sw.axis==="v"){
+    hint(hintL,0,0); hint(hintR,0,0);
+    var p=Math.min(1,ady/(stage.clientHeight||400));
+    swipeLayer.style.transform="translateY("+dys+"px) scale("+(1-.12*p)+")";
+    swipeLayer.style.opacity=1-.6*p;
+    if(ady>=25){
+      if(dys<0){ hint(hintD,1,ady>=50); hint(hintU,0,0); } else { hint(hintU,1,ady>=50); hint(hintD,0,0); }
+    } else { hint(hintU,0,0); hint(hintD,0,0); }
+  }
+}
+function snapBack(){
+  swipeLayer.style.transition=TR();
+  swipeLayer.style.transform="translate(0,0) scale(1)"; swipeLayer.style.opacity="1";
+  clearHints();
+  setTimeout(clearSwipeStyles,SNAP+20);
+}
+function snapToNew(dir,step){
+  var out,inn;
+  if(dir==="up"){ out="translateY(-100%) scale(.85)"; inn="translateY(100%) scale(.85)"; }
+  else { out="translateY(100%) scale(.85)"; inn="translateY(-100%) scale(.85)"; }
+  swipeLayer.style.transition=TR(); swipeLayer.style.transform=out; swipeLayer.style.opacity="0"; clearHints();
+  setTimeout(function(){
+    pendingEnter=inn;
+    var ok=change(step);
+    if(!ok){ pendingEnter=null; playEnter(out); return; }
+    clearTimeout(enterTimer);
+    enterTimer=setTimeout(function(){ if(finalTok!==token) showStatus("Memuat #"+current+"…"); else settleEnter(); },1200);
+  },SNAP);
+}
+function seekVideo(x){
+  var v=zoomLayer.querySelector("video"); if(!v) return;
+  var rc=stage.getBoundingClientRect(), fwd=x>rc.left+rc.width/2;
+  var t=v.currentTime+(fwd?10:-10);
+  if(isFinite(v.duration)) t=Math.min(v.duration,t);
+  v.currentTime=Math.max(0,t);
+  toast(fwd?"⏩ +10 detik":"⏪ −10 detik");
+}
+function onTouchEnd(){
+  if(gm==="pinch"){ gm=null; zoomLayer.classList.remove("dragging"); if(zoom.scale<1.02) resetZoom(); else applyZoom(); g.lastTap=0; return; }
+  if(gm==="pan"){ gm=null; zoomLayer.classList.remove("dragging"); if(zoom.scale<1.02) resetZoom(); return; }
+  if(!sw.active) return;
+  var axis=sw.axis; sw.active=false; sw.axis=null; gm=null;
+  var dx=sw.cx-sw.sx, dy=sw.cy-sw.sy, dt=now()-sw.t, adx=Math.abs(dx), ady=Math.abs(dy);
+  if(adx<10&&ady<10&&dt<300){
+    clearSwipeStyles(); clearHints();
+    if(sw.dbl){
+      g.lastTap=0;
+      if(isVideo()) seekVideo(sw.sx);
+      else if(zoom.scale>1.02) resetZoom();
+      else {
+        var rc=stage.getBoundingClientRect(), tx=sw.sx-rc.left-rc.width/2, ty=sw.sy-rc.top-rc.height/2;
+        zoom.scale=2.5; zoom.tx=-tx*1.5; zoom.ty=-ty*1.5; clampPan(); applyZoom();
+      }
+    } else { g.lastTap=now(); g.lx=sw.sx; g.ly=sw.sy; }
+    return;
+  }
+  var valid=false;
+  if(axis==="h") valid=adx>=SW_MIN&&adx>=ady*DOM&&dt<=SW_MS;
+  else if(axis==="v") valid=ady>=SW_MIN&&ady>=adx*DOM&&dt<=SW_MS;
+  if(valid&&now()-sw.last>=SW_CD){
+    sw.last=now(); vibe(8);
+    if(axis==="h"){ snapBack(); if(dx>0) openPopup(current); else swipeDelete(); }
+    else snapToNew(dy<0?"up":"down",dy<0?1:-1);
+  } else snapBack();
+}
+function onTouchCancel(){
+  sw.active=false; sw.axis=null; gm=null; clearSwipeStyles(); clearHints();
+  zoomLayer.classList.remove("dragging"); if(zoom.scale<1.02) resetZoom();
+}
+stage.addEventListener("touchstart",onTouchStart,{passive:true});
+stage.addEventListener("touchmove",onTouchMove,{passive:true});
+stage.addEventListener("touchend",onTouchEnd,{passive:true});
+stage.addEventListener("touchcancel",onTouchCancel,{passive:true});
+var lastWheel=0;
+stage.addEventListener("wheel",function(e){
+  if(zoom.scale>1.02) return;
+  e.preventDefault();
+  if(now()-lastWheel<300) return; lastWheel=now();
+  change(e.deltaY>0?1:-1);
+},{passive:false});
+
+function swipeDelete(){
+  if(activePlaylistId){
+    var p=getPL(activePlaylistId); if(!p) return;
+    if(!isIn(p,current)){ toast("Post ini tidak ada di "+p.name); return; }
+    dialog("Hapus post <b>"+current+"</b> dari playlist <b>"+esc(p.name)+"</b>?",{ok:"Hapus",danger:true},function(){
+      removeFrom(p.id,current); toast("Dihapus dari "+p.name,"bad"); refreshBtns(); updateChip();
+      if(!p.postIds.length) exitPlaylist();
+    });
+  } else {
+    var cont=playlists.filter(function(p){ return isIn(p,current); });
+    if(!cont.length){ toast("Post #"+current+" belum di playlist mana pun. Swipe kanan untuk simpan.","bad"); return; }
+    dialog("Hapus post <b>"+current+"</b> dari <b>"+cont.length+" playlist</b>?",{ok:"Hapus",danger:true},function(){
+      cont.forEach(function(p){ removeFrom(p.id,current); });
+      toast("Dihapus dari semua playlist","bad"); refreshBtns();
+    });
+  }
+}
+
+/* ---------- popup: tambah / pilih playlist ---------- */
+function openPopup(id){
+  popupMode="add"; pickCb=null; popupPostId=id;
+  $("popupTitle").innerHTML='Simpan ke playlist <span>#'+id+'</span>';
+  renderPopup(); popupNewRow.classList.remove("show"); popupNewInput.value="";
+  popupBackdrop.classList.add("open");
+}
+function openPick(title,excludeId,cb){
+  popupMode="pick"; pickCb=cb; pickExclude=excludeId; popupPostId=null;
+  $("popupTitle").textContent=title;
+  renderPopup(); popupNewRow.classList.remove("show"); popupNewInput.value="";
+  popupBackdrop.classList.add("open");
+}
+function closePopup(e){
+  if(e&&e.target!==popupBackdrop) return;
+  popupBackdrop.classList.remove("open"); popupPostId=null; popupMode="add"; pickCb=null;
+}
+function togglePopup(){ popupBackdrop.classList.contains("open")?closePopup():openPopup(current); }
+function renderPopup(){
+  popupList.innerHTML="";
+  var list=playlists.filter(function(p){ return popupMode==="add"||p.id!==pickExclude; });
+  if(!list.length){ var h=el("div","empty","Belum ada playlist. Buat baru di bawah."); popupList.appendChild(h); return; }
+  list.forEach(function(pl){
+    var inl=popupMode==="add"&&isIn(pl,popupPostId);
+    var it=el("div","pli"+(inl?" in":"")+(popupMode==="pick"?" pick":""));
+    it.innerHTML='<span class="ck">'+(inl?"✓":"")+'</span><span class="nm">'+esc(pl.name)+'</span><span class="ct">'+pl.postIds.length+' post</span>';
+    it.onclick=function(){
+      if(popupMode==="pick"){ var cb=pickCb; closePopup(); if(cb) cb(pl); return; }
+      if(inl){ removeFrom(pl.id,popupPostId); toast("Dihapus dari "+pl.name,"bad"); }
+      else { addTo(pl.id,popupPostId); toast("Ditambahkan ke "+pl.name,"ok"); }
+      renderPopup(); refreshBtns(); updateChip();
+      if(sheet.classList.contains("open")) rerender();
+    };
+    popupList.appendChild(it);
+  });
+}
+function showNewRow(){ popupNewRow.classList.add("show"); popupNewInput.focus(); }
+function confirmNewPl(){
+  var n=popupNewInput.value.trim();
+  if(!n){ toast("Nama tidak boleh kosong"); return; }
+  var pl={id:genId(),name:n,postIds:[],last:null};
+  if(popupMode==="pick"){
+    var cb=pickCb; playlists.push(pl); persist(); closePopup(); if(cb) cb(pl); return;
+  }
+  if(popupPostId) pl.postIds.push(popupPostId);
+  playlists.push(pl); persist();
+  popupNewInput.value=""; popupNewRow.classList.remove("show");
+  renderPopup(); refreshBtns();
+  if(sheet.classList.contains("open")) rerender();
+  toast("Playlist '"+n+"' dibuat","ok");
+}
+popupNewInput.addEventListener("keydown",function(e){ if(e.key==="Enter") confirmNewPl(); });
+
+/* ---------- Tag & API Integration ---------- */
+var API_BASE = "https://r-34.xyz/api/v2";
+
+async function r34Fetch(endpoint, opts) {
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  if (opts.body && typeof opts.body === "object" && !(opts.body instanceof FormData)) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(opts.body);
+  }
+  try {
+    var res = await fetch(API_BASE + endpoint, opts);
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("Direct fetch r-34.xyz gagal, mencoba fallback proxy...", err);
+  }
+  try {
+    var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(API_BASE + endpoint);
+    var res2 = await fetch(proxyUrl, opts);
+    if (res2.ok) return await res2.json();
+  } catch (err2) {
+    console.warn("Proxy 1 gagal...", err2);
+  }
+  if (!opts.method || opts.method.toUpperCase() === "GET") {
+    try {
+      var res3 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(API_BASE + endpoint));
+      if (res3.ok) return await res3.json();
+    } catch (err3) {}
+  }
+  throw new Error("Gagal mengambil data dari API r-34.xyz");
+}
+
+function startTag(tagName, startId, shuffle) {
+  if (!tagPosts.length) { toast("Belum ada post untuk tag ini", "bad"); return; }
+  if (!activePlaylistId && !activeTag) returnId = current;
+  activeTag = tagName;
+  activePlaylistId = null;
+  shuffleOn = !!shuffle;
+  if (shuffleOn) {
+    playOrder = shuffleArr(tagPosts.slice());
+    if (startId && tagPosts.indexOf(startId) !== -1) {
+      playOrder.splice(playOrder.indexOf(startId), 1);
+      playOrder.unshift(startId);
+    }
+  }
+  var ord = activeOrder(), target = startId || ord[0];
+  closeSheet();
+  loadPost(target, 0);
+  toast((shuffleOn ? "🔀 Acak Tag: " : "🏷️ Tag: ") + tagName, "ok");
+}
+
+async function loadTagDetail(tagName, reset) {
+  if (reset) {
+    tagPosts = [];
+    tagCursor = null;
+    tagHasMore = true;
+    activeTagDetail = tagName;
+  }
+  if (!tagHasMore || tagLoading) return;
+  tagLoading = true;
+  rerender();
+  try {
+    var payload = {
+      includeTags: [tagName],
+      status: 2,
+      sortOrder: 1,
+      filterAi: false,
+      take: 30
+    };
+    if (tagCursor) payload.cursor = String(tagCursor);
+    var data = await r34Fetch("/post/search/root", { method: "POST", body: payload });
+    var items = data && data.items ? data.items : [];
+    if (items.length > 0) {
+      items.forEach(function(item) {
+        if (item.id && tagPosts.indexOf(item.id) === -1) {
+          tagPosts.push(item.id);
+        }
+      });
+      tagCursor = items[items.length - 1].id;
+      if (items.length < 30) tagHasMore = false;
+    } else {
+      tagHasMore = false;
+    }
+  } catch (err) {
+    toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
+  } finally {
+    tagLoading = false;
+    rerender();
+  }
+}
+
+async function loadMoreTagPosts(tagName) {
+  await loadTagDetail(tagName, false);
+  if (activeTag === tagName) {
+    updateChip();
+  }
+}
+
+function saveTagAsPlaylist(tagName) {
+  if (!tagPosts.length) { toast("Tidak ada post untuk disimpan", "bad"); return; }
+  var plName = "Tag: " + tagName;
+  var existing = null;
+  playlists.forEach(function(p) { if (p.name.toLowerCase() === plName.toLowerCase()) existing = p; });
+  if (existing) {
+    var added = 0;
+    tagPosts.forEach(function(id) { if (!isIn(existing, id)) { existing.postIds.push(id); added++; } });
+    persist();
+    toast("Ditambahkan " + added + " post ke " + existing.name, "ok");
+  } else {
+    var newPl = { id: genId(), name: plName, postIds: tagPosts.slice(), last: null };
+    playlists.push(newPl);
+    persist();
+    toast("Playlist '" + plName + "' dibuat (" + tagPosts.length + " post)", "ok");
+  }
+  refreshBtns();
+}
+
+var tagDebounceT = null;
+function onTagSearchInput(val) {
+  tagSearchTerm = val.trim();
+  clearTimeout(tagDebounceT);
+  tagDebounceT = setTimeout(async function() {
+    if (!tagSearchTerm) {
+      searchedTags = [];
+      rerender();
+      return;
+    }
+    try {
+      var res = await r34Fetch("/tag/search/" + encodeURIComponent(tagSearchTerm));
+      searchedTags = Array.isArray(res) ? res : [];
+      rerender();
+    } catch (e) {
+      console.warn("Tag search error:", e);
+    }
+  }, 250);
+}
+
+function renderTagsView() {
+  var b = sheetBody;
+  if (tagView === "detail") {
+    renderTagDetailView();
+    return;
+  }
+  var sb = el("div", "tagsearchbox");
+  var inp = el("input");
+  inp.type = "text";
+  inp.placeholder = "🔍 Cari nama tag (misal: anime, marvel, roblox)...";
+  inp.value = tagSearchTerm;
+  inp.oninput = function() { onTagSearchInput(inp.value); };
+  sb.appendChild(inp);
+  b.appendChild(sb);
+
+  var listContainer = el("div");
+  listContainer.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+  b.appendChild(listContainer);
+
+  var tagsToShow = tagSearchTerm ? searchedTags : popularTagsCache;
+
+  if (tagSearchTerm && !searchedTags.length) {
+    listContainer.appendChild(el("div", "empty", "Mencari tag atau tidak ditemukan..."));
+  } else if (!tagsToShow.length) {
+    listContainer.appendChild(el("div", "empty", "Memuat tag populer dari r-34.xyz..."));
+    if (!popularTagsCache.length) {
+      r34Fetch("/tag").then(function(tags) {
+        if (Array.isArray(tags)) {
+          popularTagsCache = tags;
+          rerender();
+        }
+      }).catch(function() {
+        rerender();
+      });
+    }
+  }
+
+  tagsToShow.forEach(function(t) {
+    var item = el("div", "tagitem");
+    var left = el("div", "tn");
+    left.innerHTML = "<span>🏷️</span> " + esc(t.value);
+    if (t.type) {
+      var typeName = t.type === 1 ? "General" : t.type === 2 ? "Copyright" : t.type === 4 ? "Character" : t.type === 8 ? "Artist" : "";
+      if (typeName) {
+        var tb = el("span", "ttype", typeName);
+        left.appendChild(tb);
+      }
+    }
+    var right = el("span", "tc", (t.count ? Number(t.count).toLocaleString() : "") + " post");
+    item.appendChild(left);
+    item.appendChild(right);
+    item.onclick = function() {
+      tagView = "detail";
+      loadTagDetail(t.value, true);
+    };
+    listContainer.appendChild(item);
+  });
+}
+
+function renderTagDetailView() {
+  var b = sheetBody;
+  var head = el("div", "arow");
+  head.appendChild(pill("▶ Putar Semua", "pri", function() { startTag(activeTagDetail, null, false); }));
+  head.appendChild(pill("🔀 Acak", "", function() { startTag(activeTagDetail, null, true); }));
+  head.appendChild(pill("➕ Jadikan Playlist", "", function() { saveTagAsPlaylist(activeTagDetail); }));
+  b.appendChild(head);
+
+  var sub = el("div", "selinfo", "🏷️ " + activeTagDetail + " · " + tagPosts.length + " post termuat");
+  b.appendChild(sub);
+
+  var grid = el("div", "grid");
+  b.appendChild(grid);
+
+  if (!tagPosts.length && !tagLoading) {
+    grid.appendChild(el("div", "empty", "Tidak ada post untuk tag ini."));
+  }
+
+  tagPosts.forEach(function(id) {
+    var t = thumb(id, function() {
+      startTag(activeTagDetail, id, false);
+    });
+    grid.appendChild(t);
+  });
+
+  if (tagLoading) {
+    var l = el("div", "empty", "⏳ Memuat post dari r-34.xyz…");
+    grid.appendChild(l);
+  } else if (tagHasMore && tagPosts.length > 0) {
+    var moreBtn = pill("⬇ Muat 30 Lagi", "more", function() {
+      loadMoreTagPosts(activeTagDetail);
+    });
+    grid.appendChild(moreBtn);
+  }
+}
+
+/* ---------- sheet ---------- */
+function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=txt; return e; }
+function pill(txt,cls,fn){ var b=el("button","pill "+(cls||""),txt); b.onclick=fn; return b; }
+function resetSel(){ selMode=false; sel={}; plShown=120; }
+function openSheet(tab){
+  if(tab) sheetTab=tab;
+  if(tab==="playlist"){ plView="list"; plDetailId=null; resetSel(); }
+  if(tab==="tags"){ tagView="list"; }
+  renderSheet(); sheet.classList.add("open"); sheetBackdrop.classList.add("open");
+}
+function closeSheet(){ sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); }
+function sheetBack(){
+  if(sheetTab==="playlist"&&plView==="detail"){ plView="list"; plDetailId=null; resetSel(); renderSheet(); }
+  else if(sheetTab==="tags"&&tagView==="detail"){ tagView="list"; renderSheet(); }
+}
+Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"),function(b){
+  b.addEventListener("click",function(){
+    sheetTab=b.getAttribute("data-tab");
+    if(sheetTab==="playlist"){ plView="list"; plDetailId=null; }
+    resetSel(); renderSheet();
+  });
+});
+function rerender(){ var st=sheetBody.scrollTop; renderSheet(); sheetBody.scrollTop=st; }
+function renderSheet(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"),function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===sheetTab); });
+  sheetBackBtn.disabled=!((sheetTab==="playlist"&&plView==="detail")||(sheetTab==="tags"&&tagView==="detail"));
+  sheetBody.innerHTML="";
+  if(sheetTab==="tags") renderTagsView();
+  else if(sheetTab==="playlist") plView==="list"?renderPlList():renderPlDetail();
+  else if(sheetTab==="history") renderHistory();
+  else renderSettings();
+}
+function thumb(id,onclick){
+  var d=el("div","thumb"); var im=new Image(); im.loading="lazy"; im.decoding="async"; im.alt=""; im.src=thumbURL(id);
+  im.onerror=function(){ if(im.parentNode) im.parentNode.removeChild(im); d.classList.add("nothumb"); };
+  d.appendChild(im); d.appendChild(el("span","tid","#"+id));
+  if(id===current) d.classList.add("act");
+  d.onclick=onclick; return d;
+}
+function renderPlList(){
+  var row=el("div","arow");
+  row.appendChild(pill("➕ Baru","pri",newPlaylist));
+  row.appendChild(pill("⬆ Ekspor","",exportPlaylists));
+  row.appendChild(pill("⬇ Impor","",function(){ $("importFile").click(); }));
+  sheetBody.appendChild(row);
+  var grid=el("div","grid"); sheetBody.appendChild(grid);
+  if(!playlists.length){ grid.appendChild(el("div","empty","Belum ada playlist. Tap ➕ Baru, atau swipe kanan di post.")); return; }
+  playlists.forEach(function(pl){
+    var card=el("div","card"), cv=el("div","cv","");
+    if(pl.postIds.length){
+      var im=new Image(); im.loading="lazy"; im.src=thumbURL(pl.last&&isIn(pl,pl.last)?pl.last:pl.postIds[0]); im.alt="";
+      im.onerror=function(){ if(im.parentNode) im.parentNode.removeChild(im); cv.insertBefore(document.createTextNode("📚"),cv.firstChild); };
+      cv.appendChild(im);
+    } else cv.textContent="📚";
+    var play=el("button","play","▶"); play.onclick=function(e){ e.stopPropagation(); startPlaylist(pl.id); };
+    var menu=el("button","menu","⋯");
+    var acts=el("div","acts");
+    var b1=el("button","","🔀 Putar acak"); b1.onclick=function(e){ e.stopPropagation(); startPlaylist(pl.id,null,true); };
+    var b2=el("button","","✎ Ganti nama"); b2.onclick=function(e){ e.stopPropagation(); renamePlaylist(pl.id); };
+    var b3=el("button","d","🗑 Hapus"); b3.onclick=function(e){ e.stopPropagation(); deletePlaylist(pl.id); };
+    var b4=el("button","","✕ Tutup"); b4.onclick=function(e){ e.stopPropagation(); acts.classList.remove("show"); };
+    [b1,b2,b3,b4].forEach(function(b){ acts.appendChild(b); });
+    menu.onclick=function(e){
+      e.stopPropagation();
+      Array.prototype.forEach.call(grid.querySelectorAll(".acts.show"),function(a){ a.classList.remove("show"); });
+      acts.classList.add("show");
+    };
+    cv.appendChild(play); cv.appendChild(menu); cv.appendChild(acts);
+    var info=el("div","ci"); info.appendChild(el("div","cn",pl.name)); info.appendChild(el("div","cm",pl.postIds.length+" post"));
+    card.appendChild(cv); card.appendChild(info);
+    card.onclick=function(){ plView="detail"; plDetailId=pl.id; resetSel(); renderSheet(); };
+    grid.appendChild(card);
+  });
+}
+function selIds(p){ return p.postIds.filter(function(id){ return sel[id]===1; }); }
+function needSel(p){ var s=selIds(p); if(!s.length){ toast("Belum ada yang dipilih"); return null; } return s; }
+function renderPlDetail(){
+  var p=getPL(plDetailId); if(!p){ plView="list"; resetSel(); renderSheet(); return; }
+  var ids=p.postIds;
+  if(!selMode){
+    var r1=el("div","arow");
+    r1.appendChild(pill("▶ Putar","pri",function(){ startPlaylist(p.id); }));
+    r1.appendChild(pill("🔀 Acak","",function(){ startPlaylist(p.id,null,true); }));
+    if(ids.length&&p.last&&isIn(p,p.last)&&ids[0]!==p.last) r1.appendChild(pill("⏮ Dari awal","",function(){ startPlaylist(p.id,ids[0]); }));
+    sheetBody.appendChild(r1);
+    var r2=el("div","arow");
+    r2.appendChild(pill("☑ Pilih","",function(){ selMode=true; sel={}; renderSheet(); }));
+    r2.appendChild(pill(sortAsc?"↕ ID ↑":"↕ ID ↓","",function(){ ids.sort(function(a,b){ return sortAsc?a-b:b-a; }); sortAsc=!sortAsc; persist(); rerender(); }));
+    r2.appendChild(pill("🔀 Kocok","",function(){ shuffleArr(ids); persist(); rerender(); }));
+    r2.appendChild(pill("📦 ZIP","",function(){ zipPlaylist(p,ids); }));
+    r2.appendChild(pill("✎ Nama","",function(){ renamePlaylist(p.id); }));
+    sheetBody.appendChild(r2);
+    sheetBody.appendChild(el("div","selinfo",p.name+"  ·  "+ids.length+" post"));
+  } else {
+    selCountEl=el("div","selinfo",selIds(p).length+" dipilih");
+    sheetBody.appendChild(selCountEl);
+    var a1=el("div","arow");
+    a1.appendChild(pill("Semua","",function(){ ids.forEach(function(i){ sel[i]=1; }); rerender(); }));
+    a1.appendChild(pill("Kosongkan","",function(){ sel={}; rerender(); }));
+    a1.appendChild(pill("✕ Selesai","",function(){ resetSel(); renderSheet(); }));
+    sheetBody.appendChild(a1);
+    var a2=el("div","arow");
+    a2.appendChild(pill("⬆ Ke awal","",function(){ moveSel(p,true); }));
+    a2.appendChild(pill("⬇ Ke akhir","",function(){ moveSel(p,false); }));
+    a2.appendChild(pill("📋 Salin","",function(){ pickFor(p,false); }));
+    a2.appendChild(pill("➡ Pindah","",function(){ pickFor(p,true); }));
+    a2.appendChild(pill("📦 ZIP","",function(){ var s=needSel(p); if(s) zipPlaylist(p,s); }));
+    a2.appendChild(pill("🗑 Hapus","dng",function(){ deleteSel(p); }));
+    sheetBody.appendChild(a2);
+  }
+  var grid=el("div","grid"); sheetBody.appendChild(grid);
+  if(!ids.length){ grid.appendChild(el("div","empty","Playlist kosong. Swipe kanan di sebuah post untuk menambah.")); return; }
+  var upto=Math.min(ids.length,plShown);
+  for(var i=0;i<upto;i++){
+    (function(id){
+      var t=thumb(id,function(){
+        if(selMode){
+          if(sel[id]) delete sel[id]; else sel[id]=1;
+          t.classList.toggle("sel",sel[id]===1);
+          selCountEl.textContent=selIds(p).length+" dipilih";
+        } else startPlaylist(p.id,id);
+      });
+      if(selMode&&sel[id]===1) t.classList.add("sel");
+      if(!selMode){
+        var x=el("button","x","×");
+        x.onclick=function(e){ e.stopPropagation(); removeFrom(p.id,id); rerender(); refreshBtns(); updateChip(); toast("Dihapus dari "+p.name,"bad"); };
+        t.appendChild(x);
+      }
+      grid.appendChild(t);
+    })(ids[i]);
+  }
+  if(ids.length>upto){
+    var more=pill("Tampilkan lagi ("+(ids.length-upto)+")","more",function(){ plShown+=120; rerender(); });
+    grid.appendChild(more);
+  }
+}
+function moveSel(p,toTop){
+  var s=needSel(p); if(!s) return;
+  var rest=p.postIds.filter(function(id){ return sel[id]!==1; });
+  p.postIds=toTop?s.concat(rest):rest.concat(s);
+  persist(); rerender(); toast(toTop?"Dipindah ke awal":"Dipindah ke akhir","ok");
+}
+function pickFor(p,move){
+  var s=needSel(p); if(!s) return;
+  openPick((move?"Pindahkan ":"Salin ")+s.length+" post ke…",p.id,function(dst){
+    s.forEach(function(id){ if(!isIn(dst,id)) dst.postIds.push(id); });
+    if(move) p.postIds=p.postIds.filter(function(id){ return sel[id]!==1; });
+    persist(); resetSel(); renderSheet(); refreshBtns(); updateChip();
+    toast((move?"Dipindah ":"Disalin ")+s.length+" post ke "+dst.name,"ok");
+    if(move&&activePlaylistId===p.id&&!p.postIds.length) exitPlaylist();
+  });
+}
+function deleteSel(p){
+  var s=needSel(p); if(!s) return;
+  dialog("Hapus <b>"+s.length+"</b> post dari <b>"+esc(p.name)+"</b>?",{ok:"Hapus",danger:true},function(){
+    p.postIds=p.postIds.filter(function(id){ return sel[id]!==1; });
+    persist(); resetSel(); renderSheet(); refreshBtns(); updateChip();
+    toast("Dihapus "+s.length+" post","bad");
+    if(activePlaylistId===p.id&&!p.postIds.length) exitPlaylist();
+  });
+}
+function renderHistory(){
+  var row=el("div","arow");
+  row.appendChild(pill("🗑 Kosongkan riwayat","dng",function(){ hist=[]; jset("pe_hist",hist); renderSheet(); }));
+  sheetBody.appendChild(row);
+  var grid=el("div","grid"); sheetBody.appendChild(grid);
+  if(!hist.length){ grid.appendChild(el("div","empty","Belum ada riwayat.")); return; }
+  hist.forEach(function(id){ grid.appendChild(thumb(id,function(){ exitPlaylist(); closeSheet(); loadPost(id,0); })); });
+}
+function setRow(label,sub,ctrl){
+  var r=el("div","setrow"), l=el("div"); l.appendChild(el("label","",label));
+  if(sub) l.appendChild(el("small","",sub));
+  r.appendChild(l); r.appendChild(ctrl); return r;
+}
+function seg(opts,val,cb){
+  var w=el("div","seg");
+  opts.forEach(function(o){ var b=el("button",o[0]===val?"on":"",o[1]); b.onclick=function(){ cb(o[0]); renderSheet(); }; w.appendChild(b); });
+  return w;
+}
+function renderSettings(){
+  var b=sheetBody, onoff=[[true,"On"],[false,"Off"]];
+  b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled&&!isVideo()) resetAutoTimer(); })));
+  b.appendChild(setRow("Lewati post kosong","Loncat otomatis ID yang tidak ada",seg(onoff,S.skipMissing,function(v){ S.skipMissing=v; saveS(); })));
+  b.appendChild(setRow("Hemat data","Pakai gambar kecil dulu",seg(onoff,S.saver,function(v){ S.saver=v; saveS(); cache.clear(); })));
+  b.appendChild(setRow("Pertahankan zoom","Level zoom tetap saat pindah post",seg(onoff,S.keepZoom,function(v){ S.keepZoom=v; saveS(); })));
+  b.appendChild(setRow("Tampilan","Muat utuh / penuhi layar",seg([["contain","Muat"],["cover","Penuh"]],S.fit,function(v){ S.fit=v; saveS(); applyFit(); })));
+  b.appendChild(setRow("Suara video","",seg([[true,"Mati"],[false,"Hidup"]],S.muted,function(v){ S.muted=v; saveS(); var vd=zoomLayer.querySelector("video"); if(vd) vd.muted=v; })));
+  b.appendChild(setRow("Kecepatan video","Double-tap kiri/kanan = ±10 detik",seg([[0.5,"0.5×"],[1,"1×"],[1.5,"1.5×"],[2,"2×"]],S.speed,function(v){ S.speed=v; saveS(); var vd=zoomLayer.querySelector("video"); if(vd){ vd.defaultPlaybackRate=v; vd.playbackRate=v; } })));
+  var row=el("div","arow"); row.style.marginTop="12px";
+  row.appendChild(pill("🔗 Salin URL","",copyURL));
+  row.appendChild(pill("↗ Bagikan","",shareURL));
+  row.appendChild(pill("🧹 Bersihkan cache","",function(){ cache.clear(); queue.length=0; toast("Cache dibersihkan","ok"); }));
+  b.appendChild(row);
+  var tip=el("div","","Gestur: swipe ↑ = post berikutnya · swipe ↓ = post sebelumnya · swipe → = simpan ke playlist · swipe ← = hapus dari playlist (atau petunjuk jika belum ada) · pinch / double-tap = zoom (video: seek ±10 detik). Keyboard: ←↑ = sebelumnya · →↓ = berikutnya · Spasi = play/pause · A=auto · F=favorit · R=acak · P=playlist · B=kembali · Esc=tutup.");
+  tip.style.cssText="font-size:11px;color:var(--faint);line-height:1.6;margin-top:10px";
+  b.appendChild(tip);
+}
+function newPlaylist(){
+  dialog("Nama playlist baru",{input:true,ok:"Buat"},function(v){
+    v=v.trim(); if(!v){ toast("Nama tidak boleh kosong"); return; }
+    playlists.push({id:genId(),name:v,postIds:[],last:null}); persist(); renderSheet(); refreshBtns(); toast("Playlist '"+v+"' dibuat","ok");
+  });
+}
+function renamePlaylist(id){
+  var p=getPL(id); if(!p) return;
+  dialog("Ganti nama playlist",{input:true,value:p.name,ok:"Simpan"},function(v){
+    v=v.trim(); if(!v){ toast("Nama tidak boleh kosong"); return; }
+    p.name=v; persist(); rerender(); updateChip(); toast("Nama diubah");
+  });
+}
+function deletePlaylist(id){
+  var p=getPL(id); if(!p) return;
+  dialog("Hapus playlist <b>"+esc(p.name)+"</b> ("+p.postIds.length+" post)?",{ok:"Hapus",danger:true},function(){
+    playlists=playlists.filter(function(x){ return x.id!==id; }); persist();
+    if(activePlaylistId===id) exitPlaylist();
+    plView="list"; plDetailId=null; resetSel(); renderSheet(); refreshBtns(); toast("Playlist dihapus","bad");
+  });
+}
+function exportPlaylists(){
+  saveBlob(new Blob([JSON.stringify({v:1,playlists:playlists},null,2)],{type:"application/json"}),"post-explorer-playlists.json");
+  toast("Playlist diekspor","ok");
+}
+$("importFile").addEventListener("change",function(e){
+  var f=e.target.files&&e.target.files[0]; if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var d=JSON.parse(fr.result), arr=Array.isArray(d)?d:d.playlists;
+      if(!Array.isArray(arr)) throw 0;
+      var added=0;
+      arr.forEach(function(p){
+        if(!p||typeof p.name!=="string"||!Array.isArray(p.postIds)) return;
+        var ids=uniq(p.postIds.filter(validId)), ex=null;
+        playlists.forEach(function(x){ if(x.name===p.name) ex=x; });
+        if(ex){ ids.forEach(function(i){ if(!isIn(ex,i)){ ex.postIds.push(i); added++; } }); }
+        else { playlists.push({id:genId(),name:p.name.slice(0,40),postIds:ids,last:null}); added+=ids.length; }
+      });
+      persist(); renderSheet(); refreshBtns(); toast("Impor selesai: "+added+" post","ok");
+    }catch(err){ toast("File tidak valid","bad"); }
+  };
+  fr.readAsText(f); e.target.value="";
+});
+
+/* ---------- ZIP (tanpa library, mode "store") ---------- */
+var crcT=null;
+function crc32(u8){
+  if(!crcT){ crcT=new Uint32Array(256); for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); crcT[n]=c>>>0; } }
+  var c2=0xFFFFFFFF; for(var i=0;i<u8.length;i++) c2=crcT[(c2^u8[i])&255]^(c2>>>8);
+  return (c2^0xFFFFFFFF)>>>0;
+}
+function u16(v){ return [v&255,(v>>>8)&255]; }
+function u32(v){ return [v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255]; }
+function buildZip(files){
+  var enc=new TextEncoder(), parts=[], central=[], offset=0, cdSize=0;
+  files.forEach(function(f){
+    var name=enc.encode(f.name);
+    var lh=new Uint8Array([0x50,0x4b,3,4, 20,0, 0,8, 0,0, 0,0, 0x21,0].concat(u32(f.crc),u32(f.size),u32(f.size),u16(name.length),[0,0]));
+    var cd=new Uint8Array([0x50,0x4b,1,2, 20,0, 20,0, 0,8, 0,0, 0,0, 0x21,0].concat(u32(f.crc),u32(f.size),u32(f.size),u16(name.length),[0,0, 0,0, 0,0, 0,0, 0,0,0,0],u32(offset)));
+    parts.push(lh,name,f.blob); central.push(cd,name);
+    cdSize+=cd.length+name.length; offset+=lh.length+name.length+f.size;
+  });
+  var end=new Uint8Array([0x50,0x4b,5,6, 0,0, 0,0].concat(u16(files.length),u16(files.length),u32(cdSize),u32(offset),[0,0]));
+  return new Blob(parts.concat(central,[end]),{type:"application/zip"});
+}
+function tryFetch(list,i){
+  if(i>=list.length) return Promise.reject(new Error("none"));
+  return fetch(list[i][0],{mode:"cors",credentials:"omit"}).then(function(r){
+    if(!r.ok) throw 0;
+    return r.blob().then(function(b){ return {blob:b,ext:list[i][1]}; });
+  }).catch(function(){ return tryFetch(list,i+1); });
+}
+var zipBusy=false;
+function zipPlaylist(p,ids){
+  if(zipBusy){ toast("ZIP sedang diproses"); return; }
+  if(!ids.length){ toast("Playlist kosong"); return; }
+  var list=ids.slice();
+  function go(){
+    zipBusy=true;
+    var files=[], i=0, fail=0;
+    function finish(){
+      zipBusy=false;
+      if(!files.length){ toast("Gagal: CDN mungkin blokir download langsung","bad"); return; }
+      saveBlob(buildZip(files),(p.name.replace(/[^\w\-]+/g,"_")||"playlist")+".zip");
+      toast("ZIP siap: "+files.length+" file"+(fail?" ("+fail+" gagal)":""),"ok");
+    }
+    function next(){
+      if(i>=list.length){ finish(); return; }
+      var id=list[i++], u=urls(id);
+      toast("Mengambil "+i+"/"+list.length+"…");
+      tryFetch([[u.mp4,"mp4"],[u.full,"jpg"],[u.small,"jpg"]],0).then(function(r){
+        return r.blob.arrayBuffer().then(function(buf){
+          files.push({name:"post_"+id+"."+r.ext,blob:r.blob,size:r.blob.size,crc:crc32(new Uint8Array(buf))});
+        });
+      }).catch(function(){ fail++; }).then(next);
+    }
+    next();
+  }
+  if(list.length>60) dialog("Unduh <b>"+list.length+"</b> post sebagai ZIP? Bisa berat di HP.",{ok:"Lanjut"},go);
+  else go();
+}
+
+/* ---------- download / share ---------- */
+function download(){
+  if(!currentURL){ toast("Buka post dulu"); return; }
+  var ext=currentType==="mp4"?"mp4":"jpg", url=currentURL, id=current;
+  toast("Mengunduh…");
+  fetch(url).then(function(r){ if(!r.ok) throw 0; return r.blob(); }).then(function(b){
+    saveBlob(b,"post_"+id+"."+ext);
+  }).catch(function(){ window.open(url,"_blank"); });
+}
+function copyURL(){
+  if(!currentURL){ toast("Buka post dulu"); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(currentURL).then(function(){ toast("URL disalin","ok"); },function(){ toast("Gagal menyalin","bad"); });
+  else toast("Clipboard tidak didukung","bad");
+}
+function shareURL(){
+  if(!currentURL){ toast("Buka post dulu"); return; }
+  if(navigator.share) navigator.share({title:"Post #"+current,url:currentURL}).catch(function(){});
+  else copyURL();
+}
+
+/* ---------- input & keyboard ---------- */
+var deb=null;
+input.addEventListener("focus",function(){ try{ input.select(); }catch(e){} });
+input.addEventListener("keydown",function(e){ if(e.key==="Enter"){ clearTimeout(deb); input.blur(); exitPlaylist(); loadPost(); } });
+input.addEventListener("input",function(){
+  clearTimeout(deb);
+  deb=setTimeout(function(){
+    var n=Number(input.value);
+    if(validId(n)&&n!==current){ exitPlaylist(); loadPost(n,0); }
+  },700);
+});
+function overlayOpen(){ return sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open"); }
+document.addEventListener("keydown",function(e){
+  var ae=document.activeElement;
+  if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA")) return;
+  if(e.key==="Escape"){
+    if(dlgBackdrop.classList.contains("open")) dlgNo();
+    else if(popupBackdrop.classList.contains("open")) closePopup();
+    else if(sheet.classList.contains("open")) closeSheet();
+    else if(zoom.scale>1.02) resetZoom();
+    else if(document.body.classList.contains("fs")) toggleFs();
+    return;
+  }
+  if(overlayOpen()) return;
+  var k=e.key;
+  if(k==="ArrowLeft"||k==="ArrowUp") change(-1);   /* ← / ↑ = post sebelumnya */
+  else if(k==="ArrowRight"||k==="ArrowDown") change(1); /* → / ↓ = post berikutnya */
+  else if(k===" "){ var v=zoomLayer.querySelector("video"); if(v){ e.preventDefault(); v.paused?v.play():v.pause(); } }
+  else if(k==="a"||k==="A") toggleAuto();
+  else if(k==="f"||k==="F") toggleFav();
+  else if(k==="r"||k==="R") randomPost();
+  else if(k==="p"||k==="P") openPopup(current);
+  else if(k==="t"||k==="T") openSheet("tags");
+  else if(k==="b"||k==="B") back();
+});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){ var v=zoomLayer.querySelector("video"); if(v){ try{ v.pause(); }catch(e){} } }
+});
+window.addEventListener("pagehide",function(){ persist(); });
+
+/* ---------- init ---------- */
+refreshBtns(); updateChip(); updateBack();
+loadPost(current,0);
+
+return {
+  prev:function(){ change(-1); }, next:function(){ change(1); }, back:back,
+  randomPost:randomPost, toggleAuto:toggleAuto, toggleFav:toggleFav,
+  togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
+  openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
+  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ tagView="detail"; openSheet("tags"); loadTagDetail(t,true); },
+  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist
+};
+})();
+</script>
+</body>
+</html>
