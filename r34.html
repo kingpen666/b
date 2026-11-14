@@ -757,6 +757,254 @@ body.fs .stage { border-radius: 0; border: 0; }
 }
 .tag-quickbtn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
 
+
+/* Revamped Unified Tag Manager (Mau / Whitelist + Gamau / Blacklist) */
+.tag-manager-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tm-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tm-card.want {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(18, 22, 34, 0.75);
+}
+.tm-card.block {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(30, 18, 22, 0.75);
+}
+.tm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tm-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.tm-card.want .tm-title { color: #93c5fd; }
+.tm-card.block .tm-title { color: #fca5a5; }
+.tm-count {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface3);
+  font-weight: 700;
+}
+.tm-card.want .tm-count { background: rgba(59, 130, 246, 0.25); color: #bfdbfe; }
+.tm-card.block .tm-count { background: rgba(239, 68, 68, 0.25); color: #fecaca; }
+.tm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 22px;
+}
+.tm-empty {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-style: italic;
+}
+.tm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 3px 8px 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.tm-chip.want {
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #dbeafe;
+}
+.tm-chip.block {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fee2e2;
+}
+.tm-chip button {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #fff;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+}
+.tm-chip.want button:hover { background: #ef4444; }
+.tm-chip.block button:hover { background: #3b82f6; }
+.tm-act-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.tm-quick-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 2px 4px 2px 8px;
+}
+.tm-quick-input-row input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 11.5px;
+  color: #fff;
+  padding: 4px 0;
+}
+.tm-quick-input-row input::placeholder { color: var(--text-faint); }
+.tm-quick-input-row button {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.tm-quick-input-row button:hover { background: rgba(239, 68, 68, 0.45); color: #fff; }
+
+/* Sub filter bar in Tab Tag */
+.tag-subtabs {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.tag-subtabs::-webkit-scrollbar { display: none; }
+.tag-subtab-btn {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tag-subtab-btn.on {
+  background: var(--surface3);
+  color: #fff;
+  border-color: var(--text-muted);
+}
+.tag-subtab-btn.want.on {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--blue);
+  color: #93c5fd;
+}
+.tag-subtab-btn.block.on {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--red);
+  color: #fca5a5;
+}
+
+/* Tag row items with dual buttons */
+.tagitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  transition: background 0.12s, border-color 0.12s;
+  gap: 8px;
+}
+.tagitem.sel {
+  border-color: var(--blue);
+  background: rgba(59, 130, 246, 0.12);
+}
+.tagitem.blocked {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+.tagitem.blocked .tn-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.tag-item-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  cursor: pointer;
+}
+.tag-item-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.tag-act-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface3);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.12s;
+}
+.tag-act-btn:hover { color: #fff; background: var(--surface4); }
+.tag-act-btn.want.active {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: var(--blue);
+  color: #93c5fd;
+  font-weight: 700;
+}
+.tag-act-btn.block.active {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: var(--red);
+  color: #fca5a5;
+  font-weight: 700;
+}
+.tag-act-btn.play {
+  padding: 4px 7px;
+  color: var(--text-muted);
+}
+.tag-act-btn.play:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
 /* grid & thumbnails */
 .grid {
   display: grid;
@@ -2540,75 +2788,168 @@ function saveTagAsPlaylist(tagTitle) {
 
 var tagDebounceT = null;
 
-function renderSelectedTagsBar() {
-  var box = $("tagSelBox");
-  if (!box) return;
-  box.innerHTML = "";
-  if (!selectedTags.length) {
-    box.style.display = "none";
-    return;
-  }
-  box.style.display = "flex";
-  var topRow = el("div", "tag-sel-chips");
-  selectedTags.forEach(function(t) {
-    var pillEl = el("span", "sel-pill");
-    pillEl.innerHTML = "<span>🏷️</span> " + esc(t);
-    var rem = el("button", "", "✕");
-    rem.onclick = function(e) {
-      e.stopPropagation();
-      var idx = selectedTags.indexOf(t);
-      if (idx !== -1) selectedTags.splice(idx, 1);
-      renderSelectedTagsBar();
-      renderTagItemsOnly();
-    };
-    pillEl.appendChild(rem);
-    topRow.appendChild(pillEl);
-  });
-  box.appendChild(topRow);
 
-  var actRow = el("div", "arow");
-  actRow.style.marginBottom = "0";
-  var goBtn = pill("🔍 Jelajah Post (" + selectedTags.length + " Tag)", "pri", function() {
-    tagView = "detail";
-    loadTagDetail(selectedTags.slice(), true);
-  });
-  var clrBtn = pill("✕ Kosongkan", "dng", function() {
-    selectedTags = [];
-    renderSelectedTagsBar();
-    renderTagItemsOnly();
-  });
-  actRow.appendChild(goBtn);
-  actRow.appendChild(clrBtn);
-  box.appendChild(actRow);
+var tagListFilterMode = "all"; // "all" | "want" | "block"
+
+function toggleTagWant(val) {
+  if (!val) return;
+  var name = String(val).trim().toLowerCase().replace(/\s+/g, "_");
+  var idx = selectedTags.indexOf(name);
+  if (idx !== -1) {
+    selectedTags.splice(idx, 1);
+    toast("Dihapus dari pilihan: " + name);
+  } else {
+    selectedTags.push(name);
+    // Jika ada di blacklist, otomatis lepaskan dari blacklist
+    var bIdx = blacklistTags.indexOf(name);
+    if (bIdx !== -1) {
+      blacklistTags.splice(bIdx, 1);
+      saveBlacklist();
+    }
+    toast("✓ Dipilih untuk filter: " + name, "ok");
+  }
+  renderTagManagerBars();
+  renderTagItemsOnly();
+  if (typeof renderFilterHub === "function") renderFilterHub();
+}
+
+function toggleTagBlock(val) {
+  if (!val) return;
+  var name = String(val).trim().toLowerCase().replace(/\s+/g, "_");
+  var idx = blacklistTags.indexOf(name);
+  if (idx !== -1) {
+    blacklistTags.splice(idx, 1);
+    saveBlacklist();
+    toast("Dihapus dari blacklist: " + name);
+  } else {
+    blacklistTags.push(name);
+    // Jika ada di selectedTags, otomatis lepaskan dari selectedTags
+    var sIdx = selectedTags.indexOf(name);
+    if (sIdx !== -1) {
+      selectedTags.splice(sIdx, 1);
+    }
+    saveBlacklist();
+    toast("⛔ Diblacklist: " + name, "bad");
+  }
+  renderTagManagerBars();
+  renderTagItemsOnly();
+  if (typeof renderFilterHub === "function") renderFilterHub();
+}
+
+function renderTagManagerBars() {
+  var wantChips = $("tagWantChips");
+  var blockChips = $("tagBlockChips");
+  var wantCount = $("tagWantCount");
+  var blockCount = $("tagBlockCount");
+  var wantActRow = $("tagWantActRow");
+  var blockActRow = $("tagBlockActRow");
+  var subtabWant = $("subtabWant");
+  var subtabBlock = $("subtabBlock");
+
+  // 1. Want / Selected Tags Bar
+  if (wantCount) wantCount.textContent = selectedTags.length;
+  if (subtabWant) subtabWant.textContent = "🏷️ Dipilih (" + selectedTags.length + ")";
+  if (wantChips) {
+    wantChips.innerHTML = "";
+    if (!selectedTags.length) {
+      var emW = el("span", "tm-empty", "Belum ada tag dipilih (tap '+ Mau' pada daftar di bawah)");
+      wantChips.appendChild(emW);
+    } else {
+      selectedTags.forEach(function(t) {
+        var cp = el("span", "tm-chip want", "🏷️ " + t);
+        var x = el("button", "", "✕");
+        x.title = "Hapus tag";
+        x.onclick = function(e) { e.stopPropagation(); toggleTagWant(t); };
+        cp.appendChild(x);
+        wantChips.appendChild(cp);
+      });
+    }
+  }
+  if (wantActRow) {
+    wantActRow.style.display = selectedTags.length ? "flex" : "none";
+    var goBtn = $("tagGoExploreBtn");
+    if (goBtn) goBtn.textContent = "🔍 Jelajah Post (" + selectedTags.length + " Tag)";
+  }
+
+  // 2. Block / Blacklist Tags Bar
+  if (blockCount) blockCount.textContent = blacklistTags.length;
+  if (subtabBlock) subtabBlock.textContent = "⛔ Blacklist (" + blacklistTags.length + ")";
+  if (blockChips) {
+    blockChips.innerHTML = "";
+    if (!blacklistTags.length) {
+      var emB = el("span", "tm-empty", "Belum ada blacklist (tap '⛔ Gamau' atau ketik manual)");
+      blockChips.appendChild(emB);
+    } else {
+      blacklistTags.forEach(function(b) {
+        var cp = el("span", "tm-chip block", "⛔ " + b);
+        var x = el("button", "", "✕");
+        x.title = "Lepas dari blacklist";
+        x.onclick = function(e) { e.stopPropagation(); toggleTagBlock(b); };
+        cp.appendChild(x);
+        blockChips.appendChild(cp);
+      });
+    }
+  }
+  if (blockActRow) {
+    blockActRow.style.display = blacklistTags.length ? "flex" : "none";
+  }
 }
 
 function renderTagItemsOnly() {
   var listContainer = $("tagListContainer");
   if (!listContainer) return;
   listContainer.innerHTML = "";
-  var tagsToShow = tagSearchTerm ? searchedTags : popularTagsCache;
 
-  if (tagSearchTerm && !searchedTags.length) {
-    listContainer.appendChild(el("div", "empty", "Mencari tag atau tidak ditemukan..."));
-  } else if (!tagsToShow.length) {
-    listContainer.appendChild(el("div", "empty", "Memuat tag populer dari r-34.xyz..."));
-    if (!popularTagsCache.length) {
-      r34Fetch("/tag").then(function(tags) {
-        if (Array.isArray(tags)) {
-          popularTagsCache = tags;
+  var tagsToShow = [];
+  if (tagListFilterMode === "want") {
+    tagsToShow = selectedTags.map(function(t) { return { value: t }; });
+    if (!tagsToShow.length) {
+      listContainer.appendChild(el("div", "empty", "Belum ada tag yang dipilih untuk ditonton."));
+      return;
+    }
+  } else if (tagListFilterMode === "block") {
+    tagsToShow = blacklistTags.map(function(t) { return { value: t }; });
+    if (!tagsToShow.length) {
+      listContainer.appendChild(el("div", "empty", "Tidak ada tag dalam daftar blacklist."));
+      return;
+    }
+  } else {
+    // Mode "all"
+    tagsToShow = tagSearchTerm ? searchedTags : popularTagsCache;
+    if (tagSearchTerm && !searchedTags.length) {
+      listContainer.appendChild(el("div", "empty", "Mencari tag atau tidak ditemukan..."));
+    } else if (!tagsToShow.length) {
+      listContainer.appendChild(el("div", "empty", "Memuat tag populer dari r-34.xyz..."));
+      if (!popularTagsCache.length) {
+        r34Fetch("/tag").then(function(tags) {
+          if (Array.isArray(tags)) {
+            popularTagsCache = tags;
+            renderTagItemsOnly();
+          }
+        }).catch(function() {
           renderTagItemsOnly();
-        }
-      }).catch(function() {
-        renderTagItemsOnly();
-      });
+        });
+      }
     }
   }
 
   tagsToShow.forEach(function(t) {
-    var isSel = selectedTags.indexOf(t.value) !== -1;
-    var item = el("div", "tagitem" + (isSel ? " sel" : ""));
-    var left = el("div", "tn");
-    left.innerHTML = "<span>" + (isSel ? "✓" : "🏷️") + "</span> " + esc(t.value);
+    var val = t.value;
+    var isSel = selectedTags.indexOf(val) !== -1;
+    var isBlocked = blacklistTags.indexOf(val) !== -1;
+
+    var item = el("div", "tagitem" + (isSel ? " sel" : "") + (isBlocked ? " blocked" : ""));
+
+    // Left info (click toggles want)
+    var left = el("div", "tag-item-left");
+    var ico = el("span", "", isBlocked ? "⛔" : (isSel ? "✓" : "🏷️"));
+    ico.style.cssText = "font-size:12px;color:" + (isBlocked ? "var(--red)" : (isSel ? "var(--blue2)" : "var(--text-faint)"));
+    left.appendChild(ico);
+
+    var nameSpan = el("span", "tn-name", val);
+    nameSpan.style.cssText = "font-weight:600;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+    left.appendChild(nameSpan);
+
     if (t.type) {
       var typeName = t.type === 1 ? "General" : t.type === 2 ? "Copyright" : t.type === 4 ? "Character" : t.type === 8 ? "Artist" : "";
       if (typeName) {
@@ -2616,35 +2957,47 @@ function renderTagItemsOnly() {
         left.appendChild(tb);
       }
     }
-    
-    var right = el("div");
-    right.style.cssText = "display:flex;align-items:center;";
-    var countBadge = el("span", "tc", (t.count ? Number(t.count).toLocaleString() : "") + " post");
-    right.appendChild(countBadge);
 
-    var qk = el("button", "tag-quickbtn", "▶");
-    qk.title = "Langsung jelajah tag ini saja";
+    if (t.count) {
+      var countBadge = el("span", "tc", Number(t.count).toLocaleString());
+      left.appendChild(countBadge);
+    }
+    left.onclick = function() { toggleTagWant(val); };
+    item.appendChild(left);
+
+    // Right Action Buttons: [Mau] [Gamau] [▶]
+    var right = el("div", "tag-item-right");
+
+    // Button 1: Mau / Dipilih
+    var btnWant = el("button", "tag-act-btn want" + (isSel ? " active" : ""), isSel ? "✓ Dipilih" : "+ Mau");
+    btnWant.title = isSel ? "Batalkan pilihan tag ini" : "Pilih tag ini untuk difilter / ditonton";
+    btnWant.onclick = function(e) {
+      e.stopPropagation();
+      toggleTagWant(val);
+    };
+    right.appendChild(btnWant);
+
+    // Button 2: Gamau / Blacklist
+    var btnBlock = el("button", "tag-act-btn block" + (isBlocked ? " active" : ""), isBlocked ? "⛔ Diblokir" : "⛔ Gamau");
+    btnBlock.title = isBlocked ? "Hapus dari blacklist" : "Blacklist tag ini (jangan tampilkan post bertag ini)";
+    btnBlock.onclick = function(e) {
+      e.stopPropagation();
+      toggleTagBlock(val);
+    };
+    right.appendChild(btnBlock);
+
+    // Button 3: Quick Direct Play
+    var qk = el("button", "tag-act-btn play", "▶");
+    qk.title = "Langsung tonton tag ini saja";
     qk.onclick = function(e) {
       e.stopPropagation();
-      selectedTags = [t.value];
+      selectedTags = [val];
       tagView = "detail";
-      loadTagDetail([t.value], true);
+      loadTagDetail([val], true);
     };
     right.appendChild(qk);
 
-    item.appendChild(left);
     item.appendChild(right);
-
-    item.onclick = function() {
-      var idx = selectedTags.indexOf(t.value);
-      if (idx !== -1) {
-        selectedTags.splice(idx, 1);
-      } else {
-        selectedTags.push(t.value);
-      }
-      renderSelectedTagsBar();
-      renderTagItemsOnly();
-    };
     listContainer.appendChild(item);
   });
 }
@@ -2675,41 +3028,141 @@ function renderTagsView() {
     return;
   }
 
-  // Jika input box dan sel box sudah ada, update isinya saja agar keyboard tidak tertutup!
+  // Jika input box dan manager sudah ada, update isinya saja agar keyboard tidak tertutup!
   var existingInp = $("tagSearchInput");
-  if (existingInp && $("tagListContainer") && $("tagSelBox")) {
-    renderSelectedTagsBar();
+  if (existingInp && $("tagListContainer") && $("tagWantChips") && $("tagBlockChips")) {
+    renderTagManagerBars();
     renderTagItemsOnly();
     return;
   }
 
   b.innerHTML = "";
-  
-  // Box tag yang sedang dipilih
-  var selBox = el("div", "tag-sel-box");
-  selBox.id = "tagSelBox";
-  b.appendChild(selBox);
-  renderSelectedTagsBar();
 
-  // Search input box
+  // 1. Unified Tag Manager Hub (Tag yang Mau + Tag yang Gamau / Blacklist)
+  var hub = el("div", "tag-manager-hub");
+
+  // --- CARD 1: TAG YANG MAU (SELECTED) ---
+  var cardWant = el("div", "tm-card want");
+  var headWant = el("div", "tm-head");
+  headWant.innerHTML = '<div class="tm-title"><span>🏷️</span> Tag Dipilih <span class="tm-count" id="tagWantCount">0</span></div>';
+  cardWant.appendChild(headWant);
+
+  var chipsWant = el("div", "tm-chips");
+  chipsWant.id = "tagWantChips";
+  cardWant.appendChild(chipsWant);
+
+  var actWant = el("div", "tm-act-row");
+  actWant.id = "tagWantActRow";
+  var goBtn = pill("🔍 Jelajah Post (0 Tag)", "pri", function() {
+    if (!selectedTags.length) return;
+    tagView = "detail";
+    loadTagDetail(selectedTags.slice(), true);
+  });
+  goBtn.id = "tagGoExploreBtn";
+  var clrWantBtn = pill("✕ Kosongkan", "dng", function() {
+    selectedTags = [];
+    renderTagManagerBars();
+    renderTagItemsOnly();
+  });
+  actWant.appendChild(goBtn);
+  actWant.appendChild(clrWantBtn);
+  cardWant.appendChild(actWant);
+  hub.appendChild(cardWant);
+
+  // --- CARD 2: TAG YANG GAMAU (BLACKLIST) ---
+  var cardBlock = el("div", "tm-card block");
+  var headBlock = el("div", "tm-head");
+  headBlock.innerHTML = '<div class="tm-title"><span>⛔</span> Tag Blacklist <span class="tm-count" id="tagBlockCount">0</span></div>';
+  cardBlock.appendChild(headBlock);
+
+  var chipsBlock = el("div", "tm-chips");
+  chipsBlock.id = "tagBlockChips";
+  cardBlock.appendChild(chipsBlock);
+
+  // Quick manual blacklist input row
+  var quickRow = el("div", "tm-quick-input-row");
+  var blkInp = el("input");
+  blkInp.id = "tagQuickBlockInp";
+  blkInp.type = "text";
+  blkInp.placeholder = "⛔ Ketik tag untuk blacklist langsung...";
+  var blkBtn = el("button", "", "+ Blokir");
+  function doQuickBlock() {
+    var v = blkInp.value.trim().toLowerCase().replace(/\s+/g, "_");
+    if (!v) return;
+    if (blacklistTags.indexOf(v) === -1) {
+      toggleTagBlock(v);
+    } else {
+      toast("Tag sudah ada di blacklist", "ok");
+    }
+    blkInp.value = "";
+  }
+  blkBtn.onclick = doQuickBlock;
+  blkInp.onkeydown = function(e) { if (e.key === "Enter") doQuickBlock(); };
+  quickRow.appendChild(blkInp);
+  quickRow.appendChild(blkBtn);
+  cardBlock.appendChild(quickRow);
+
+  var actBlock = el("div", "tm-act-row");
+  actBlock.id = "tagBlockActRow";
+  var clrBlockBtn = pill("🗑️ Hapus Semua Blacklist", "dng", function() {
+    if (!blacklistTags.length) return;
+    blacklistTags = [];
+    saveBlacklist();
+    renderTagManagerBars();
+    renderTagItemsOnly();
+    toast("Semua tag blacklist dihapus");
+  });
+  actBlock.appendChild(clrBlockBtn);
+  cardBlock.appendChild(actBlock);
+  hub.appendChild(cardBlock);
+
+  b.appendChild(hub);
+
+  // 2. Search Input Box
   var sb = el("div", "tagsearchbox");
+  var searchIco = el("span", "search-ico", "🔍");
   var inp = el("input");
   inp.id = "tagSearchInput";
   inp.type = "text";
-  inp.placeholder = "🔍 Ketik tag (misal: armpits, nude, video)...";
+  inp.placeholder = "Ketik tag untuk mencari (misal: armpits, video, genshin)...";
   inp.value = tagSearchTerm;
   inp.oninput = function() { onTagSearchInput(inp.value); };
+  sb.appendChild(searchIco);
   sb.appendChild(inp);
   b.appendChild(sb);
 
+  // 3. Subtabs Bar (Semua / Populer, Dipilih, Blacklist)
+  var subtabs = el("div", "tag-subtabs");
+  var tAll = el("button", "tag-subtab-btn" + (tagListFilterMode === "all" ? " on" : ""), "🔥 Semua / Populer");
+  var tWant = el("button", "tag-subtab-btn want" + (tagListFilterMode === "want" ? " on" : ""), "🏷️ Dipilih (" + selectedTags.length + ")");
+  tWant.id = "subtabWant";
+  var tBlock = el("button", "tag-subtab-btn block" + (tagListFilterMode === "block" ? " on" : ""), "⛔ Blacklist (" + blacklistTags.length + ")");
+  tBlock.id = "subtabBlock";
+
+  function setFilterMode(m) {
+    tagListFilterMode = m;
+    tAll.classList.toggle("on", m === "all");
+    tWant.classList.toggle("on", m === "want");
+    tBlock.classList.toggle("on", m === "block");
+    renderTagItemsOnly();
+  }
+  tAll.onclick = function() { setFilterMode("all"); };
+  tWant.onclick = function() { setFilterMode("want"); };
+  tBlock.onclick = function() { setFilterMode("block"); };
+  subtabs.appendChild(tAll);
+  subtabs.appendChild(tWant);
+  subtabs.appendChild(tBlock);
+  b.appendChild(subtabs);
+
+  // 4. Tag List Container
   var listContainer = el("div");
   listContainer.id = "tagListContainer";
   listContainer.style.cssText = "display:flex;flex-direction:column;gap:6px;";
   b.appendChild(listContainer);
 
+  renderTagManagerBars();
   renderTagItemsOnly();
 }
-
 function renderTagDetailView() {
   var b = sheetBody;
   var titleStr = activeTagsDetail.join(" + ");
@@ -3469,7 +3922,7 @@ return {
   randomPost:randomPost, toggleAuto:toggleAuto, toggleFav:toggleFav,
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
-  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ selectedTags=Array.isArray(t)?t.slice():[t]; tagView="detail"; openSheet("tags"); loadTagDetail(selectedTags,true); }, openInfo:openInfo, closeInfo:closeInfo,
+  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ selectedTags=Array.isArray(t)?t.slice():[t]; tagView="detail"; openSheet("tags"); loadTagDetail(selectedTags,true); }, openInfo:openInfo, closeInfo:closeInfo, toggleTagWant:toggleTagWant, toggleTagBlock:toggleTagBlock, getSelectedTags:function(){return selectedTags;}, getBlacklistTags:function(){return blacklistTags;},
   dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide, toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, addHubTag:addHubTag, addHubBlockTag:addHubBlockTag, applyFilterHub:applyFilterHub, toggleSound:toggleSound, toggleSortMenu:toggleSortMenu, setSort:setSort, toggleSound:toggleSound
 };
 })();
