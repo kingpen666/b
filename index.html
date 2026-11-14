@@ -1064,6 +1064,180 @@ body.fs .toast { bottom: 20px; }
   .dk small { font-size: 8.5px; }
   .ib { width: 38px; }
 }
+
+/* sort popover */
+.sort-popover {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 135px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  z-index: 25;
+}
+.sort-popover.open { display: flex; }
+.sp-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  user-select: none;
+}
+.sp-item:hover { background: var(--surface2); color: #fff; }
+.sp-item.on { background: var(--surface3); color: #fff; }
+.sp-item span { font-size: 14px; }
+
+
+/* Quick Filter Hub Popover / Modal */
+.filter-hub-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 45;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(54px + env(safe-area-inset-top, 0px)) 12px 12px;
+}
+.filter-hub-backdrop.open { display: flex; }
+.filter-hub {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7);
+}
+.fh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.fh-head b { font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+.fh-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.fh-close:hover { color: #fff; }
+.fh-sec { display: flex; flex-direction: column; gap: 6px; }
+.fh-sec label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.fh-sort-seg {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.fh-sort-seg button {
+  flex: 1;
+  padding: 7px 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.fh-sort-seg button.on {
+  background: var(--surface4);
+  color: #fff;
+}
+.fh-input-row { display: flex; gap: 6px; }
+.fh-input-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: #fff;
+  outline: none;
+}
+.fh-input-row input:focus { border-color: var(--blue); }
+.fh-input-row button {
+  padding: 8px 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.fh-input-row button:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.fh-input-row button.btn-dng:hover { background: var(--red); color: #fff; border-color: var(--red); }
+.fh-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px; }
+.fh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: #fff;
+}
+.fh-chip.block {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+}
+.fh-chip button {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #fff;
+  padding: 0;
+}
+.fh-apply-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 8px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.fh-apply-btn:hover { background: var(--blue-hover); }
+
 </style>
 </head>
 <body>
@@ -1105,6 +1279,17 @@ body.fs .toast { bottom: 20px; }
 
     <!-- Stage controls group top-right -->
     <div class="glass-controls">
+      <div style="position:relative">
+        <button class="sbtn" id="sortBtn" onclick="PE.toggleSortMenu(event)" title="Urutan Post (Terbaru / Populer / Terlama)">
+          <span id="sortIco">✨</span>
+        </button>
+        <div class="sort-popover" id="sortPopover">
+          <div class="sp-item on" id="spNewest" onclick="PE.setSort('newest')"><span>✨</span><b>Terbaru</b></div>
+          <div class="sp-item" id="spPopular" onclick="PE.setSort('popular')"><span>🔥</span><b>Terpopuler</b></div>
+          <div class="sp-item" id="spOldest" onclick="PE.setSort('oldest')"><span>⏳</span><b>Terlama</b></div>
+        </div>
+      </div>
+      <button class="sbtn" id="soundBtn" onclick="PE.toggleSound()" title="Suara Video" style="display:none">🔇</button>
       <button class="sbtn" id="infoBtn" onclick="PE.openInfo()" title="Info Post & Tag (Shortcut: I)">ℹ</button>
       <button class="sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / Penuhi Layar">◫</button>
       <button class="sbtn" id="dlBtn" onclick="PE.download()" title="Unduh Post Ini">⬇</button>
@@ -1224,6 +1409,50 @@ body.fs .toast { bottom: 20px; }
   </div>
 </div>
 
+
+<!-- Quick Filter Hub Modal -->
+<div class="filter-hub-backdrop" id="filterHubBackdrop" onclick="PE.closeFilterHub(event)">
+  <div class="filter-hub" id="filterHub" onclick="event.stopPropagation()">
+    <div class="fh-head">
+      <b>🎛️ Filter & Urutan Post</b>
+      <button class="fh-close" onclick="PE.closeFilterHub()">✕</button>
+    </div>
+    
+    <!-- Sort Option -->
+    <div class="fh-sec">
+      <label>Urutan Tampilan</label>
+      <div class="fh-sort-seg">
+        <button id="fhSortNewest" class="on" onclick="PE.setHubSort('newest')">✨ Terbaru</button>
+        <button id="fhSortPopular" onclick="PE.setHubSort('popular')">🔥 Terpopuler</button>
+        <button id="fhSortOldest" onclick="PE.setHubSort('oldest')">⏳ Terlama</button>
+      </div>
+    </div>
+
+    <!-- Active Tags (Include) -->
+    <div class="fh-sec">
+      <label>Tag yang Dicari (Include)</label>
+      <div class="fh-input-row">
+        <input id="fhTagInput" type="text" placeholder="Tambah tag (misal: genshin_impact)..." maxlength="50">
+        <button onclick="PE.addHubTag()">+ Tambah</button>
+      </div>
+      <div class="fh-chips" id="fhActiveTagChips"></div>
+    </div>
+
+    <!-- Blacklist Tags (Exclude) -->
+    <div class="fh-sec">
+      <label>Blacklist / Sembunyikan (Exclude)</label>
+      <div class="fh-input-row">
+        <input id="fhBlockInput" type="text" placeholder="Tag yang dihindari (misal: gore, ai)..." maxlength="50">
+        <button class="btn-dng" onclick="PE.addHubBlockTag()">+ Blokir</button>
+      </div>
+      <div class="fh-chips" id="fhBlockTagChips"></div>
+    </div>
+
+    <!-- Apply Button -->
+    <button class="fh-apply-btn" onclick="PE.applyFilterHub()">Terapkan & Jelajah Post</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1247,7 +1476,7 @@ function jset(k,v){ try{ lsSet(k,JSON.stringify(v)); }catch(e){} }
 
 /* ---------- settings ---------- */
 var S = (function(){
-  var d = {interval:5, skipMissing:true, fit:"contain", muted:true, saver:false, keepZoom:false, speed:1, filterAi:false};
+  var d = {interval:5, skipMissing:true, fit:"contain", muted:true, saver:false, keepZoom:false, speed:1, filterAi:false, autoNextVid:false};
   var s = jget("pe_settings",{}) || {};
   for (var k in d) if (s[k]!==undefined) d[k]=s[k];
   return d;
@@ -1344,7 +1573,8 @@ function probeVideo(url){
       res(ok===true);
     }
     v.onloadedmetadata=function(){ fin(true); };
-    v.onerror=function(){ fin(false); };
+    v.onended=function(){ if (autoEnabled || S.autoNextVid) change(1); };
+  v.onerror=function(){ fin(false); };
     v.preload="metadata"; v.muted=true; v.src=url;
   });
 }
@@ -1539,6 +1769,8 @@ function setMedia(el,kind){
   if(el.tagName==="IMG"){ el.alt="Post "+current; el.className=kind==="ph"?"ph":""; el.draggable=false; }
   zoomLayer.appendChild(el);
   stage.classList.toggle("isvid",el.tagName==="VIDEO");
+  if (soundBtn) { soundBtn.style.display = el.tagName==="VIDEO" ? "flex" : "none"; soundBtn.textContent = S.muted ? "🔇" : "🔊"; }
+  if (soundBtn) { soundBtn.style.display = el.tagName==="VIDEO" ? "flex" : "none"; soundBtn.textContent = S.muted ? "🔇" : "🔊"; }
   if(S.keepZoom&&zoom.scale>1.02&&el.tagName==="IMG"){ zoom.tx=0; zoom.ty=0; clampPan(); applyZoom(); }
   else resetZoom();
   if(pendingEnter) settleEnter();
@@ -2149,7 +2381,8 @@ async function loadTagDetail(tags, reset) {
       includeTags: activeTagsDetail,
       status: 2,
       filterAi: !!S.filterAi,
-      take: 30
+      take: 30,
+      excludeTags: blacklistTags.length ? blacklistTags : undefined
     };
     if (tagSortMode === "popular") {
       payload.sortBy = 1;
@@ -2640,6 +2873,7 @@ function seg(opts,val,cb){
 }
 function renderSettings(){
   var b=sheetBody, onoff=[[true,"On"],[false,"Off"]];
+  b.appendChild(setRow("Auto-Next Video","Otomatis lanjut post berikutnya saat video selesai",seg(onoff,!!S.autoNextVid,function(v){ S.autoNextVid=v; saveS(); })));
   b.appendChild(setRow("Filter Konten AI","Sembunyikan post buatan AI",seg(onoff,S.filterAi,function(v){ S.filterAi=v; saveS(); })));
   b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled&&!isVideo()) resetAutoTimer(); })));
   b.appendChild(setRow("Lewati post kosong","Loncat otomatis ID yang tidak ada",seg(onoff,S.skipMissing,function(v){ S.skipMissing=v; saveS(); })));
@@ -2816,11 +3050,248 @@ function closeGuide(e) {
   }
 }
 
-function overlayOpen(){ return sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open")||infoBackdrop.classList.contains("open")||(guideBackdrop&&guideBackdrop.classList.contains("open")); }
+
+var sortPopover = $("sortPopover");
+var sortIco = $("sortIco");
+var soundBtn = $("soundBtn");
+
+function toggleSortMenu(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  if (sortPopover) sortPopover.classList.toggle("open");
+}
+
+function updateSortUI() {
+  if (sortIco) {
+    sortIco.textContent = tagSortMode === "popular" ? "🔥" : tagSortMode === "oldest" ? "⏳" : "✨";
+  }
+  var nEl = $("spNewest"), pEl = $("spPopular"), oEl = $("spOldest");
+  if (nEl) nEl.classList.toggle("on", tagSortMode === "newest");
+  if (pEl) pEl.classList.toggle("on", tagSortMode === "popular");
+  if (oEl) oEl.classList.toggle("on", tagSortMode === "oldest");
+}
+
+async function setSort(mode) {
+  tagSortMode = mode;
+  updateSortUI();
+  if (sortPopover) sortPopover.classList.remove("open");
+  
+  var label = mode === "popular" ? "🔥 Terpopuler (Likes terbanyak)" : mode === "oldest" ? "⏳ Terlama (Mulai post #1)" : "✨ Terbaru";
+  toast(label, "ok");
+
+  // If in Tag mode:
+  if (activeTagsDetail && activeTagsDetail.length > 0) {
+    await loadTagDetail(activeTagsDetail, true);
+    if (tagPosts.length) startTag(activeTagsDetail, null, false);
+    return;
+  }
+
+  // If in normal browsing mode:
+  if (mode === "popular") {
+    toast("Memuat post terpopuler...", "ok");
+    await loadTagDetail([], true);
+    if (tagPosts.length) {
+      activeTag = "🔥 Terpopuler";
+      startTag([], null, false);
+    }
+  } else if (mode === "oldest") {
+    exitPlaylist();
+    loadPost(1, 0);
+  } else {
+    exitPlaylist();
+    var km = parseInt(lsGet("knownMaxId"), 10);
+    var target = (isFinite(km) && km > 1300000) ? km : 1352845;
+    loadPost(target, 0);
+  }
+}
+
+function toggleSound() {
+  S.muted = !S.muted;
+  saveS();
+  var vd = zoomLayer.querySelector("video");
+  if (vd) vd.muted = S.muted;
+  if (soundBtn) soundBtn.textContent = S.muted ? "🔇" : "🔊";
+  toast(S.muted ? "Suara Video: Mati" : "Suara Video: Hidup", "ok");
+}
+
+document.addEventListener("click", function(e) {
+  if (sortPopover && sortPopover.classList.contains("open")) {
+    if (!e.target.closest || !e.target.closest("#sortBtn")) {
+      sortPopover.classList.remove("open");
+    }
+  }
+});
+
+
+/* ---------- Quick Filter Hub (Tag, Sort, Blacklist) ---------- */
+var filterHubBackdrop = $("filterHubBackdrop");
+var fhActiveTagChips = $("fhActiveTagChips");
+var fhBlockTagChips = $("fhBlockTagChips");
+var fhTagInput = $("fhTagInput");
+var fhBlockInput = $("fhBlockInput");
+var soundBtn = $("soundBtn");
+
+// Blacklist tags persisted in localStorage
+var blacklistTags = jget("pe_blacklist", []) || [];
+
+function saveBlacklist() { jset("pe_blacklist", blacklistTags); }
+
+function toggleFilterHub(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  if (filterHubBackdrop) {
+    var isOpen = filterHubBackdrop.classList.contains("open");
+    if (isOpen) closeFilterHub();
+    else openFilterHub();
+  }
+}
+
+function openFilterHub() {
+  if (!filterHubBackdrop) return;
+  renderFilterHub();
+  filterHubBackdrop.classList.add("open");
+}
+
+function closeFilterHub(e) {
+  if (!filterHubBackdrop) return;
+  if (!e || e.target === filterHubBackdrop) {
+    filterHubBackdrop.classList.remove("open");
+  }
+}
+
+function renderFilterHub() {
+  // 1. Sort state
+  var nBtn = $("fhSortNewest"), pBtn = $("fhSortPopular"), oBtn = $("fhSortOldest");
+  if (nBtn) nBtn.classList.toggle("on", tagSortMode === "newest");
+  if (pBtn) pBtn.classList.toggle("on", tagSortMode === "popular");
+  if (oBtn) oBtn.classList.toggle("on", tagSortMode === "oldest");
+
+  // 2. Active tags chips
+  if (fhActiveTagChips) {
+    fhActiveTagChips.innerHTML = "";
+    if (!selectedTags.length) {
+      var em = el("span", "", "Semua post (belum ada tag)");
+      em.style.cssText = "font-size:11px;color:var(--text-faint);font-style:italic;";
+      fhActiveTagChips.appendChild(em);
+    } else {
+      selectedTags.forEach(function(t, idx) {
+        var cp = el("span", "fh-chip", t);
+        var x = el("button", "", "✕");
+        x.onclick = function() { selectedTags.splice(idx, 1); renderFilterHub(); };
+        cp.appendChild(x);
+        fhActiveTagChips.appendChild(cp);
+      });
+    }
+  }
+
+  // 3. Blacklist chips
+  if (fhBlockTagChips) {
+    fhBlockTagChips.innerHTML = "";
+    if (!blacklistTags.length) {
+      var emB = el("span", "", "Tidak ada tag yang diblokir");
+      emB.style.cssText = "font-size:11px;color:var(--text-faint);font-style:italic;";
+      fhBlockTagChips.appendChild(emB);
+    } else {
+      blacklistTags.forEach(function(b, idx) {
+        var cp = el("span", "fh-chip block", "⛔ " + b);
+        var x = el("button", "", "✕");
+        x.onclick = function() { blacklistTags.splice(idx, 1); saveBlacklist(); renderFilterHub(); };
+        cp.appendChild(x);
+        fhBlockTagChips.appendChild(cp);
+      });
+    }
+  }
+}
+
+function setHubSort(mode) {
+  tagSortMode = mode;
+  renderFilterHub();
+}
+
+function addHubTag() {
+  if (!fhTagInput) return;
+  var val = fhTagInput.value.trim().toLowerCase().replace(/\s+/g, "_");
+  if (!val) return;
+  if (selectedTags.indexOf(val) === -1) {
+    selectedTags.push(val);
+  }
+  fhTagInput.value = "";
+  renderFilterHub();
+}
+
+if (fhTagInput) {
+  fhTagInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") addHubTag();
+  });
+}
+
+function addHubBlockTag() {
+  if (!fhBlockInput) return;
+  var val = fhBlockInput.value.trim().toLowerCase().replace(/\s+/g, "_");
+  if (!val) return;
+  if (blacklistTags.indexOf(val) === -1) {
+    blacklistTags.push(val);
+    saveBlacklist();
+  }
+  fhBlockInput.value = "";
+  renderFilterHub();
+}
+
+if (fhBlockInput) {
+  fhBlockInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") addHubBlockTag();
+  });
+}
+
+async function applyFilterHub() {
+  if (filterHubBackdrop) filterHubBackdrop.classList.remove("open");
+  var sortLabel = tagSortMode === "popular" ? "🔥 Terpopuler" : tagSortMode === "oldest" ? "⏳ Terlama" : "✨ Terbaru";
+  
+  if (selectedTags.length > 0) {
+    activeTagsDetail = selectedTags.slice();
+    toast("Mencari tag: " + selectedTags.join(", ") + " (" + sortLabel + ")", "ok");
+    await loadTagDetail(selectedTags, true);
+    if (tagPosts.length) {
+      startTag(selectedTags, null, false);
+    } else {
+      toast("Tidak ditemukan post dengan kombinasi tag ini", "bad");
+    }
+  } else {
+    // No specific tags selected -> browse all posts with sortMode
+    if (tagSortMode === "popular") {
+      toast("Memuat post terpopuler...", "ok");
+      await loadTagDetail([], true);
+      if (tagPosts.length) {
+        activeTag = "🔥 Terpopuler";
+        startTag([], null, false);
+      }
+    } else if (tagSortMode === "oldest") {
+      exitPlaylist();
+      loadPost(1, 0);
+      toast("Lompat ke post terlama (#1)", "ok");
+    } else {
+      exitPlaylist();
+      var km = parseInt(lsGet("knownMaxId"), 10);
+      var target = (isFinite(km) && km > 1300000) ? km : 1352845;
+      loadPost(target, 0);
+      toast("Lompat ke post terbaru (#" + target + ")", "ok");
+    }
+  }
+}
+
+function toggleSound() {
+  S.muted = !S.muted;
+  saveS();
+  var vd = zoomLayer.querySelector("video");
+  if (vd) vd.muted = S.muted;
+  if (soundBtn) soundBtn.textContent = S.muted ? "🔇" : "🔊";
+  toast(S.muted ? "Suara Video: Mati" : "Suara Video: Hidup", "ok");
+}
+
+function overlayOpen(){ return (filterHubBackdrop && filterHubBackdrop.classList.contains("open")) || sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open")||infoBackdrop.classList.contains("open")||(guideBackdrop&&guideBackdrop.classList.contains("open")); }
 document.addEventListener("keydown",function(e){
   var ae=document.activeElement;
   if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA")) return;
   if(e.key==="Escape"){
+    if(filterHubBackdrop && filterHubBackdrop.classList.contains("open")) { closeFilterHub(); return; }
     if(guideBackdrop&&guideBackdrop.classList.contains("open")) closeGuide();
     if(dlgBackdrop.classList.contains("open")) dlgNo();
     else if(popupBackdrop.classList.contains("open")) closePopup();
@@ -2858,7 +3329,7 @@ return {
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
   download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ selectedTags=Array.isArray(t)?t.slice():[t]; tagView="detail"; openSheet("tags"); loadTagDetail(selectedTags,true); }, openInfo:openInfo, closeInfo:closeInfo,
-  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide
+  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide, toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, addHubTag:addHubTag, addHubBlockTag:addHubBlockTag, applyFilterHub:applyFilterHub, toggleSound:toggleSound, toggleSortMenu:toggleSortMenu, setSort:setSort, toggleSound:toggleSound
 };
 })();
 </script>
