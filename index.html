@@ -2340,17 +2340,20 @@ body.fs .stage-wrapper {
         if (!post || !post.file_url) return Promise.resolve({ type: null, miss: true });
         var url = post.file_url;
         var isVid = !!(url.match(/\.(mp4|webm|mov)(\?|$)/i) || (post.image && post.image.match(/\.(mp4|webm|mov)$/i)));
+        var pid = Number(post.id);
         if (isVid) {
-          return Promise.resolve({ type: "mp4", url: url, meta: post });
+          var posterUrl = (post.sample_url && post.sample) ? post.sample_url : (post.preview_url || "");
+          if (posterUrl) { var img = new Image(); img.src = posterUrl; }
+          return Promise.resolve({ type: "mp4", url: url, meta: post, poster: posterUrl, postId: pid });
         }
         // Gunakan sample_url (versi kompresi web yang tajam & ringan, ~300KB), fallback ke file_url
         var targetUrl = (post.sample_url && post.sample) ? post.sample_url : url;
         return loadImg(targetUrl).then(function (im) {
-          if (im) return { type: "jpg", url: targetUrl, el: im, meta: post, fullUrl: url };
+          if (im) return { type: "jpg", url: targetUrl, el: im, meta: post, fullUrl: url, postId: pid };
           var fallbackUrl = (targetUrl === post.sample_url) ? post.file_url : (post.sample_url || post.preview_url);
           if (fallbackUrl && fallbackUrl !== targetUrl) {
             return loadImg(fallbackUrl).then(function (im2) {
-              if (im2) return { type: "jpg", url: fallbackUrl, el: im2, meta: post, fullUrl: url };
+              if (im2) return { type: "jpg", url: fallbackUrl, el: im2, meta: post, fullUrl: url, postId: pid };
               return { type: null, miss: true };
             });
           }
@@ -2364,10 +2367,14 @@ body.fs .stage-wrapper {
         if (postMetaCache.has(id)) {
           p = buildResultFromMeta(postMetaCache.get(id));
         } else {
-          p = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id })
+          p = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id, tags: "id:" + id, limit: 1 })
             .then(function (data) {
               if (!Array.isArray(data) || !data.length) return { type: null, miss: true };
-              var post = data[0];
+              var post = null;
+              for (var i = 0; i < data.length; i++) {
+                if (Number(data[i].id) === Number(id)) { post = data[i]; break; }
+              }
+              if (!post) return { type: null, miss: true };
               postMetaCache.set(id, post);
               return buildResultFromMeta(post);
             })
@@ -2707,19 +2714,32 @@ body.fs .stage-wrapper {
         if (soundBtn) soundBtn.style.display = "none";
         resetZoom(); settleEnter();
       }
-      function makeVideo(id, url) {
+      function makeVideo(id, url, posterUrl) {
         var v = document.createElement("video");
         v._pid = id;
         v.controls = true; v.playsInline = true; v.setAttribute("playsinline", "");
         v.preload = "auto"; v.muted = S.muted; v.loop = !(autoEnabled || S.autoNextVid);
         v.defaultPlaybackRate = S.speed; v.playbackRate = S.speed;
+        if (posterUrl) v.poster = posterUrl;
         v.addEventListener("loadedmetadata", function () {
           var t = vpos.get(id);
           if (t && isFinite(v.duration) && t < v.duration - 2) { try { v.currentTime = t; } catch (e) { } }
           v.playbackRate = S.speed;
         });
-        v.addEventListener("ended", function () { if ((autoEnabled || S.autoNextVid) && v.parentNode && id === current) change(1); });
-        v.addEventListener("error", function () { if (autoEnabled && v.parentNode && id === current) resetAutoTimer(); });
+        v.addEventListener("waiting", function () { if (id === current) setLoading(true); });
+        v.addEventListener("canplay", function () { if (id === current) setLoading(false); });
+        v.addEventListener("playing", function () { if (id === current) setLoading(false); });
+        v.addEventListener("ended", function () {
+          if ((autoEnabled || S.autoNextVid) && v.parentNode && id === current) {
+            if (v.duration && v.duration > 0.5 && v.currentTime >= v.duration - 0.5) change(1);
+          }
+        });
+        v.addEventListener("error", function () {
+          if (id === current) {
+            setLoading(false);
+            console.warn("Video load error for post #" + id);
+          }
+        });
         v.src = url;
         return v;
       }
@@ -2771,7 +2791,16 @@ body.fs .stage-wrapper {
       }
       function present(r, tok, dir, tries) {
         finalTok = tok; setLoading(false); clearTimeout(phTimer);
+        if (r.postId && Number(r.postId) !== Number(current)) return;
         if (r.miss || !r.type) {
+          var ord = activeOrder();
+          if (ord && ord.length) {
+            var curIdx = ord.indexOf(current);
+            if (curIdx >= 0 && curIdx + 1 < ord.length && tries < 5) {
+              loadPost(ord[curIdx + 1], 1, tries + 1);
+              return;
+            }
+          }
           if (S.skipMissing && tries < 5) {
             var tagQuery = "id:>" + current + " sort:id:asc";
             rule34ApiFetch({ page: "dapi", s: "post", q: "index", tags: tagQuery, limit: 1 })
@@ -2798,14 +2827,15 @@ body.fs .stage-wrapper {
         currentURL = r.url; currentType = r.type;
         shownId = current;
         if (r.type === "mp4") {
-          var el = makeVideo(current, r.url); setMedia(el);
+          var poster = r.poster || (r.meta && (r.meta.sample_url || r.meta.preview_url)) || "";
+          var el = makeVideo(current, r.url, poster); setMedia(el);
           clearAutoTimer();
           if (autoEnabled) { lastLbl = "VIDEO"; autoLbl.textContent = "VIDEO"; autoFill.style.width = "100%"; }
           var pr = el.play();
           if (pr && pr.catch) pr.catch(function () {
             el.muted = true;
             var p2 = el.play();
-            if (p2 && p2.catch) p2.catch(function () { if (autoEnabled && tok === token) resetAutoTimer(); });
+            if (p2 && p2.catch) p2.catch(function () { });
           });
         } else {
           setMedia(r.el);
@@ -2836,12 +2866,12 @@ body.fs .stage-wrapper {
           var nextTargetId = null;
           if (step > 0) {
             var cands = [];
-            postMetaCache.forEach(function (meta, k) { if (k > current) cands.push(k); });
+            postMetaCache.forEach(function (meta, k) { if (k > current && k <= current + 5) cands.push(k); });
             cands.sort(function (a, b) { return a - b; });
             if (cands.length > 0) nextTargetId = cands[0];
           } else {
             var cands2 = [];
-            postMetaCache.forEach(function (meta, k) { if (k < current) cands2.push(k); });
+            postMetaCache.forEach(function (meta, k) { if (k < current && k >= current - 5) cands2.push(k); });
             cands2.sort(function (a, b) { return b - a; });
             if (cands2.length > 0) nextTargetId = cands2[0];
           }
@@ -3206,10 +3236,16 @@ body.fs .stage-wrapper {
         if (postMetaCache.has(id)) {
           postPromise = Promise.resolve(postMetaCache.get(id));
         } else {
-          postPromise = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id }).then(function (data) {
+          postPromise = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id, tags: "id:" + id, limit: 1 }).then(function (data) {
             if (Array.isArray(data) && data.length) {
-              postMetaCache.set(id, data[0]);
-              return data[0];
+              var p = null;
+              for (var i = 0; i < data.length; i++) {
+                if (Number(data[i].id) === Number(id)) { p = data[i]; break; }
+              }
+              if (p) {
+                postMetaCache.set(id, p);
+                return p;
+              }
             }
             return null;
           });
