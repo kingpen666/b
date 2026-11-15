@@ -3084,22 +3084,25 @@
         }).join("&");
 
         var directUrl = "https://api.rule34.xxx/index.php?" + qs;
-        var proxyUrl = "/api/dapi?" + qs;
 
+        // 1. Direct fetch (CORS terbuka, keep-alive HTTP/2, paling cepat tanpa delay proxy)
+        try {
+          var res = await fetch(directUrl);
+          if (res.ok) return await res.json();
+        } catch (e) {
+          console.warn("Direct fetch Rule34 gagal, mencoba proxy Vercel...", e);
+        }
+
+        // 2. Fallback rewrite proxy Vercel
         if (window.location.protocol === "http:" || window.location.protocol === "https:") {
           try {
-            var res = await fetch(proxyUrl);
-            if (res.ok) return await res.json();
-          } catch (e) { }
+            var proxyUrl = "/api/dapi?" + qs;
+            var res2 = await fetch(proxyUrl);
+            if (res2.ok) return await res2.json();
+          } catch (e2) { }
         }
 
-        try {
-          var res2 = await fetch(directUrl);
-          if (res2.ok) return await res2.json();
-        } catch (e2) {
-          console.warn("Direct fetch Rule34 gagal, mencoba allorigins proxy...", e2);
-        }
-
+        // 3. Fallback allorigins
         try {
           var res3 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl));
           if (res3.ok) return await res3.json();
@@ -3147,13 +3150,14 @@
         if (isVid) {
           return Promise.resolve({ type: "mp4", url: url, meta: post });
         }
-        var targetUrl = (S.saver && post.sample_url) ? post.sample_url : url;
+        // Gunakan sample_url (versi kompresi web yang tajam & ringan, ~300KB), fallback ke file_url
+        var targetUrl = (post.sample_url && post.sample) ? post.sample_url : url;
         return loadImg(targetUrl).then(function (im) {
-          if (im) return { type: "jpg", url: targetUrl, el: im, meta: post };
+          if (im) return { type: "jpg", url: targetUrl, el: im, meta: post, fullUrl: url };
           var fallbackUrl = (targetUrl === post.sample_url) ? post.file_url : (post.sample_url || post.preview_url);
           if (fallbackUrl && fallbackUrl !== targetUrl) {
             return loadImg(fallbackUrl).then(function (im2) {
-              if (im2) return { type: "jpg", url: fallbackUrl, el: im2, meta: post };
+              if (im2) return { type: "jpg", url: fallbackUrl, el: im2, meta: post, fullUrl: url };
               return { type: null, miss: true };
             });
           }
@@ -3228,7 +3232,43 @@
           if (resolveQueued) resolveQueued({ type: null, miss: true, cancelled: true });
         }
       }
-      function preloadAround(id) { clearQueued(); neighbors(id).forEach(schedule); }
+      function preloadAround(id) {
+        clearQueued();
+        var ord = activeOrder();
+        if (ord) {
+          neighbors(id).forEach(schedule);
+          return;
+        }
+        rule34ApiFetch({
+          page: "dapi", s: "post", q: "index",
+          tags: "id:>" + id + " sort:id:asc",
+          limit: 4
+        }).then(function (nextPosts) {
+          if (Array.isArray(nextPosts)) {
+            nextPosts.forEach(function (p) {
+              var pid = Number(p.id);
+              postMetaCache.set(pid, p);
+              schedule(pid);
+            });
+          }
+        }).catch(function () {});
+
+        if (id > 1) {
+          rule34ApiFetch({
+            page: "dapi", s: "post", q: "index",
+            tags: "id:<" + id + " sort:id:desc",
+            limit: 2
+          }).then(function (prevPosts) {
+            if (Array.isArray(prevPosts)) {
+              prevPosts.forEach(function (p) {
+                var pid = Number(p.id);
+                postMetaCache.set(pid, p);
+                schedule(pid);
+              });
+            }
+          }).catch(function () {});
+        }
+      }
 
       var idbP = null;
       function idb() {
@@ -3495,24 +3535,43 @@
         clearTimeout(phTimer);
         var c = cache.get(id);
         if (c) { present(c, tok, dir, tries); return; }
-        phTimer = setTimeout(function () {
-          if (tok !== token || finalTok === tok) return;
+
+        // Tampilkan thumbnail instan dari postMetaCache jika sudah ada (0ms delay)
+        var meta = postMetaCache.get(id);
+        if (meta && meta.preview_url) {
           var th = new Image();
           th.onload = function () { if (tok === token && finalTok !== tok) setMedia(th, "ph"); };
-          th.src = thumbURL(id);
-        }, 200);
+          th.src = meta.preview_url;
+        } else {
+          phTimer = setTimeout(function () {
+            if (tok !== token || finalTok === tok) return;
+            var th2 = new Image();
+            th2.onload = function () { if (tok === token && finalTok !== tok) setMedia(th2, "ph"); };
+            th2.src = thumbURL(id);
+          }, 150);
+        }
         get(id).then(function (r) { if (tok !== token) return; present(r, tok, dir, tries); });
       }
       function present(r, tok, dir, tries) {
         finalTok = tok; setLoading(false); clearTimeout(phTimer);
         if (r.miss || !r.type) {
-          if (S.skipMissing && dir && tries < 25) {
-            var ord = activeOrder(), at = ord ? ord.indexOf(current) : -1;
-            var n = ord && at > -1 ? ord[at + dir] : current + dir;
-            if (n !== undefined && n >= 1 && n <= MAXID) {
-              if (!ord) for (var k = 2; k <= 5; k++) schedule(current + dir * k);
-              loadPost(n, dir, tries + 1); return;
-            }
+          if (S.skipMissing && tries < 5) {
+            var tagQuery = "id:>" + current + " sort:id:asc";
+            rule34ApiFetch({ page: "dapi", s: "post", q: "index", tags: tagQuery, limit: 1 })
+              .then(function (posts) {
+                if (tok !== token) return;
+                if (Array.isArray(posts) && posts.length) {
+                  var validPost = posts[0];
+                  var validId = Number(validPost.id);
+                  postMetaCache.set(validId, validPost);
+                  loadPost(validId, 1, tries + 1);
+                } else {
+                  showStatus("Post #" + current + " tidak ditemukan");
+                }
+              }).catch(function () {
+                showStatus("Post #" + current + " tidak ditemukan");
+              });
+            return;
           }
           showStatus("Post #" + current + " tidak ditemukan");
           preloadAround(current);
@@ -3538,7 +3597,9 @@
         addHist(current);
         preloadAround(current);
       }
-      function change(step) {
+
+      var changeBusy = false;
+      async function change(step) {
         var ord = activeOrder();
         if (ord) {
           if (!ord.length) { exitPlaylist(); return false; }
@@ -3551,9 +3612,56 @@
           if (ni < 0 || ni >= ord.length) { toast(step > 0 ? "Playlist selesai" : "Awal playlist"); return false; }
           loadPost(ord[ni], step); return true;
         }
-        var n = current + step;
-        if (n < 1 || n > MAXID) return false;
-        loadPost(n, step); return true;
+
+        if (changeBusy) return false;
+        changeBusy = true;
+        try {
+          var nextTargetId = null;
+          if (step > 0) {
+            var cands = [];
+            postMetaCache.forEach(function (meta, k) { if (k > current) cands.push(k); });
+            cands.sort(function (a, b) { return a - b; });
+            if (cands.length > 0) nextTargetId = cands[0];
+          } else {
+            var cands2 = [];
+            postMetaCache.forEach(function (meta, k) { if (k < current) cands2.push(k); });
+            cands2.sort(function (a, b) { return b - a; });
+            if (cands2.length > 0) nextTargetId = cands2[0];
+          }
+
+          if (!nextTargetId) {
+            var tagQuery = step > 0 ? ("id:>" + current + " sort:id:asc") : ("id:<" + current + " sort:id:desc");
+            var posts = await rule34ApiFetch({
+              page: "dapi", s: "post", q: "index",
+              tags: tagQuery,
+              limit: 4
+            });
+            if (Array.isArray(posts) && posts.length) {
+              posts.forEach(function (p) {
+                var pid = Number(p.id);
+                postMetaCache.set(pid, p);
+              });
+              nextTargetId = Number(posts[0].id);
+            }
+          }
+
+          if (nextTargetId && nextTargetId >= 1 && nextTargetId <= MAXID) {
+            loadPost(nextTargetId, step);
+            return true;
+          } else {
+            toast(step > 0 ? "Sudah mencapai post terakhir" : "Sudah mencapai post pertama");
+            return false;
+          }
+        } catch (e) {
+          var fallbackId = current + step;
+          if (fallbackId >= 1 && fallbackId <= MAXID) {
+            loadPost(fallbackId, step);
+            return true;
+          }
+          return false;
+        } finally {
+          changeBusy = false;
+        }
       }
 
       var randTries = 0;
@@ -5217,8 +5325,11 @@
 
       function download() {
         if (!currentURL) { toast("Buka post dulu"); return; }
-        var ext = currentType === "mp4" ? "mp4" : "jpg", url = currentURL, id = current;
-        toast("Mengunduh…");
+        var meta = postMetaCache.get(current);
+        var url = (meta && meta.file_url) ? meta.file_url : currentURL;
+        var ext = currentType === "mp4" ? "mp4" : (meta && meta.image && meta.image.match(/\.([a-z0-9]+)$/i) ? meta.image.match(/\.([a-z0-9]+)$/i)[1] : "jpg");
+        var id = current;
+        toast("Mengunduh kualitas penuh…");
         fetch(url).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (b) {
           saveBlob(b, "post_" + id + "." + ext);
         }).catch(function () { window.open(url, "_blank"); });
