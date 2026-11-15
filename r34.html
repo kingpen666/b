@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#090a0f">
+  <meta name="theme-color" content="#0b0c0e">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -12,26 +12,61 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Post Explorer">
-  <title>Post Explorer</title>
+  <meta name="apple-mobile-web-app-title" content="Darknight">
+  <title>Darknight - Minimalist Media Explorer</title>
   <style>
+    /* ==========================================================================
+       BESPOKE MINIMALIST DESIGN SYSTEM - DARKNIGHT SOCIAL PLATFORM
+       ========================================================================== */
     :root {
-      --bg: #090a0f;
-      --surface: #12131a;
-      --surface2: #181a24;
-      --surface3: #222533;
-      --surface4: #2d3142;
-      --border: #222533;
-      --border-focus: #3b82f6;
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --text-faint: #6b7280;
-      --blue: #3b82f6;
-      --blue-hover: #2563eb;
-      --red: #ef4444;
+      --bg-canvas: #0b0c0e;
+      --bg-surface: #121418;
+      --bg-subtle: #181b20;
+      --bg-elevated: #20242b;
+      --bg-hover: rgba(255, 255, 255, 0.05);
+      --bg-active: rgba(255, 255, 255, 0.09);
+
+      --border-hairline: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.14);
+      --border-strong: rgba(255, 255, 255, 0.25);
+
+      --text-primary: #f4f5f6;
+      --text-secondary: #9ea3ab;
+      --text-muted: #585e6a;
+
+      --accent-primary: #ffffff;
+      --accent-subtle: rgba(255, 255, 255, 0.06);
+      --accent-like: #f43f5e;
+      --accent-video: #38bdf8;
+      --accent-danger: #ef4444;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+      --radius-xs: 4px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-pill: 9999px;
+
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --transition-fast: 140ms var(--ease);
+
+      /* Legacy compatibility mappings */
+      --bg: var(--bg-canvas);
+      --surface: var(--bg-surface);
+      --surface2: var(--bg-subtle);
+      --surface3: var(--bg-elevated);
+      --surface4: #2a2f39;
+      --border: var(--border-hairline);
+      --border-focus: var(--accent-primary);
+      --text: var(--text-primary);
+      --text-faint: var(--text-muted);
+      --blue: #38bdf8;
+      --blue-hover: #0284c7;
+      --red: var(--accent-danger);
       --green: #10b981;
       --amber: #f59e0b;
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * {
@@ -39,273 +74,389 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html,
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       height: 100%;
-      background: var(--bg);
-    }
-
-    body {
-      color: var(--text);
-      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font: 14px/1.5 var(--font-sans);
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       overflow: hidden;
       overscroll-behavior: none;
+      font-variant-numeric: tabular-nums;
     }
 
-    button,
-    input {
+    button, input {
       font: inherit;
       color: inherit;
     }
 
     button {
       border: 0;
+      background: transparent;
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
-      transition: opacity 0.12s var(--ease), background 0.12s var(--ease), transform 0.1s var(--ease);
+      transition: opacity var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
     }
 
     button:active {
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
 
-    .app {
-      max-width: 600px;
+    /* SVG ICONS */
+    .ic {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      vertical-align: middle;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .ic.fill {
+      fill: currentColor;
+    }
+
+    /* APP CONTAINER & SHELL */
+    .app-container {
+      display: flex;
+      width: 100vw;
       height: 100vh;
       height: 100dvh;
-      margin: 0 auto;
+      background: var(--bg-canvas);
+      overflow: hidden;
+    }
+
+    /* DESKTOP SIDEBAR (Slim 220px) */
+    .app-sidebar {
+      width: 220px;
+      flex: 0 0 220px;
+      height: 100%;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-hairline);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+      gap: 16px;
+      z-index: 20;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 8px 12px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .brand-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-primary);
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      border: 1px solid transparent;
+      width: 100%;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--bg-active);
+      color: var(--text-primary);
+      border-color: var(--border-hairline);
+      font-weight: 600;
+    }
+
+    .nav-item .ic {
+      width: 17px;
+      height: 17px;
+      stroke-width: 1.8;
+      color: inherit;
+    }
+
+    .sidebar-footer {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding: calc(6px + env(safe-area-inset-top, 0px)) 10px calc(8px + env(safe-area-inset-bottom, 0px));
+      padding-top: 12px;
+      border-top: 1px solid var(--border-hairline);
     }
 
-    .top {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 28px;
-    }
-
-    .brand {
-      flex: 0 0 auto;
-      font-size: 13.5px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #fff;
+    .sidebar-quick-jumper {
       display: flex;
       align-items: center;
       gap: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+    }
+
+    .sidebar-quick-jumper input {
+      flex: 1;
+      background: transparent;
+      border: 0;
+      outline: none;
+      font-size: 12px;
+      color: var(--text-primary);
+      width: 100%;
+    }
+
+    .sidebar-quick-jumper button {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 3px 7px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-elevated);
+    }
+
+    /* MAIN VIEWPORT */
+    .app-main {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg-canvas);
+      position: relative;
+    }
+
+    /* TOP CONTEXT BAR */
+    .app-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border-hairline);
+      background: var(--bg-surface);
+      min-height: 48px;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
     }
 
     .backbtn {
       display: none;
-      flex: 0 0 auto;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      font: 600 11px monospace;
-      color: var(--text-muted);
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      font: 600 11px var(--font-mono);
+      color: var(--text-secondary);
     }
 
     .backbtn.on {
-      display: block;
+      display: inline-flex;
     }
 
     .backbtn:hover {
-      color: #fff;
-      border-color: var(--text-muted);
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
     }
 
     .chip {
-      margin-left: auto;
       display: none;
       align-items: center;
       gap: 6px;
-      min-width: 0;
-      flex: 0 1 auto;
-      max-width: 65%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 3px 6px 3px 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-pill);
+      padding: 3px 8px 3px 10px;
       font-size: 11.5px;
-      font-weight: 600;
+      max-width: 280px;
+      color: var(--text-primary);
     }
 
     .chip.on {
-      display: flex;
+      display: inline-flex;
     }
 
-    .chip span {
+    .chip.pl {
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .ck-txt {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      min-width: 0;
     }
 
-    .chip button {
-      background: rgba(255, 255, 255, 0.12);
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      font-size: 11px;
-      padding: 0;
-      color: #fff;
-      flex: 0 0 auto;
-    }
-
-    .helpbtn {
-      margin-left: auto;
-      padding: 3px 9px;
-      border-radius: 999px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      font-size: 11px;
-      font-weight: 600;
+    .ck-x {
+      padding: 2px;
       color: var(--text-muted);
     }
 
-    .helpbtn:hover {
-      color: #fff;
-      border-color: var(--text-muted);
+    .ck-x:hover {
+      color: var(--text-primary);
     }
 
-    .chip.on+.helpbtn {
-      margin-left: 0;
-    }
-
-    .idrow {
+    .idbox-top {
       display: flex;
+      align-items: center;
       gap: 6px;
-      align-items: center;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 3px 8px;
+      max-width: 210px;
     }
 
-    .idbox {
-      flex: 1;
-      min-width: 0;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0 6px 0 10px;
-      transition: border-color 0.15s;
-    }
-
-    .idbox:focus-within {
-      border-color: var(--border-focus);
-    }
-
-    .idprefix {
-      font-size: 15px;
+    .idbox-top .idprefix {
+      font-size: 11px;
       font-weight: 700;
-      color: var(--text-faint);
-      margin-right: 4px;
-      user-select: none;
+      color: var(--text-muted);
     }
 
-    .idrow input {
+    .idbox-top input {
       flex: 1;
-      min-width: 0;
-      height: 100%;
-      text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      width: 70px;
       background: transparent;
       border: 0;
       outline: none;
-      color: #fff;
+      font-size: 12px;
+      color: var(--text-primary);
     }
 
-    .idrow input::placeholder {
-      color: var(--text-faint);
-      font-weight: 400;
-      font-size: 12.5px;
-    }
-
-    input[type=number] {
-      -moz-appearance: textfield;
-    }
-
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    .idgo {
-      padding: 5px 10px;
-      border-radius: 6px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
+    .idbox-top .idgo, .idbox-top .rnd-btn {
+      padding: 2px 7px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-elevated);
       font-size: 11px;
       font-weight: 600;
+      color: var(--text-secondary);
     }
 
-    .idgo:hover {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
-
-    .ib {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      font-size: 18px;
-      color: var(--text-muted);
-      flex: 0 0 auto;
+    .idbox-top .rnd-btn {
+      padding: 3px 5px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .ib:hover {
-      background: var(--surface2);
-      color: #fff;
-      border-color: var(--border);
+    .idbox-top .rnd-btn .ic {
+      width: 13px;
+      height: 13px;
     }
 
-    .ib.rnd {
-      font-size: 16px;
+    .icon-tool-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .icon-tool-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--border-hairline);
+    }
+
+    .icon-tool-btn .ic {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* STAGE & MEDIA VIEWPORT */
+    .stage-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: 12px 16px;
+      background: #08090a;
+      min-height: 0;
     }
 
     .stage {
-      flex: 1 1 auto;
-      min-height: 0;
+      width: 100%;
+      height: 100%;
+      max-width: 820px;
       position: relative;
-      overflow: hidden;
-      border-radius: 14px;
-      background: #000;
-      border: 1px solid var(--border);
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .swipe-layer {
-      position: absolute;
-      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      will-change: transform, opacity;
-      transition: transform 0.2s var(--ease), opacity 0.2s var(--ease);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border-hairline);
+      user-select: none;
     }
 
-    .swipe-layer.dragging {
-      transition: none;
+    .swipe-layer {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .zoom-layer {
@@ -314,376 +465,239 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transform-origin: center;
-      will-change: transform;
-      transition: transform 0.2s var(--ease);
-    }
-
-    .zoom-layer.dragging {
-      transition: none;
+      touch-action: none;
+      transform-origin: center center;
     }
 
     .zoom-layer img,
     .zoom-layer video {
-      width: 100%;
-      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
       display: block;
-      background: transparent;
-    }
-
-    .fit-cover .zoom-layer img,
-    .fit-cover .zoom-layer video {
-      object-fit: cover;
     }
 
     .zoom-layer img.ph {
-      filter: blur(2px);
-      opacity: 0.85;
+      filter: blur(8px);
+      transform: scale(1.02);
+      transition: opacity 0.2s var(--ease);
     }
 
     #status {
       color: var(--text-muted);
-      padding: 24px;
-      text-align: center;
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
     }
 
-    .spin {
-      position: absolute;
-      left: 50%;
-      top: 40px;
-      width: 22px;
-      height: 22px;
-      margin-left: -11px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.15);
-      border-top-color: var(--blue);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 6;
-      animation: rot 0.65s linear infinite;
-      transition: opacity 0.15s;
-    }
-
-    .spin.show {
-      opacity: 1;
-    }
-
-    @keyframes rot {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .glass-controls {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      display: flex;
-      gap: 5px;
-      z-index: 6;
-    }
-
-    .sbtn {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      font-size: 14px;
-      color: #fff;
-      padding: 0;
+    /* REFINED SOCIAL ACTION BAR */
+    .post-actionbar {
+      width: 100%;
+      max-width: 820px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      background: rgba(18, 19, 26, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      margin-top: 8px;
+      gap: 12px;
+      flex-shrink: 0;
     }
 
-    .sbtn:hover {
-      background: rgba(34, 37, 51, 0.95);
+    .post-actionbar-left, .post-actionbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .zoom-badge {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      border-radius: 6px;
-      padding: 3px 8px;
-      font: 700 11px monospace;
-      color: #fff;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-      background: rgba(18, 19, 26, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(8px);
-      z-index: 6;
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      font-weight: 500;
     }
 
-    .zoom-badge.visible {
-      opacity: 1;
+    .action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .action-btn.active, .action-btn.liked {
+      color: var(--accent-like);
+    }
+
+    .action-btn.active .ic, .action-btn.liked .ic {
+      fill: var(--accent-like);
+    }
+
+    .action-btn .ic {
+      width: 16px;
+      height: 16px;
     }
 
     .idtag-box {
       position: absolute;
-      left: 8px;
-      bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      border-radius: 7px;
-      padding: 3px 8px;
-      font: 700 11px monospace;
-      color: var(--text-muted);
-      pointer-events: none;
-      z-index: 6;
-      background: rgba(18, 19, 26, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(8px);
-    }
-
-    .stage.isvid .idtag-box {
-      display: none;
-    }
-
-    .idfmt {
-      font-size: 9.5px;
-      color: var(--blue);
-      background: rgba(59, 130, 246, 0.15);
-      padding: 1px 4px;
-      border-radius: 4px;
-    }
-
-    .hint {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 14px;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 5;
-      background: rgba(18, 19, 26, 0.85);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(8px);
-      transition: opacity 0.12s, transform 0.12s;
-    }
-
-    .hint .h-ico {
-      font-size: 16px;
-    }
-
-    .hint .h-txt {
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .hint.l {
+      bottom: 12px;
       left: 12px;
-    }
-
-    .hint.r {
-      right: 12px;
-    }
-
-    .hint.visible {
-      opacity: 1;
-    }
-
-    .hint.r.armed {
-      background: rgba(16, 185, 129, 0.95);
-      transform: translateY(-50%) scale(1.05);
-    }
-
-    .hint.l.armed {
-      background: rgba(239, 68, 68, 0.95);
-      transform: translateY(-50%) scale(1.05);
-    }
-
-    .hintv {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-xs);
+      padding: 3px 8px;
+      font: 600 11px var(--font-mono);
+      color: var(--text-secondary);
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 7px 16px;
-      opacity: 0;
+      z-index: 10;
       pointer-events: none;
-      z-index: 5;
-      background: rgba(18, 19, 26, 0.85);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(8px);
-      transition: opacity 0.12s, transform 0.12s;
     }
 
-    .hintv .h-ico {
-      font-size: 16px;
+    .idtag-box .idfmt {
+      font-size: 9.5px;
+      color: var(--accent-video);
+      text-transform: uppercase;
     }
 
-    .hintv .h-txt {
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .hintv.d {
-      bottom: 20px;
-    }
-
-    .hintv.u {
-      top: 20px;
-    }
-
-    .hintv.visible {
-      opacity: 1;
-    }
-
-    .hintv.armed {
-      background: rgba(59, 130, 246, 0.95);
-      transform: translateX(-50%) scale(1.05);
-    }
-
-    .autobar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.08);
-      z-index: 6;
+    /* MOBILE BOTTOM NAV */
+    .app-bottomnav {
       display: none;
-      pointer-events: none;
-    }
-
-    .autobar.on {
-      display: block;
-    }
-
-    .autobar .fill {
-      position: absolute;
-      top: 0;
+      position: fixed;
       bottom: 0;
       left: 0;
-      width: 0;
-      background: var(--blue);
+      right: 0;
+      height: calc(52px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-hairline);
+      z-index: 30;
+      align-items: center;
+      justify-content: space-around;
     }
 
-    .autobar .lbl {
-      position: absolute;
-      top: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 2px 8px;
-      border-radius: 6px;
-      background: rgba(18, 19, 26, 0.85);
-      border: 1px solid var(--border);
-      font: 700 10.5px monospace;
-      color: #fff;
-      white-space: nowrap;
-    }
-
-    body.fs .top,
-    body.fs .idrow,
-    body.fs .dock {
-      display: none;
-    }
-
-    body.fs .app {
-      padding: 0;
-      gap: 0;
-    }
-
-    body.fs .stage {
-      border-radius: 0;
-      border: 0;
-    }
-
-    .dock {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
-      padding: 3px 0;
-      border-radius: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-    }
-
-    .dk {
-      height: 48px;
-      border-radius: 8px;
-      background: transparent;
+    .bottomnav-item {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
-      padding: 0;
+      gap: 3px;
       color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 6px 0;
     }
 
-    .dk b {
-      font-size: 17px;
-      line-height: 1;
-      font-weight: 400;
+    .bottomnav-item .ic {
+      width: 18px;
+      height: 18px;
     }
 
-    .dk small {
-      font-size: 9.5px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      text-transform: uppercase;
+    .bottomnav-item.active {
+      color: var(--text-primary);
     }
 
-    .dk:hover {
-      background: var(--surface2);
-      color: #fff;
-    }
-
-    .dk.on {
-      background: var(--surface3);
-      color: #fff;
-    }
-
-    .dk.on small {
-      color: #fff;
-    }
-
-    .dk.fav.on {
-      color: #f87171;
-    }
-
-    .dk.fav.on small {
-      color: #f87171;
-    }
-
-    .dk.auto.on {
-      color: #34d399;
-    }
-
-    .dk.auto.on small {
-      color: #34d399;
-    }
-
-    .backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      z-index: 39;
+    /* SPINNER, HINTS & PROGRESS */
+    .spin {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-hairline);
+      border-top-color: var(--text-primary);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s var(--ease);
+      transition: opacity 0.15s var(--ease);
+      z-index: 10;
     }
 
-    .backdrop.open {
+    .spin.show { opacity: 1; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .autobar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 10;
+    }
+
+    .autobar .fill {
+      height: 100%;
+      background: var(--text-primary);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .autobar .lbl { display: none; }
+
+    .zoom-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 2px 6px;
+      border-radius: var(--radius-xs);
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid var(--border-hairline);
+      font: 600 10px var(--font-mono);
+      color: var(--text-secondary);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s var(--ease);
+      z-index: 10;
+    }
+
+    .zoom-badge.show { opacity: 1; }
+
+    .hint, .hintv {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: rgba(18, 20, 24, 0.88);
+      border: 1px solid var(--border-hairline);
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s var(--ease);
+      z-index: 15;
+    }
+
+    .hint.l { left: 16px; }
+    .hint.r { right: 16px; }
+    .hintv.u { top: 16px; }
+    .hintv.d { bottom: 16px; }
+
+    /* MODALS, SHEETS & DRAWERS */
+    .backdrop, .modal, .filter-hub-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+      z-index: 50;
+    }
+
+    .backdrop.open, .modal.open, .filter-hub-backdrop.open {
       opacity: 1;
       pointer-events: auto;
     }
@@ -693,407 +707,130 @@
       left: 0;
       right: 0;
       bottom: 0;
-      max-width: 600px;
+      max-width: 580px;
       margin: 0 auto;
       max-height: 85vh;
       max-height: 85dvh;
-      z-index: 40;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-radius: 18px 18px 0 0;
-      padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+      z-index: 55;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-bottom: 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
       display: flex;
       flex-direction: column;
       transform: translateY(105%);
-      transition: transform 0.25s var(--ease);
-      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+      transition: transform 0.22s var(--ease);
       visibility: hidden;
     }
 
     .sheet.open {
-      transform: none;
+      transform: translateY(0);
       visibility: visible;
     }
 
-    .grab {
-      width: 36px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--border);
-      margin: 0 auto 10px;
-      flex: 0 0 auto;
+    .box, .filter-hub {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      overflow-y: auto;
+    }
+
+    .box h4, .fh-head b {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 0 0 12px;
+      color: var(--text-primary);
     }
 
     .shead {
       display: flex;
-      gap: 8px;
       align-items: center;
+      gap: 10px;
       margin-bottom: 12px;
-      flex: 0 0 auto;
+    }
+
+    .grab {
+      width: 32px;
+      height: 3px;
+      border-radius: var(--radius-pill);
+      background: var(--border-hairline);
+      margin: 0 auto 10px;
     }
 
     .hb {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 0;
-      font-size: 14px;
-      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      color: var(--text-secondary);
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .hb:disabled {
-      opacity: 0.25;
-    }
-
-    .hb:hover {
-      color: #fff;
-      background: var(--surface3);
-    }
+    .hb:disabled { opacity: 0.3; }
+    .hb:hover { color: var(--text-primary); background: var(--bg-elevated); }
 
     .tabs {
       flex: 1;
       display: flex;
-      background: var(--surface2);
-      border-radius: 9px;
+      background: var(--bg-subtle);
+      border-radius: var(--radius-sm);
       padding: 2px;
       gap: 2px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-hairline);
     }
 
     .tabs button {
       flex: 1;
-      background: transparent;
-      color: var(--text-muted);
+      padding: 6px 8px;
+      border-radius: var(--radius-xs);
       font-size: 11.5px;
-      font-weight: 600;
-      padding: 7px 4px;
-      border-radius: 7px;
+      font-weight: 500;
+      color: var(--text-secondary);
     }
 
     .tabs button.on {
-      background: var(--surface4);
-      color: #fff;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-weight: 600;
     }
 
     .sbody {
       overflow-y: auto;
-      min-height: 80px;
-      padding-bottom: 6px;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .sbody::-webkit-scrollbar {
-      width: 5px;
-    }
-
-    .sbody::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
-    }
-
-    .arow {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pill {
       flex: 1;
-      min-width: 76px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--text-muted);
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
+      min-height: 120px;
     }
 
-    .pill:hover {
-      color: #fff;
-      background: var(--surface3);
-    }
-
-    .pill.pri {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
-
-    .pill.pri:hover {
-      background: var(--blue-hover);
-    }
-
-    .pill.dng {
-      color: #f87171;
-      border-color: rgba(239, 68, 68, 0.3);
-    }
-
-    .selinfo {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--amber);
-      margin: 2px 2px 8px;
-    }
-
-    .seg {
-      display: flex;
-      flex-wrap: wrap;
-      background: var(--surface2);
-      border-radius: 8px;
-      padding: 2px;
-      gap: 2px;
-      flex: 1;
-      border: 1px solid var(--border);
-    }
-
-    .seg button {
-      flex: 1;
-      background: transparent;
-      color: var(--text-muted);
-      padding: 6px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .seg button.on {
-      background: var(--surface4);
-      color: #fff;
-    }
-
-
-    .tag-mode-seg {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    .tag-mode-btn {
-      height: 36px;
-      border-radius: 9px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 11.5px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .tag-mode-btn.on {
-      background: var(--surface4);
-      color: #fff;
-      border-color: var(--text-muted);
-    }
-
-    .tag-mode-btn.want.on {
-      background: rgba(59, 130, 246, 0.18);
-      color: #93c5fd;
-      border-color: var(--blue);
-    }
-
-    .tag-mode-btn.block.on {
-      background: rgba(239, 68, 68, 0.18);
-      color: #fca5a5;
-      border-color: var(--red);
-    }
-
-    .tag-mode-btn .ic {
-      width: 14px;
-      height: 14px;
-    }
-
-    .tag-cat-bar {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-
-    .tag-cat-btn {
-      height: 28px;
-      border-radius: 7px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-muted);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      padding: 0;
-      white-space: nowrap;
-      transition: all 0.15s;
-    }
-
-    .tag-cat-btn.on {
-      background: rgba(59, 130, 246, 0.2);
-      color: #93c5fd;
-      border-color: rgba(59, 130, 246, 0.45);
-    }
-
-    .tag-cat-btn.artist.on {
-      background: rgba(196, 181, 253, .2);
-      color: #c4b5fd;
-      border-color: #a78bfa;
-    }
-
-    .tag-cat-btn.char.on {
-      background: rgba(110, 231, 183, .2);
-      color: #6ee7b7;
-      border-color: #34d399;
-    }
-
-    .tag-cat-btn.copy.on {
-      background: rgba(253, 230, 138, .2);
-      color: #fde68a;
-      border-color: #fbbf24;
-    }
-
-    .tag-alpha-pad {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      margin-bottom: 10px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
-    }
-
-    .tag-alpha-btn {
-      height: 32px;
-      border-radius: 7px;
-      background: var(--surface3);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 11.5px;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      padding: 0;
-      transition: all 0.12s;
-    }
-
-    .tag-alpha-btn:hover {
-      background: var(--surface4);
-      color: #fff;
-      border-color: var(--text-muted);
-    }
-
-    .tag-alpha-btn.on {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-      box-shadow: 0 0 0 1px var(--blue);
-      font-weight: 800;
-    }
-
-    .tag-alpha-btn .ic {
-      width: 13px;
-      height: 13px;
-    }
-
-    .tagsearchbox {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 0 10px;
-    }
-
-    .tagsearchbox span.search-ico {
-      font-size: 13px;
-      color: var(--text-faint);
-      user-select: none;
-    }
-
-    .tagsearchbox input {
-      flex: 1;
-      padding: 9px 0;
-      background: transparent;
-      border: 0;
-      outline: none;
-      font-size: 13px;
-      color: #fff;
-    }
-
-    .tagsearchbox input::placeholder {
-      color: var(--text-faint);
-    }
-
-    .tagsearchbox .clear-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-
+    /* GRIDS & THUMBNAILS */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 6px;
-    }
-
-    .empty {
-      grid-column: 1 / -1;
-      text-align: center;
-      color: var(--text-faint);
-      font-style: italic;
-      padding: 24px 10px;
-      font-size: 13px;
-    }
-
-    .more {
-      grid-column: 1 / -1;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+      padding: 4px 0;
     }
 
     .thumb {
       position: relative;
       aspect-ratio: 1;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       overflow: hidden;
-      background: #14161f;
-      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .thumb:hover {
-      border-color: var(--text-muted);
     }
 
     .thumb img {
@@ -1103,41 +840,10 @@
       display: block;
     }
 
-    .thumb.nothumb::before {
-      content: "NO IMG";
-      font: 700 9px monospace;
-      opacity: 0.4;
-    }
-
+    .thumb:hover { border-color: var(--border-strong); }
     .thumb.act {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 1.5px var(--blue);
-    }
-
-    .thumb.sel {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 1.5px var(--blue);
-    }
-
-    .thumb.sel img {
-      opacity: 0.6;
-    }
-
-    .thumb.sel::after {
-      content: "✓";
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--blue);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff;
+      border-color: var(--text-primary);
+      box-shadow: 0 0 0 1.5px var(--text-primary);
     }
 
     .thumb .tid {
@@ -1145,656 +851,176 @@
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 10px 4px 2px;
+      padding: 8px 4px 2px;
       text-align: center;
-      font: 700 9.5px monospace;
+      font: 700 9.5px var(--font-mono);
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
       color: #fff;
-      background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
     }
 
-    .thumb .x {
+    .thumb .vid-badge {
       position: absolute;
       top: 4px;
       right: 4px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(239, 68, 68, 0.9);
-      color: #fff;
-      font-size: 12px;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .vid-badge {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      padding: 1px 5px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.8);
-      font: 700 9px monospace;
-      color: #fff;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .card {
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 10px;
-      overflow: hidden;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .card:hover {
-      border-color: var(--text-muted);
-    }
-
-    .card .cv {
-      flex: 1;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      background: #14161f;
-      overflow: hidden;
-    }
-
-    .card .cv img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .card .ci {
-      padding: 6px 8px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-    }
-
-    .card .cn {
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #fff;
-    }
-
-    .card .cm {
-      font-size: 10px;
-      color: var(--text-faint);
-    }
-
-    .card .play,
-    .card .menu {
-      position: absolute;
-      top: 5px;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      z-index: 2;
-    }
-
-    .card .play {
-      right: 5px;
-      background: rgba(16, 185, 129, 0.95);
-      color: #fff;
-    }
-
-    .card .menu {
-      left: 5px;
-      background: rgba(18, 19, 26, 0.85);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-    }
-
-    .card .acts {
-      position: absolute;
-      inset: 0;
-      background: rgba(18, 19, 26, 0.94);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      z-index: 3;
-    }
-
-    .card .acts.show {
-      display: flex;
-    }
-
-    .card .acts button {
-      width: 82%;
-      padding: 7px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 6px;
-      background: var(--surface3);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .card .acts .d {
-      background: var(--red);
-      color: #fff;
-    }
-
-    .setrow {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 2px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .setrow>div:first-child {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .setrow label {
-      font-size: 13px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .setrow small {
-      display: block;
-      color: var(--text-faint);
-      font-size: 11px;
-      margin-top: 1px;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
+      padding: 1px 4px;
+      border-radius: 3px;
       background: rgba(0, 0, 0, 0.7);
-      display: flex;
+      font: 700 8.5px var(--font-mono);
+      color: var(--accent-video);
+    }
+
+    /* TAG CHIPS, PILLS & BUTTONS */
+    .tagchip, .pill {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      padding: 16px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s var(--ease);
-      z-index: 50;
-    }
-
-    .modal.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    #dlgBackdrop {
-      z-index: 60;
-    }
-
-    .box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 14px 12px;
-      width: 100%;
-      max-width: 360px;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-    }
-
-    .box h4 {
-      margin: 0 0 10px;
-      text-align: center;
-      font-size: 13.5px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .plist {
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
       gap: 5px;
-      margin-bottom: 8px;
-      min-height: 50px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      font-weight: 500;
     }
 
-    .pli {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      cursor: pointer;
+    .tagchip:hover, .pill:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
     }
 
-    .pli.in {
-      border-color: var(--green);
-      background: rgba(16, 185, 129, 0.1);
-    }
-
-    .pli .ck {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 1.5px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: transparent;
-      flex: 0 0 auto;
-    }
-
-    .pli.in .ck {
-      background: var(--green);
-      border-color: var(--green);
-      color: #fff;
-    }
-
-    .pli.pick .ck {
-      display: none;
-    }
-
-    .pli .nm {
-      flex: 1;
-      font-weight: 600;
-      font-size: 12px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: #fff;
-    }
-
-    .pli .ct {
-      font-size: 10px;
-      color: var(--text-faint);
-    }
-
-    .newrow {
-      display: none;
-      gap: 5px;
-      margin-bottom: 8px;
-    }
-
-    .newrow.show {
-      display: flex;
-    }
-
-    .box input.t {
-      flex: 1;
-      width: 100%;
-      padding: 9px;
-      border-radius: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      outline: none;
-      font-size: 13px;
-      text-align: left;
-      color: #fff;
+    .pill.pri, .b-pri {
+      background: var(--accent-primary) !important;
+      color: #000 !important;
+      font-weight: 600 !important;
     }
 
     .bwide {
       width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .b-pri {
-      background: var(--blue);
-      color: #fff;
-    }
-
-    .b-pri:hover {
-      background: var(--blue-hover);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .b-sec {
-      background: var(--surface2);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      margin-top: 5px;
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      border: 1px solid var(--border-hairline);
     }
 
-    .dmsg {
-      margin: 0 0 12px;
-      text-align: center;
-      line-height: 1.5;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+    .b-sec:hover { background: var(--bg-elevated); }
 
-    .dmsg b {
-      color: #fff;
-    }
-
-    .dact {
+    /* TAG SEARCH & ALPHA BAR */
+    .tagsearchbox {
       display: flex;
-      gap: 6px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 0 10px;
     }
 
-    .dact button {
+    .tagsearchbox input {
       flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .d-no {
-      background: var(--surface2);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-
-    .d-ok {
-      background: var(--blue);
+      padding: 8px 0;
+      background: transparent;
+      border: 0;
+      outline: none;
+      font-size: 12.5px;
       color: #fff;
     }
 
-    .d-ok.danger {
-      background: var(--red);
-      color: #fff;
-    }
-
-    #dlgInput {
-      display: none;
+    .tag-alpha-pad {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
       margin-bottom: 10px;
     }
 
-    .guide-box {
-      max-width: 420px;
-    }
-
-    .guide-content {
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 58vh;
-      padding-right: 2px;
-    }
-
-    .guide-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 10px;
-    }
-
-    .gi-ico {
-      font-size: 16px;
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      background: var(--surface3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 auto;
-    }
-
-    .gi-txt {
-      flex: 1;
-      min-width: 0;
-      font-size: 11.5px;
-      line-height: 1.4;
-    }
-
-    .gi-txt b {
-      display: block;
-      font-size: 12.5px;
-      color: #fff;
-      margin-bottom: 1px;
-    }
-
-    .gi-txt span {
-      color: var(--text-muted);
-    }
-
-    .infotag-sec {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 6px;
-    }
-
-    .infotag-title {
-      font-size: 10.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      letter-spacing: 0.5px;
-    }
-
-    .infotag-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .tagchip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      border-radius: 6px;
+    .tag-alpha-btn {
+      height: 30px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      color: var(--text-secondary);
       font-size: 11px;
       font-weight: 600;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
+    }
+
+    .tag-alpha-btn:hover { background: var(--bg-elevated); color: #fff; }
+    .tag-alpha-btn.on {
+      background: var(--text-primary);
+      color: #000;
+      border-color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .trow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      border-bottom: 1px solid var(--border-hairline);
       cursor: pointer;
     }
 
-    .tagchip:hover {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
+    .trow:hover { background: var(--bg-hover); }
+    .trow .tnm { flex: 1; font-weight: 500; font-size: 12.5px; }
+    .trow .tcnt { font: 600 11px var(--font-mono); color: var(--text-muted); }
 
-    .tagchip.artist {
-      color: #c4b5fd;
-      border-color: rgba(167, 139, 250, 0.4);
-    }
-
-    .tagchip.character {
-      color: #6ee7b7;
-      border-color: rgba(110, 231, 183, 0.4);
-    }
-
-    .tagchip.copyright {
-      color: #fde68a;
-      border-color: rgba(253, 230, 138, 0.4);
-    }
-
-    .sugg-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
-      gap: 5px;
-    }
-
-    .toast {
-      position: fixed;
-      left: 50%;
-      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-      transform: translate(-50%, 12px);
-      z-index: 70;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12.5px;
-      font-weight: 600;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s, transform 0.15s;
-      max-width: 90vw;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      color: #fff;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-
-    .toast.ok {
-      border-color: var(--green);
-      color: #a7f3d0;
-    }
-
-    .toast.bad {
-      border-color: var(--red);
-      color: #fca5a5;
-    }
-
-    body.fs .toast {
-      bottom: 20px;
-    }
-
-    @media (max-width: 380px) {
-      .dk small {
-        font-size: 8.5px;
-      }
-
-      .ib {
-        width: 38px;
-      }
-    }
-
-    .filter-hub-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      z-index: 45;
-      display: none;
-      align-items: flex-start;
-      justify-content: center;
-      padding: calc(54px + env(safe-area-inset-top, 0px)) 12px 12px;
-    }
-
-    .filter-hub-backdrop.open {
-      display: flex;
-    }
-
-    .filter-hub {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      width: 100%;
-      max-width: 380px;
-      max-height: 85vh;
-      overflow-y: auto;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7);
-    }
-
+    /* FILTER HUB MODAL */
     .fh-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-hairline);
       padding-bottom: 8px;
-    }
-
-    .fh-head b {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .fh-close {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      width: 26px;
-      height: 26px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .fh-close:hover {
-      color: #fff;
     }
 
     .fh-sec {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      margin-top: 10px;
     }
 
     .fh-sec label {
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.5px;
     }
 
     .fh-sort-seg {
       display: flex;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
       padding: 2px;
       gap: 2px;
     }
 
     .fh-sort-seg button {
       flex: 1;
-      padding: 7px 6px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: transparent;
-      border-radius: 6px;
-      white-space: nowrap;
+      padding: 6px 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: var(--radius-xs);
     }
 
     .fh-sort-seg button.on {
-      background: rgba(59, 130, 246, 0.22);
-      color: #93c5fd;
-      border-color: rgba(59, 130, 246, 0.45);
-      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25) inset;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-weight: 600;
     }
 
     .fh-input-row {
@@ -1804,824 +1030,100 @@
 
     .fh-input-row input {
       flex: 1;
-      min-width: 0;
-      padding: 8px 10px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      font-size: 12.5px;
+      padding: 7px 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
       color: #fff;
       outline: none;
     }
 
-    .fh-input-row input:focus {
-      border-color: var(--blue);
-    }
-
     .fh-input-row button {
-      padding: 8px 12px;
-      background: var(--surface3);
-      border: 1px solid var(--border);
-      border-radius: 7px;
+      padding: 7px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
       font-size: 11.5px;
       font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-    }
-
-    .fh-input-row button:hover {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
-
-    .fh-input-row button.btn-dng {
-      background: rgba(239, 68, 68, 0.18);
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.35);
-    }
-
-    .fh-input-row button.btn-dng:hover {
-      background: var(--red);
-      color: #fff;
-      border-color: var(--red);
-    }
-
-    .fh-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      min-height: 20px;
-    }
-
-    .fh-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 6px 3px 9px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: #fff;
-    }
-
-    .fh-chip.block {
-      border-color: rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      background: rgba(239, 68, 68, 0.1);
-    }
-
-    .fh-chip button {
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 50%;
-      width: 16px;
-      height: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 9px;
-      color: #fff;
-      padding: 0;
-    }
-
-    .fh-apply-btn {
-      width: 100%;
-      padding: 11px;
-      border-radius: 8px;
-      background: var(--blue);
-      color: #fff;
-      font-size: 12.5px;
-      font-weight: 700;
-      margin-top: 4px;
-    }
-
-    .fh-apply-btn:hover {
-      background: var(--blue-hover);
-    }
-
-    .heart-pop {
-      position: fixed;
-      pointer-events: none;
-      z-index: 99;
-      transform: translate(-50%, -50%) scale(0.4);
-      opacity: 0;
-      color: #ef4444;
-      animation: heartPopAnim 0.75s var(--ease) forwards;
-    }
-
-    @keyframes heartPopAnim {
-      0% {
-        transform: translate(-50%, -50%) scale(0.3);
-        opacity: 0;
-      }
-
-      35% {
-        transform: translate(-50%, -50%) scale(1.35);
-        opacity: 1;
-        filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.7));
-      }
-
-      75% {
-        transform: translate(-50%, -70%) scale(1.1);
-        opacity: 0.9;
-      }
-
-      100% {
-        transform: translate(-50%, -100%) scale(0.85);
-        opacity: 0;
-      }
-    }
-
-    .storage-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .storage-title {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .storage-stats {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 11.5px;
-      color: var(--text-muted);
-    }
-
-    .storage-stats b {
-      color: var(--text);
-    }
-
-    .storage-stats span {
-      color: var(--blue);
-      font-weight: 600;
-    }
-
-    .ic {
-      width: 18px;
-      height: 18px;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      display: block;
-      flex: 0 0 auto;
-    }
-
-    .ic.fill {
-      fill: currentColor;
-    }
-
-    .dk {
-      position: relative;
-    }
-
-    .dk b {
-      display: flex;
-    }
-
-    .dk b .ic {
-      width: 21px;
-      height: 21px;
-    }
-
-    .dk.dot::after {
-      content: "";
-      position: absolute;
-      top: 7px;
-      left: calc(50% + 9px);
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--blue);
-      box-shadow: 0 0 0 2px var(--surface);
-    }
-
-    .sbtn .ic {
-      width: 17px;
-      height: 17px;
-    }
-
-    .sbtn.on {
-      background: var(--blue);
-      border-color: var(--blue);
-    }
-
-    .ib .ic {
-      width: 20px;
-      height: 20px;
-    }
-
-    .hint .h-ico {
-      display: flex;
-    }
-
-    .hint .h-ico .ic,
-    .hintv .h-ico .ic {
-      width: 16px;
-      height: 16px;
-    }
-
-    .hintv .h-ico {
-      display: flex;
-    }
-
-    .backbtn.on {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .backbtn .ic {
-      width: 13px;
-      height: 13px;
-    }
-
-    .chip button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .chip button .ic {
-      width: 10px;
-      height: 10px;
-      stroke-width: 2.6;
-    }
-
-    .hb .ic {
-      width: 16px;
-      height: 16px;
-    }
-
-    .gi-ico .ic {
-      width: 18px;
-      height: 18px;
-    }
-
-    .gi-txt span b {
-      display: inline;
-      color: #fff;
-      margin: 0;
-      font-size: inherit;
-    }
-
-    .pill .ic {
-      width: 15px;
-      height: 15px;
-    }
-
-    .pill span {
-      white-space: nowrap;
-    }
-
-    .card .cv .ic {
-      width: 28px;
-      height: 28px;
-      opacity: 0.4;
-    }
-
-    .card .play .ic {
-      width: 12px;
-      height: 12px;
-    }
-
-    .vid-badge {
-      letter-spacing: 0.2px;
-    }
-
-    .tagsearchbox {
-      margin-bottom: 10px;
-    }
-
-    .tagsearchbox .search-ico {
-      display: flex;
-    }
-
-    .tagsearchbox .search-ico .ic {
-      width: 16px;
-      height: 16px;
-    }
-
-    .tagsearchbox .clear-btn .ic {
-      width: 10px;
-      height: 10px;
-      stroke-width: 2.6;
-    }
-
-    .fsum {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      width: 100%;
-      padding: 8px 10px;
-      margin-bottom: 10px;
-      border-radius: 9px;
-      background: rgba(59, 130, 246, .10);
-      border: 1px solid rgba(59, 130, 246, .3);
-      color: #bfdbfe;
-      font-size: 11.5px;
-      font-weight: 600;
-      text-align: left;
-    }
-
-    .fsum .ic {
-      width: 14px;
-      height: 14px;
-    }
-
-    .fsum span {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .fsum u {
-      text-decoration: none;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .tlabel {
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin: 2px 4px 4px;
-    }
-
-    .tlist {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .trow {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 8px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    .trow:hover {
-      background: var(--surface2);
-    }
-
-    .trow.sel {
-      background: rgba(59, 130, 246, .12);
-    }
-
-    .trow.blk .tnm {
-      color: var(--text-faint);
-      text-decoration: line-through;
-    }
-
-    .tck {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 1.5px solid var(--surface4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 auto;
-      color: #fff;
-    }
-
-    .tck .ic {
-      width: 12px;
-      height: 12px;
-      stroke-width: 3;
-    }
-
-    .trow.sel .tck {
-      background: var(--blue);
-      border-color: var(--blue);
-    }
-
-    .trow.blk .tck {
-      background: var(--red);
-      border-color: var(--red);
-    }
-
-    .trow.blk .tck .ic {
-      width: 12px;
-      height: 12px;
-      stroke-width: 2.4;
-    }
-
-    .tnm {
-      flex: 1;
-      min-width: 0;
-      font-size: 13.5px;
-      font-weight: 600;
-      color: #fff;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .tkind {
-      font-size: 9.5px;
-      font-weight: 700;
-      letter-spacing: .4px;
-      text-transform: uppercase;
-      color: var(--text-faint);
-    }
-
-    .tkind.artist {
-      color: #c4b5fd;
-    }
-
-    .tkind.character {
-      color: #6ee7b7;
-    }
-
-    .tkind.copyright {
-      color: #fde68a;
-    }
-
-    .tcnt {
-      font-size: 11px;
-      color: var(--text-faint);
-      font-variant-numeric: tabular-nums;
-      min-width: 30px;
-      text-align: right;
-    }
-
-    .tgo {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      flex: 0 0 auto;
-    }
-
-    .tgo .ic {
-      width: 13px;
-      height: 13px;
-    }
-
-    .tgo:hover {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: #fff;
-    }
-
-    .tagbar {
-      position: sticky;
-      bottom: 0;
-      margin-top: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 -8px 20px rgba(0, 0, 0, .5);
-    }
-
-    .tagbar.on {
-      display: flex;
-    }
-
-    .tagbar-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .tagbar-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .tagbar-row .bwide {
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .tagbar-row .bwide.b-sec {
-      width: auto;
-      padding: 10px 14px;
-    }
-
-    .tagbar-row .bwide .ic {
-      width: 14px;
-      height: 14px;
-    }
-
-    .tdhead {
-      margin: 0 2px 10px;
-    }
-
-    .tdtitle {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      word-break: break-word;
-    }
-
-    .tdsub {
-      font-size: 11.5px;
-      color: var(--text-faint);
-      margin-top: 2px;
-    }
-
-    .fh-head b {
-      align-items: center;
-    }
-
-    .fh-head b .ic {
-      width: 16px;
-      height: 16px;
-    }
-
-    .fh-close .ic {
-      width: 12px;
-      height: 12px;
-    }
-
-    .fh-chip button .ic {
-      width: 9px;
-      height: 9px;
-      stroke-width: 3;
-    }
-
-    .fh-chip {
-      display: inline-flex;
-      align-items: center;
-    }
-
-    .fh-chip button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .fh-empty {
-      font-size: 11.5px;
-      color: var(--text-faint);
-    }
-
-    .fh-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .switch {
-      width: 42px;
-      height: 24px;
-      border-radius: 999px;
-      background: var(--surface4);
-      position: relative;
-      padding: 0;
-      flex: 0 0 auto;
-    }
-
-    .switch i {
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #fff;
-      transition: transform .15s var(--ease);
-    }
-
-    .switch.on {
-      background: var(--blue);
-    }
-
-    .switch.on i {
-      transform: translateX(18px);
+      color: var(--text-primary);
     }
 
     .fh-actions {
       display: flex;
       gap: 8px;
-      margin-top: 2px;
-    }
-
-    .fh-actions .fh-apply-btn {
-      flex: 1;
-      margin-top: 0;
+      margin-top: 16px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-hairline);
     }
 
     .fh-reset {
-      padding: 11px 14px;
-      border-radius: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 12.5px;
+      flex: 1;
+      padding: 9px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      font-size: 12px;
       font-weight: 600;
     }
 
-    .fh-reset:hover {
-      color: #fff;
-    }
-
-    .heart-pop .ic {
-      width: 56px;
-      height: 56px;
-      fill: currentColor;
-      stroke: none;
-    }
-
-    .pli .ck .ic {
-      width: 12px;
-      height: 12px;
-      stroke-width: 3;
-    }
-
-    .chip {
-      margin-left: 6px;
-      flex: 1 1 0;
-      max-width: none;
-      position: relative;
-      overflow: hidden;
-      gap: 7px;
-      padding: 3px 4px 3px 8px;
-      min-height: 32px;
-      border-radius: 10px;
-      border-color: rgba(59, 130, 246, .45);
-      background: rgba(59, 130, 246, .12);
-    }
-
-    .chip.pl {
-      border-color: rgba(16, 185, 129, .45);
-      background: rgba(16, 185, 129, .12);
-    }
-
-    .chip .ck-ico {
-      display: flex;
-      color: #93c5fd;
-      flex: 0 0 auto;
-    }
-
-    .chip.pl .ck-ico {
-      color: #6ee7b7;
-    }
-
-    .chip .ck-ico .ic {
-      width: 15px;
-      height: 15px;
-    }
-
-    .ck-txt {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      flex: 1;
-      line-height: 1.2;
-    }
-
-    .ck-txt small {
-      font-size: 8.5px;
+    .fh-apply-btn {
+      flex: 2;
+      padding: 9px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-primary);
+      color: #000;
+      font-size: 12.5px;
       font-weight: 700;
-      letter-spacing: .6px;
-      color: #93c5fd;
     }
 
-    .chip.pl .ck-txt small {
-      color: #6ee7b7;
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 12.5px;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s var(--ease), transform 0.16s var(--ease);
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
 
-    .ck-txt b {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #fff;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
-    .ck-pos {
-      font: 700 10.5px monospace;
-      color: var(--text-muted);
-      flex: 0 0 auto;
-    }
+    .toast.ok { border-color: rgba(16, 185, 129, 0.4); }
+    .toast.bad { border-color: rgba(239, 68, 68, 0.4); }
 
-    .chip button.ck-x {
-      width: 24px;
-      height: 24px;
-      border-radius: 7px;
-      background: rgba(255, 255, 255, .12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .ck-bar {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 2px;
-      background: rgba(255, 255, 255, .08);
-    }
-
-    .ck-bar u {
-      display: block;
-      height: 100%;
-      width: 0;
-      background: var(--blue);
-      transition: width .2s var(--ease);
-    }
-
-    .chip.pl .ck-bar u {
-      background: var(--green);
-    }
-
-    .helpbtn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      padding: 0;
-      margin-left: auto;
-      flex: 0 0 auto;
-    }
-
-    .helpbtn .ic {
-      width: 15px;
-      height: 15px;
-    }
-
-    /* ===== v6.3 responsive polish ===== */
-    @media (max-width: 360px) {
-      .glass-controls {
-        gap: 3px;
-        right: 6px;
-        top: 6px;
+    /* RESPONSIVE BREAKPOINTS */
+    @media (max-width: 1023px) {
+      .app-sidebar {
+        display: none;
       }
-
-      .sbtn {
-        width: 30px;
-        height: 30px;
-        border-radius: 7px;
+      .app-bottomnav {
+        display: flex;
       }
-
-      .sbtn .ic {
-        width: 15px;
-        height: 15px;
+      .stage-wrapper {
+        padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
       }
+    }
 
-      .idtag-box {
-        font-size: 10px;
-        padding: 2px 6px;
-        gap: 4px;
-        bottom: 6px;
-        left: 6px;
+    @media (min-width: 1024px) {
+      .idbox-top {
+        display: none;
       }
-
-      .zoom-badge {
-        font-size: 10px;
-        padding: 2px 6px;
-      }
-
-      .top {
-        gap: 6px;
-      }
-
-      .brand {
-        font-size: 12px;
+      .help-mobile-btn {
+        display: none;
       }
     }
   </style>
@@ -2629,93 +1131,140 @@
 
 <body>
 
-  <div class="app">
-
-    <div class="top">
-      <div class="brand">Post Explorer</div>
-      <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya"><span
-          data-ic="back"></span><span id="backId"></span></button>
-      <div class="chip" id="chip">
-        <span class="ck-ico" id="chipIco"></span>
-        <span class="ck-txt"><small id="chipKind">TAG</small><b id="chipName"></b></span>
-        <span class="ck-pos" id="chipPos"></span>
-        <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dan kembali ke post sebelumnya"
-          aria-label="Keluar"><span data-ic="x"></span></button>
-        <i class="ck-bar"><u id="chipBar"></u></i>
+  <div class="app-container">
+    <!-- DESKTOP SLIM SIDEBAR (220px) -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">D</div>
+        <div class="brand-title">Darknight</div>
       </div>
-      <button class="helpbtn" onclick="PE.openGuide()" title="Panduan" aria-label="Panduan"><span
-          data-ic="help"></span></button>
-    </div>
-
-    <div class="idrow">
-      <button class="ib" onclick="PE.prev()" aria-label="Sebelumnya" title="Sebelumnya"><span
-          data-ic="chevL"></span></button>
-      <div class="idbox">
-        <span class="idprefix">#</span>
-        <input id="numberInput" type="number" inputmode="numeric" min="1" max="100000000" placeholder="Nomor Post...">
-        <button class="idgo" onclick="PE.goToInput()" title="Buka ID">Go</button>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="PE.closeSheet()"><span class="ic" data-ic="play"></span><span>Stream</span></button>
+        <button class="nav-item" onclick="PE.openSheet('tags')"><span class="ic" data-ic="tag"></span><span>Explore / Tags</span></button>
+        <button class="nav-item" onclick="PE.openSheet('playlist')"><span class="ic" data-ic="layers"></span><span>Koleksi</span></button>
+        <button class="nav-item" onclick="PE.toggleFilterHub()"><span class="ic" data-ic="filter"></span><span>Filter Hub</span></button>
+        <button class="nav-item" onclick="PE.openSheet('history')"><span class="ic" data-ic="clock"></span><span>Riwayat</span></button>
+        <button class="nav-item" onclick="PE.openSheet('settings')"><span class="ic" data-ic="gear"></span><span>Setelan</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-quick-jumper">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:700">#</span>
+          <input id="numberInputSidebar" type="number" inputmode="numeric" min="1" max="100000000" placeholder="Lompat ID…">
+          <button onclick="PE.goToSidebarInput()">Go</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="nav-item" style="flex:1;padding:6px 10px;font-size:12px;justify-content:center" onclick="PE.randomPost()"><span class="ic" data-ic="dice"></span><span>Acak</span></button>
+          <button class="nav-item" style="padding:6px 10px;justify-content:center" onclick="PE.openGuide()" title="Panduan"><span class="ic" data-ic="help"></span></button>
+        </div>
       </div>
-      <button class="ib" onclick="PE.next()" aria-label="Berikutnya" title="Berikutnya"><span
-          data-ic="chevR"></span></button>
-      <button class="ib rnd" onclick="PE.randomPost()" aria-label="Acak" title="Post acak"><span
-          data-ic="dice"></span></button>
-    </div>
+    </aside>
 
-    <div class="stage" id="stage">
-      <div class="swipe-layer" id="swipeLayer">
-        <div class="zoom-layer" id="zoomLayer"><span id="status">Pilih nomor post</span></div>
+    <!-- MAIN VIEWPORT -->
+    <main class="app-main">
+      <!-- TOP CONTEXT BAR -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya"><span data-ic="back"></span><span id="backId"></span></button>
+          <div class="chip" id="chip">
+            <span class="ck-ico" id="chipIco"></span>
+            <span class="ck-txt"><small id="chipKind" style="font-size:9.5px;color:var(--text-muted);text-transform:uppercase;margin-right:4px">TAG</small><b id="chipName" style="font-size:11.5px"></b></span>
+            <span class="ck-pos" id="chipPos" style="font-size:10px;color:var(--text-muted);margin-left:4px"></span>
+            <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dari tag/playlist" aria-label="Keluar"><span data-ic="x"></span></button>
+            <i class="ck-bar"><u id="chipBar"></u></i>
+          </div>
+          <!-- ID BOX untuk mobile / tablet -->
+          <div class="idbox-top" id="idBoxTop">
+            <span class="idprefix">#</span>
+            <input id="numberInput" type="number" inputmode="numeric" min="1" max="100000000" placeholder="ID...">
+            <button class="idgo" onclick="PE.goToInput()">Go</button>
+            <button class="rnd-btn" onclick="PE.randomPost()" title="Post acak"><span data-ic="dice"></span></button>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="icon-tool-btn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span data-ic="mute"></span></button>
+          <button class="icon-tool-btn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span data-ic="fit"></span></button>
+          <button class="icon-tool-btn" id="gridBtn" onclick="PE.toggleGrid()" title="Tampilan Grid Galeri"><span data-ic="grid"></span></button>
+          <button class="icon-tool-btn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span data-ic="expand"></span></button>
+          <button class="icon-tool-btn help-mobile-btn" onclick="PE.openGuide()" title="Panduan"><span data-ic="help"></span></button>
+        </div>
+      </header>
+
+      <!-- MEDIA STAGE WRAPPER -->
+      <div class="stage-wrapper">
+        <div class="stage" id="stage">
+          <div class="swipe-layer" id="swipeLayer">
+            <div class="zoom-layer" id="zoomLayer"><span id="status">Pilih nomor post</span></div>
+          </div>
+
+          <div class="hint l" id="hintL"><span class="h-ico" data-ic="trash"></span><span class="h-txt">Hapus</span></div>
+          <div class="hint r" id="hintR"><span class="h-ico" data-ic="plus"></span><span class="h-txt">Simpan</span></div>
+          <div class="hintv d" id="hintD"><span class="h-ico" data-ic="arrowUp"></span><span class="h-txt">Berikutnya</span></div>
+          <div class="hintv u" id="hintU"><span class="h-ico" data-ic="arrowDown"></span><span class="h-txt">Sebelumnya</span></div>
+
+          <div class="autobar" id="autoBar">
+            <div class="fill" id="autoFill"></div>
+            <div class="lbl" id="autoLbl">5.0s</div>
+          </div>
+          <div class="spin" id="spin"></div>
+
+          <div class="zoom-badge" id="zoomBadge">1.0x</div>
+
+          <div class="idtag-box" id="idTagBox">
+            <span class="idtag" id="idTag">#1</span>
+            <span class="idfmt" id="idFormat"></span>
+          </div>
+
+          <!-- Glass controls hidden compatibility untuk JS queries -->
+          <div style="display:none">
+            <button id="plBtn" onclick="PE.togglePopup()"><span id="plIco" data-ic="plus"></span></button>
+            <button id="infoBtn" onclick="PE.openInfo()"><span data-ic="info"></span></button>
+            <button id="dlBtn" onclick="PE.download()"><span data-ic="download"></span></button>
+          </div>
+        </div>
+
+        <!-- REFINED SOCIAL ACTION BAR DI BAWAH MEDIA -->
+        <div class="post-actionbar" id="postActionBar">
+          <div class="post-actionbar-left">
+            <button class="action-btn" id="favBtn" onclick="PE.toggleFav()" title="Favorit">
+              <span id="favIco" data-ic="heart"></span>
+              <span id="favText">Suka</span>
+            </button>
+            <button class="action-btn" onclick="PE.togglePopup()" title="Simpan ke Playlist">
+              <span data-ic="plus"></span>
+              <span>Koleksi</span>
+            </button>
+            <button class="action-btn" onclick="PE.download()" title="Unduh Kualitas Penuh">
+              <span data-ic="download"></span>
+              <span>Unduh</span>
+            </button>
+          </div>
+
+          <div class="post-actionbar-right">
+            <button class="action-btn" id="autoBtn" onclick="PE.toggleAuto()" title="Otomatis Putar (Slideshow)">
+              <span id="autoIco" data-ic="play"></span>
+              <span id="autoTxt">Auto</span>
+            </button>
+            <button class="action-btn" onclick="PE.openInfo()" title="Info Post & Tags">
+              <span data-ic="info"></span>
+              <span>Detail</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="hint l" id="hintL"><span class="h-ico" data-ic="trash"></span><span class="h-txt">Hapus</span></div>
-      <div class="hint r" id="hintR"><span class="h-ico" data-ic="plus"></span><span class="h-txt">Simpan</span></div>
-      <div class="hintv d" id="hintD"><span class="h-ico" data-ic="arrowUp"></span><span class="h-txt">Berikutnya</span>
-      </div>
-      <div class="hintv u" id="hintU"><span class="h-ico" data-ic="arrowDown"></span><span
-          class="h-txt">Sebelumnya</span></div>
-
-      <div class="autobar" id="autoBar">
-        <div class="fill" id="autoFill"></div>
-        <div class="lbl" id="autoLbl">5.0s</div>
-      </div>
-      <div class="spin" id="spin"></div>
-
-      <div class="zoom-badge" id="zoomBadge">1.0x</div>
-
-      <div class="glass-controls">
-        <button class="sbtn" id="plBtn" onclick="PE.togglePopup()" title="Simpan ke playlist"><span id="plIco"
-            data-ic="plus"></span></button>
-        <button class="sbtn" id="infoBtn" onclick="PE.openInfo()" title="Info post & tag"><span
-            data-ic="info"></span></button>
-        <button class="sbtn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span
-            data-ic="mute"></span></button>
-        <button class="sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span
-            data-ic="fit"></span></button>
-        <button class="sbtn" id="dlBtn" onclick="PE.download()" title="Unduh"><span data-ic="download"></span></button>
-        <button class="sbtn" id="gridBtn" onclick="PE.toggleGrid()" title="Tampilan Galeri Grid"><span
-            data-ic="grid"></span></button>
-        <button class="sbtn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span
-            data-ic="expand"></span></button>
-      </div>
-
-      <div class="idtag-box" id="idTagBox">
-        <span class="idtag" id="idTag">#1</span>
-        <span class="idfmt" id="idFormat"></span>
-      </div>
-    </div>
-
-    <div class="dock">
-      <button class="dk auto" id="autoBtn" onclick="PE.toggleAuto()"><b id="autoIco" data-ic="play"></b><small
-          id="autoTxt">Auto</small></button>
-      <button class="dk fav" id="favBtn" onclick="PE.toggleFav()"><b id="favIco"
-          data-ic="heart"></b><small>Favorit</small></button>
-      <button class="dk" id="tagBtn" onclick="PE.openSheet('tags')"><b data-ic="tag"></b><small>Tag</small></button>
-      <button class="dk" id="filterBtn" onclick="PE.toggleFilterHub()"><b
-          data-ic="filter"></b><small>Filter</small></button>
-      <button class="dk" onclick="PE.openSheet('playlist')"><b data-ic="layers"></b><small>Koleksi</small></button>
-      <button class="dk" onclick="PE.openSheet('settings')"><b data-ic="gear"></b><small>Setelan</small></button>
-    </div>
+      <!-- MOBILE BOTTOM NAVIGATION (Max 5 Tabs) -->
+      <nav class="app-bottomnav" id="appBottomNav">
+        <button class="bottomnav-item active" id="bnStream" onclick="PE.closeSheet()"><span class="ic" data-ic="play"></span><span>Stream</span></button>
+        <button class="bottomnav-item" id="tagBtn" onclick="PE.openSheet('tags')"><span class="ic" data-ic="tag"></span><span>Explore</span></button>
+        <button class="bottomnav-item" id="bnPlaylist" onclick="PE.openSheet('playlist')"><span class="ic" data-ic="layers"></span><span>Koleksi</span></button>
+        <button class="bottomnav-item" id="filterBtn" onclick="PE.toggleFilterHub()"><span class="ic" data-ic="filter"></span><span>Filter</span></button>
+        <button class="bottomnav-item" id="bnSettings" onclick="PE.openSheet('settings')"><span class="ic" data-ic="gear"></span><span>Setelan</span></button>
+      </nav>
+    </main>
   </div>
 
+  <!-- BOTTOM SHEET (TAGS / PLAYLIST / RIWAYAT / SETELAN) -->
   <div class="backdrop" id="sheetBackdrop" onclick="PE.closeSheet()"></div>
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Panel">
     <div class="grab"></div>
@@ -2733,9 +1282,10 @@
   </div>
   <input type="file" id="importFile" accept="application/json,.json" style="display:none">
 
+  <!-- MODAL DETAIL INFO POST -->
   <div class="modal" id="infoBackdrop" role="dialog" aria-modal="true" aria-labelledby="infoTitle"
     onclick="PE.closeInfo(event)">
-    <div class="box" style="max-width:420px;max-height:82vh" onclick="event.stopPropagation()">
+    <div class="box" style="max-width:440px;max-height:82vh" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <h4 id="infoTitle" style="margin:0;font-size:14px;font-weight:700">Post #<span id="infoId"></span></h4>
         <button class="hb" onclick="PE.closeInfo()" style="width:28px;height:28px"><span data-ic="x"></span></button>
@@ -2749,6 +1299,7 @@
     </div>
   </div>
 
+  <!-- MODAL GUIDE -->
   <div class="modal" id="guideBackdrop" role="dialog" aria-modal="true" aria-label="Panduan penggunaan"
     onclick="PE.closeGuide(event)">
     <div class="box guide-box" onclick="event.stopPropagation()">
@@ -2756,97 +1307,65 @@
         <h4 style="margin:0;font-size:14px;font-weight:700">Panduan Penggunaan</h4>
         <button class="hb" onclick="PE.closeGuide()" style="width:28px;height:28px"><span data-ic="x"></span></button>
       </div>
-      <div class="guide-content">
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="info"></div>
-          <div class="gi-txt"><b>Mulai dari sini</b><span>Ketik nomor post lalu tekan Go, atau tekan tombol dadu untuk
-              post acak. Tombol Favorit menyimpan post dengan satu tap.</span></div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="swap"></div>
-          <div class="gi-txt"><b>Geser Layar Atas / Bawah</b><span>Swipe atas = post berikutnya. Swipe bawah = post
-              sebelumnya.</span></div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="arrowRight"></div>
-          <div class="gi-txt"><b>Geser Layar ke Kanan</b><span>Simpan post ke playlist Favorit.</span></div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="arrowLeft"></div>
-          <div class="gi-txt"><b>Geser Layar ke Kiri</b><span>Hapus post dari playlist yang sedang diputar.</span></div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="heart"></div>
-          <div class="gi-txt"><b>Pinch · Double-Tap</b><span>Pinch = zoom gambar. Double-tap = simpan ke Favorit (dengan
-              animasi heart).</span></div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="tag"></div>
-          <div class="gi-txt"><b>Tag dan Filter</b><span>Tag: cari dan tonton post bertag. Filter: atur urutan, jenis,
-              tag aktif, sembunyikan tag, dan filter AI. Semua di Filter Hub.</span></div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-ico" data-ic="keyboard"></div>
-          <div class="gi-txt"><b>Keyboard Shortcut (PC)</b><span><b>↓ / →</b>: Berikutnya · <b>↑ / ←</b>: Sebelumnya ·
-              <b>F</b>: Fullscreen · <b>I</b>: Info · <b>T</b>: Tag · <b>Space</b>: Play/Pause · <b>A</b>: Auto ·
-              <b>R</b>: Acak</span></div>
-        </div>
+      <div class="guide-content" style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-secondary)">
+        <div><b>Swipe Atas / Bawah:</b> Navigasi ke post berikutnya / sebelumnya.</div>
+        <div><b>Swipe Kanan:</b> Simpan post ke playlist Favorit.</div>
+        <div><b>Pinch / Double Tap:</b> Zoom gambar / Simpan ke Favorit.</div>
+        <div><b>Keyboard (PC):</b> <b>↓ / →</b>: Berikutnya · <b>↑ / ←</b>: Sebelumnya · <b>Space</b>: Play/Pause Video · <b>F</b>: Fullscreen · <b>I</b>: Info · <b>R</b>: Acak</div>
       </div>
-      <button class="bwide b-pri" style="margin-top:10px" onclick="PE.closeGuide()">Mengerti</button>
+      <button class="bwide b-pri" style="margin-top:12px" onclick="PE.closeGuide()">Mengerti</button>
     </div>
   </div>
 
+  <!-- MODAL POPUP PLAYLIST -->
   <div class="modal" id="popupBackdrop" role="dialog" aria-modal="true" aria-labelledby="popupTitle"
     onclick="PE.closePopup(event)">
     <div class="box" onclick="event.stopPropagation()">
-      <h4 id="popupTitle">Simpan ke playlist</h4>
+      <h4 id="popupTitle">Simpan ke Koleksi</h4>
       <div class="plist" id="popupList"></div>
       <div class="newrow" id="popupNewRow">
-        <input class="t" type="text" id="popupNewInput" placeholder="Nama playlist baru…" maxlength="40">
+        <input class="t" type="text" id="popupNewInput" placeholder="Nama playlist baru…" maxlength="40" style="padding:8px 10px;background:var(--bg-subtle);border:1px solid var(--border-hairline);border-radius:6px;color:#fff">
         <button class="bwide b-pri" style="width:auto;padding:0 14px" onclick="PE.confirmNewPl()">OK</button>
       </div>
-      <button class="bwide b-pri" onclick="PE.showNewRow()">Buat playlist baru</button>
-      <button class="bwide b-sec" onclick="PE.closePopup()">Tutup</button>
+      <button class="bwide b-pri" style="margin-top:6px" onclick="PE.showNewRow()">Buat Playlist Baru</button>
+      <button class="bwide b-sec" style="margin-top:6px" onclick="PE.closePopup()">Tutup</button>
     </div>
   </div>
 
+  <!-- MODAL DIALOG CONFIRMATION -->
   <div class="modal" id="dlgBackdrop" role="dialog" aria-modal="true" aria-labelledby="dlgMsg">
     <div class="box" style="max-width:320px">
-      <p class="dmsg" id="dlgMsg"></p>
-      <input class="t" id="dlgInput" type="text" maxlength="40">
-      <div class="dact">
-        <button class="d-no" onclick="PE.dlgNo()">Batal</button>
-        <button class="d-ok" id="dlgOk" onclick="PE.dlgYes()">OK</button>
+      <p class="dmsg" id="dlgMsg" style="font-size:13px;margin:0 0 10px"></p>
+      <input class="t" id="dlgInput" type="text" maxlength="40" style="padding:8px;background:var(--bg-subtle);border:1px solid var(--border-hairline);border-radius:6px;color:#fff;margin-bottom:10px">
+      <div class="dact" style="display:flex;gap:6px">
+        <button class="bwide b-sec" onclick="PE.dlgNo()">Batal</button>
+        <button class="bwide b-pri" id="dlgOk" onclick="PE.dlgYes()">OK</button>
       </div>
     </div>
   </div>
 
+  <!-- FILTER HUB OVERLAY -->
   <div class="filter-hub-backdrop" id="filterHubBackdrop" role="dialog" aria-modal="true" aria-label="Filter"
     onclick="PE.closeFilterHub(event)">
     <div class="filter-hub" id="filterHub" onclick="event.stopPropagation()">
       <div class="fh-head">
-        <b><span data-ic="filter"></span>Filter</b>
+        <b><span data-ic="filter" style="margin-right:6px"></span>Filter Hub</b>
         <button class="fh-close" onclick="PE.closeFilterHub()" aria-label="Tutup"><span data-ic="x"></span></button>
       </div>
 
       <div class="fh-sec">
         <label>Urutan</label>
         <div class="fh-sort-seg">
-          <button id="fhSortNewest" onclick="PE.setHubSort('newest')" title="Terbaru (Latest)"><span
-              data-ic="sparkle"></span><span>Terbaru</span></button>
-          <button id="fhSortHot" onclick="PE.setHubSort('hot')" title="Trending / Hangat (Hot)"><span
-              data-ic="flame"></span><span>Hot</span></button>
-          <button id="fhSortPopular" onclick="PE.setHubSort('popular')" title="Rating Tertinggi (Top Rated)"><span
-              data-ic="star"></span><span>Top</span></button>
-          <button id="fhSortViews" onclick="PE.setHubSort('views')" title="Paling Banyak Dilihat (Most Viewed)"><span
-              data-ic="eye"></span><span>Views</span></button>
-          <button id="fhSortOldest" onclick="PE.setHubSort('oldest')" title="Terlama (Oldest)"><span
-              data-ic="clock"></span><span>Terlama</span></button>
+          <button id="fhSortNewest" onclick="PE.setHubSort('newest')" title="Terbaru"><span data-ic="sparkle"></span><span>Baru</span></button>
+          <button id="fhSortHot" onclick="PE.setHubSort('hot')" title="Hot"><span data-ic="flame"></span><span>Hot</span></button>
+          <button id="fhSortPopular" onclick="PE.setHubSort('popular')" title="Top Rated"><span data-ic="star"></span><span>Top</span></button>
+          <button id="fhSortViews" onclick="PE.setHubSort('views')" title="Views"><span data-ic="eye"></span><span>Views</span></button>
+          <button id="fhSortOldest" onclick="PE.setHubSort('oldest')" title="Terlama"><span data-ic="clock"></span><span>Lama</span></button>
         </div>
       </div>
 
       <div class="fh-sec">
-        <label>Jenis</label>
+        <label>Jenis Media</label>
         <div class="fh-sort-seg">
           <button id="fhTypeAll" onclick="PE.setHubType(null)">Semua</button>
           <button id="fhTypeVid" onclick="PE.setHubType(1)">Video</button>
@@ -2855,41 +1374,37 @@
       </div>
 
       <div class="fh-sec">
-        <label>Tag aktif</label>
+        <label>Tag Aktif</label>
         <div class="fh-chips" id="fhActiveTagChips"></div>
         <div class="fh-input-row">
-          <input id="fhTagInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off"
-            autocapitalize="off">
+          <input id="fhTagInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off" autocapitalize="off">
           <button onclick="PE.addHubTag()">Tambah</button>
         </div>
-        <button class="fsum" style="margin-top:0;margin-bottom:0;background:transparent;border:0;padding:2px 0"
-          onclick="PE.pickTags()"><span data-ic="tag"></span><span style="color:#93c5fd">Pilih dari daftar
-            tag</span></button>
+        <button class="fsum" style="margin-top:2px;background:transparent;border:0;padding:2px 0;font-size:11.5px;color:var(--text-secondary);cursor:pointer;text-align:left" onclick="PE.pickTags()">
+          <span data-ic="tag" style="margin-right:4px"></span><span>Pilih dari daftar tag</span>
+        </button>
       </div>
 
       <div class="fh-sec">
-        <label>Sembunyikan tag</label>
+        <label>Sembunyikan Tag (Blacklist)</label>
         <div class="fh-chips" id="fhBlockTagChips"></div>
         <div class="fh-input-row">
-          <input id="fhBlockInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off"
-            autocapitalize="off">
-          <button class="btn-dng" onclick="PE.addHubBlockTag()">Sembunyikan</button>
+          <input id="fhBlockInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off" autocapitalize="off">
+          <button style="background:rgba(239,68,68,0.2);color:#fca5a5;border-color:rgba(239,68,68,0.4)" onclick="PE.addHubBlockTag()">Blok</button>
         </div>
-        <button class="fsum"
-          style="margin-top:0;margin-bottom:0;background:transparent;border:0;padding:2px 0;color:#fca5a5"
-          onclick="PE.pickBlockTags()"><span data-ic="ban"></span><span style="color:#fca5a5">Pilih dari daftar
-            tag</span></button>
+        <button class="fsum" style="margin-top:2px;background:transparent;border:0;padding:2px 0;font-size:11.5px;color:#fca5a5;cursor:pointer;text-align:left" onclick="PE.pickBlockTags()">
+          <span data-ic="ban" style="margin-right:4px"></span><span>Pilih tag untuk diblokir</span>
+        </button>
       </div>
 
-      <div class="fh-row">
-        <span>Sembunyikan konten AI</span>
-        <button class="switch" id="fhAiBtn" onclick="PE.toggleHubAi()"
-          aria-label="Sembunyikan konten AI"><i></i></button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:8px 0;border-top:1px solid var(--border-hairline)">
+        <span style="font-size:12px;color:var(--text-secondary)">Sembunyikan Konten AI</span>
+        <button class="switch" id="fhAiBtn" onclick="PE.toggleHubAi()" aria-label="Sembunyikan konten AI" style="width:36px;height:20px;border-radius:10px;background:var(--bg-elevated);border:1px solid var(--border-hairline);position:relative;cursor:pointer"><i style="position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.15s"></i></button>
       </div>
 
       <div class="fh-actions">
-        <button class="fh-reset" onclick="PE.resetFilter()">Atur ulang</button>
-        <button class="fh-apply-btn" onclick="PE.applyFilterHub()">Cari &amp; Putar</button>
+        <button class="fh-reset" onclick="PE.resetFilter()">Atur Ulang</button>
+        <button class="fh-apply-btn" onclick="PE.applyFilterHub()">Terapkan &amp; Putar</button>
       </div>
     </div>
   </div>
@@ -2897,6 +1412,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
+
     var PE = (function () {
       "use strict";
       var MAXID = 100000000;
@@ -3514,7 +2030,7 @@
       }
 
       function commit(id) {
-        current = id; input.value = id; lsSet("lastPost", String(id)); updateAnchor(id);
+        current = id; input.value = id; var sbInp = $("numberInputSidebar"); if (sbInp) sbInp.value = id; lsSet("lastPost", String(id)); updateAnchor(id);
         refreshBtns(); updateChip(); updateBack();
         if (activePlaylistId) {
           var ap = getPL(activePlaylistId);
@@ -5587,7 +4103,7 @@
       loadPost(current, 0);
       fetchLatestPostId().then(function (id) {
         var numInp = $("numberInput");
-        if (numInp) numInp.placeholder = "Nomor Post (terbaru: #" + id + ")…";
+        if (numInp) numInp.placeholder = "Nomor Post (#" + id + ")…"; var sbInp = $("numberInputSidebar"); if (sbInp) sbInp.placeholder = "#" + id + "…";
       }).catch(function () { });
 
       try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
@@ -5606,7 +4122,9 @@
         }
       } catch (e) { }
 
+      function goToSidebarInput() { var v = Number($("numberInputSidebar").value); if (validId(v)) loadPost(v, 0); else toast("ID tidak valid", "bad"); }
       return {
+        goToSidebarInput: goToSidebarInput,
         prev: function () { change(-1); }, next: function () { change(1); }, back: back,
         randomPost: randomPost, toggleAuto: toggleAuto, toggleFav: toggleFav,
         togglePopup: togglePopup, closePopup: closePopup, showNewRow: showNewRow, confirmNewPl: confirmNewPl,
@@ -5619,6 +4137,7 @@
         toggleSound: toggleSound, toggleGrid: toggleGrid
       };
     })();
+  
   </script>
 </body>
 
