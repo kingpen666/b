@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pe-cache-v1';
+const CACHE_NAME = 'pe-cache-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -30,12 +30,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Jangan cache API calls atau CDN media secara agresif di service worker
-  if (url.pathname.startsWith('/api/') || url.hostname.includes('b-cdn.net') || url.hostname.includes('r-34.xyz')) {
+  // KRUSIAL: HANYA layani file static lokal dari origin sendiri.
+  // JANGAN PERNAH intercept API calls, video range requests, atau gambar CDN eksternal (Rule34 dll).
+  // Membiarkan CDN media lewat jalur native browser menghilangkan lag & buffer video.
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Network first for HTML/static assets, fallback to cache
+  // Network first untuk file aplikasi (HTML/static), fallback ke cache bila offline
   event.respondWith(
     fetch(event.request)
       .then((response) => {

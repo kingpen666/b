@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#0b0c0e">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -263,6 +263,7 @@
       min-width: 0;
       background: var(--bg-canvas);
       position: relative;
+      overflow: hidden;
     }
 
     /* TOP CONTEXT BAR */
@@ -500,7 +501,7 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
-      margin-top: 8px;
+      margin: 8px auto 0;
       gap: 12px;
       flex-shrink: 0;
     }
@@ -1105,19 +1106,146 @@
     .toast.ok { border-color: rgba(16, 185, 129, 0.4); }
     .toast.bad { border-color: rgba(239, 68, 68, 0.4); }
 
-    /* RESPONSIVE BREAKPOINTS */
+    /* =======================================================================
+       RESPONSIVE — MOBILE & TABLET
+       ======================================================================= */
+
+    /* ---- TABLET & MOBILE: < 1024px ---- */
     @media (max-width: 1023px) {
-      .app-sidebar {
-        display: none;
+      .app-sidebar { display: none; }
+      .app-bottomnav { display: flex; }
+
+      /* Layout ulang: stage shrink, action bar di bawah stage, lalu bottom nav (fixed) */
+      .app-main {
+        /* Tambah padding-bottom untuk bottom nav yang fixed */
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
       }
-      .app-bottomnav {
-        display: flex;
-      }
+
       .stage-wrapper {
-        padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+        padding: 8px 8px 0;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Action bar di mobile: full-width, kompak, tanpa rounded corners di sisi kiri/kanan */
+      .post-actionbar {
+        max-width: 100%;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+        border-bottom: 0;
+        margin: 0;
+        padding: 6px 8px;
+        gap: 4px;
+        background: var(--bg-surface);
+        border-top: 1px solid var(--border-hairline);
+        flex-shrink: 0;
+      }
+
+      .action-btn {
+        padding: 7px 8px;
+        font-size: 11.5px;
+        gap: 4px;
+        flex: 1;
+        justify-content: center;
+      }
+
+      /* Topbar mobile: lebih kompak */
+      .app-topbar {
+        padding: 6px 10px;
+        min-height: 44px;
+        gap: 8px;
+      }
+
+      /* ID box di topbar mobile: lebih kecil */
+      .idbox-top {
+        max-width: 160px;
+      }
+
+      .idbox-top input {
+        width: 55px;
+      }
+
+      /* Chip konteks: ukuran lebih kecil */
+      .chip {
+        max-width: 180px;
+        font-size: 11px;
+      }
+
+      /* Back button mobile */
+      .backbtn {
+        font-size: 10.5px;
+        padding: 3px 8px;
+      }
+
+      /* Icon-only buttons di topbar lebih kecil di mobile */
+      .icon-tool-btn {
+        width: 30px;
+        height: 30px;
+      }
+
+      /* Stage */
+      .stage {
+        max-width: 100%;
+        border-radius: var(--radius-sm);
       }
     }
 
+    /* ---- SMALL MOBILE: < 480px ---- */
+    @media (max-width: 479px) {
+      /* Sembunyikan label text action buttons, icon only */
+      .action-btn span:last-child {
+        display: none;
+      }
+
+      .action-btn {
+        padding: 8px 6px;
+        gap: 0;
+      }
+
+      /* Topbar: lebih kecil */
+      .idbox-top {
+        max-width: 130px;
+      }
+
+      .idbox-top input {
+        width: 42px;
+        font-size: 11px;
+      }
+
+      .topbar-right {
+        gap: 2px;
+      }
+
+      /* Bottom nav lebih rapat */
+      .bottomnav-item {
+        font-size: 9px;
+        gap: 2px;
+      }
+
+      .bottomnav-item .ic {
+        width: 17px;
+        height: 17px;
+      }
+    }
+
+    /* ---- VERY SMALL: < 360px ---- */
+    @media (max-width: 359px) {
+      .idbox-top {
+        display: none;
+      }
+
+      .topbar-left {
+        gap: 6px;
+      }
+
+      .action-btn .ic {
+        width: 15px;
+        height: 15px;
+      }
+    }
+
+    /* ---- DESKTOP: >= 1024px ---- */
     @media (min-width: 1024px) {
       .idbox-top {
         display: none;
@@ -1126,7 +1254,538 @@
         display: none;
       }
     }
-  </style>
+
+    /* ---- SHEET / BOTTOM DRAWER: Responsive ---- */
+
+    /* Tab pills di sheet harus tampak jelas dengan background */
+    .tabs {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .tabs button {
+      white-space: nowrap;
+      min-width: 0;
+      flex-shrink: 1;
+    }
+
+    @media (max-width: 479px) {
+      .tabs button {
+        font-size: 10px;
+        padding: 5px 4px;
+      }
+    }
+
+    /* Sheet header di mobile: lebih rapat */
+    @media (max-width: 1023px) {
+      .sheet {
+        border: 1px solid var(--border-subtle);
+        border-bottom: 0;
+      }
+
+      .shead {
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .hb {
+        flex-shrink: 0;
+      }
+    }
+
+    /* ---- TOAST: angkat di atas action bar + bottom nav saat mobile ---- */
+    @media (max-width: 1023px) {
+      .toast {
+        bottom: calc(52px + 48px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+  
+/* =================== MISSING COMPONENT CSS (fix_all.js) =================== */
+
+/* Heart pop animation */
+.heart-pop {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+  transform: translate(-50%, -50%) scale(0);
+  animation: heart-burst 0.75s var(--ease) forwards;
+  color: var(--accent-like);
+}
+.heart-pop .ic { width: 48px; height: 48px; fill: currentColor; }
+@keyframes heart-burst {
+  0% { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+  60% { transform: translate(-50%,-50%) scale(1.4); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+
+/* Shared action row */
+.arow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: center;
+  width: 100%;
+}
+
+/* Filter summary bar */
+.fsum {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  color: var(--accent-video);
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.fsum u { color: var(--text-primary); margin-left: auto; text-decoration: underline; }
+
+/* Tag mode switcher */
+.tag-mode-seg {
+  display: flex;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.tag-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.tag-mode-btn.on {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.tag-mode-btn.block.on { color: var(--accent-danger); }
+
+/* Tag category filter bar */
+.tag-cat-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.tag-cat-btn {
+  flex: 1;
+  min-width: 50px;
+  padding: 5px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.tag-cat-btn.on {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  font-weight: 600;
+}
+.tag-cat-btn.artist.on { color: #f59e0b; border-color: rgba(245,158,11,0.4); }
+.tag-cat-btn.char.on   { color: #38bdf8; border-color: rgba(56,189,248,0.4); }
+.tag-cat-btn.copy.on   { color: #10b981; border-color: rgba(16,185,129,0.4); }
+
+/* Tagmode hint */
+.tagmode-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 0 6px;
+}
+
+/* Tag list items */
+.tlist { display: flex; flex-direction: column; }
+.tlabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 0 4px;
+}
+.tck {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.trow.sel .tck { color: var(--accent-primary); }
+.trow.blk .tck { color: var(--accent-danger); }
+.tkind {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.tkind.artist    { color: #f59e0b; background: rgba(245,158,11,0.1); }
+.tkind.character { color: #38bdf8; background: rgba(56,189,248,0.1); }
+.tkind.copyright { color: #10b981; background: rgba(16,185,129,0.1); }
+.tgo {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  margin-left: auto;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.tgo:hover { background: var(--text-primary); color: #000; }
+.tgo .ic { width: 13px; height: 13px; }
+.trow.sel { background: rgba(255,255,255,0.05); border-color: var(--border-subtle); }
+.trow.blk { opacity: 0.6; }
+
+/* Tag bar (selected tags display) */
+.tagbar { display: none; flex-direction: column; gap: 6px; padding: 8px 0; border-top: 1px solid var(--border-hairline); margin-top: 6px; }
+.tagbar.on { display: flex; }
+.tagbar-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.tagbar-row { display: flex; gap: 6px; }
+
+/* Tag detail view header */
+.tdhead { margin-bottom: 10px; }
+.tdtitle { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 2px; }
+.tdsub { font-size: 11.5px; color: var(--text-muted); }
+
+/* Filter hub chip */
+.fh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 2px;
+}
+.fh-chip.block { border-color: rgba(239,68,68,0.3); color: #fca5a5; background: rgba(239,68,68,0.08); }
+.fh-chip button { width: 14px; height: 14px; padding: 0; color: var(--text-muted); display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; }
+.fh-chip button .ic { width: 10px; height: 10px; }
+.fh-chip button:hover { color: var(--text-primary); }
+.fh-empty { font-size: 11.5px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
+
+/* Settings rows */
+.setrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-hairline);
+  gap: 12px;
+}
+.setrow label { font-size: 13px; font-weight: 500; color: var(--text-primary); display: block; }
+.setrow small { font-size: 11px; color: var(--text-muted); display: block; margin-top: 1px; }
+.seg {
+  display: flex;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.seg button {
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.seg button.on {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Storage card in settings */
+.storage-card {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+.storage-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.storage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.storage-row:last-child { border-bottom: none; }
+.storage-row b { color: var(--text-primary); font-weight: 600; }
+.storage-row span { color: var(--accent-video); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12px; }
+.storage-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.storage-stats b { color: var(--text-primary); font-weight: 600; }
+.storage-stats span { color: var(--accent-video); font-variant-numeric: tabular-nums; }
+
+/* Playlist cards */
+.card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-fast);
+}
+.card:hover { border-color: var(--border-subtle); }
+.cv {
+  aspect-ratio: 16/9;
+  background: var(--bg-elevated);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--text-muted);
+}
+.cv img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cv .ic { width: 28px; height: 28px; }
+.cv .play {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.cv .menu {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  background: rgba(0,0,0,0.6);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+}
+.cv .acts {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: none;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+  overflow-y: auto;
+}
+.cv .acts.show { display: flex; }
+.cv .acts button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.cv .acts button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.cv .acts button.d { color: var(--accent-danger); }
+.ci { padding: 8px 10px; }
+.cn { font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* Sel info bar */
+.selinfo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 0 8px;
+}
+
+/* Info modal tag chips and suggestions */
+.infotag-sec { margin-bottom: 10px; }
+.infotag-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.infotag-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.sugg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+
+/* Tabs: stronger active state */
+.tabs button.on {
+  background: rgba(255,255,255,0.14) !important;
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+/* =================== END MISSING COMPONENT CSS =================== */
+
+/* =================== MOBILE TOPBAR COLLISION FIX =================== */
+@media (max-width: 1023px) {
+  /* When context chip is active (playlist/tag mode), hide ID jump box to prevent collision */
+  #chip.on ~ #idbox-top,
+  .chip.on ~ .idbox-top,
+  .topbar-left .chip.on ~ #idbox-top { display: none !important; }
+
+  /* Topbar left: prevent overflow */
+  .topbar-left {
+    overflow: hidden;
+    min-width: 0;
+    flex: 1 1 0;
+    max-width: calc(100% - 120px);
+  }
+
+  /* Chip itself: truncate gracefully */
+  #chip {
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ID box on mobile: compact */
+  #idbox-top {
+    max-width: 90px;
+    flex-shrink: 1;
+  }
+  #idbox-top input {
+    width: 60px;
+    min-width: 0;
+  }
+
+  /* Topbar right: hide less critical tools to free space */
+  #fitBtn { display: none !important; }
+
+  /* Ensure topbar right doesn't push */
+  .topbar-right {
+    flex-shrink: 0;
+    gap: 2px !important;
+  }
+}
+
+@media (max-width: 479px) {
+  /* Even tighter on small phones */
+  #gridBtn { display: none !important; }
+
+  .topbar-left {
+    max-width: calc(100% - 100px);
+  }
+
+  #chip {
+    max-width: 90px;
+  }
+
+  #idbox-top {
+    max-width: 70px;
+  }
+  #idbox-top input {
+    width: 46px;
+  }
+}
+/* =================== END MOBILE TOPBAR FIX =================== */
+
+/* =================== FULLSCREEN IMMERSIVE MODE =================== */
+body.fs .app-sidebar,
+body.fs .app-topbar,
+body.fs .app-bottomnav,
+body.fs .post-actionbar {
+  display: none !important;
+}
+body.fs .app-main {
+  padding: 0 !important;
+}
+body.fs .stage-wrapper {
+  height: 100vh !important;
+  height: 100dvh !important;
+}
+/* =================== END FULLSCREEN =================== */
+
+</style>
 </head>
 
 <body>
@@ -1223,36 +1882,38 @@
           </div>
         </div>
 
-        <!-- REFINED SOCIAL ACTION BAR DI BAWAH MEDIA -->
-        <div class="post-actionbar" id="postActionBar">
-          <div class="post-actionbar-left">
-            <button class="action-btn" id="favBtn" onclick="PE.toggleFav()" title="Favorit">
-              <span id="favIco" data-ic="heart"></span>
-              <span id="favText">Suka</span>
-            </button>
-            <button class="action-btn" onclick="PE.togglePopup()" title="Simpan ke Playlist">
-              <span data-ic="plus"></span>
-              <span>Koleksi</span>
-            </button>
-            <button class="action-btn" onclick="PE.download()" title="Unduh Kualitas Penuh">
-              <span data-ic="download"></span>
-              <span>Unduh</span>
-            </button>
-          </div>
+      </div>
 
-          <div class="post-actionbar-right">
-            <button class="action-btn" id="autoBtn" onclick="PE.toggleAuto()" title="Otomatis Putar (Slideshow)">
-              <span id="autoIco" data-ic="play"></span>
-              <span id="autoTxt">Auto</span>
-            </button>
-            <button class="action-btn" onclick="PE.openInfo()" title="Info Post & Tags">
-              <span data-ic="info"></span>
-              <span>Detail</span>
-            </button>
-          </div>
+      <!-- REFINED SOCIAL ACTION BAR (DI LUAR stage-wrapper) -->
+      <div class="post-actionbar" id="postActionBar">
+        <div class="post-actionbar-left">
+          <button class="action-btn" id="favBtn" onclick="PE.toggleFav()" title="Favorit">
+            <span id="favIco" data-ic="heart"></span>
+            <span id="favText">Suka</span>
+          </button>
+          <button class="action-btn" onclick="PE.togglePopup()" title="Simpan ke Playlist">
+            <span data-ic="plus"></span>
+            <span>Koleksi</span>
+          </button>
+          <button class="action-btn" onclick="PE.download()" title="Unduh Kualitas Penuh">
+            <span data-ic="download"></span>
+            <span>Unduh</span>
+          </button>
+        </div>
+
+        <div class="post-actionbar-right">
+          <button class="action-btn" id="autoBtn" onclick="PE.toggleAuto()" title="Otomatis Putar (Slideshow)">
+            <span id="autoIco" data-ic="play"></span>
+            <span id="autoTxt">Auto</span>
+          </button>
+          <button class="action-btn" onclick="PE.openInfo()" title="Info Post & Tags">
+            <span data-ic="info"></span>
+            <span>Detail</span>
+          </button>
         </div>
       </div>
 
+      
       <!-- MOBILE BOTTOM NAVIGATION (Max 5 Tabs) -->
       <nav class="app-bottomnav" id="appBottomNav">
         <button class="bottomnav-item active" id="bnStream" onclick="PE.closeSheet()"><span class="ic" data-ic="play"></span><span>Stream</span></button>
@@ -1483,7 +2144,23 @@
       var okLS = true, mem = {};
       try { localStorage.setItem("__t", "1"); localStorage.removeItem("__t"); } catch (e) { okLS = false; }
       function lsGet(k) { if (okLS) { try { return localStorage.getItem(k); } catch (e) { okLS = false; } } return k in mem ? mem[k] : null; }
-      function lsSet(k, v) { if (okLS) { try { localStorage.setItem(k, v); return; } catch (e) { okLS = false; } } mem[k] = v; }
+      function lsSet(k, v) {
+        if (okLS) {
+          try {
+            localStorage.setItem(k, v);
+            return;
+          } catch (e) {
+            try {
+              localStorage.removeItem("darknight_alpha_cache");
+              localStorage.setItem(k, v);
+              return;
+            } catch (e2) {
+              okLS = false;
+            }
+          }
+        }
+        mem[k] = v;
+      }
       function jget(k, d) { try { var r = lsGet(k); return r ? JSON.parse(r) : d; } catch (e) { return d; } }
       function jset(k, v) { try { lsSet(k, JSON.stringify(v)); } catch (e) { } }
 
@@ -1748,8 +2425,15 @@
           if (resolveQueued) resolveQueued({ type: null, miss: true, cancelled: true });
         }
       }
+      var preloadTimer = null;
       function preloadAround(id) {
+        clearTimeout(preloadTimer);
         clearQueued();
+        preloadTimer = setTimeout(function () {
+          _doPreloadAround(id);
+        }, 220);
+      }
+      function _doPreloadAround(id) {
         var ord = activeOrder();
         if (ord) {
           neighbors(id).forEach(schedule);
@@ -1831,6 +2515,23 @@
         try { idbSet("playlists_v1", JSON.stringify(playlists)); } catch (e) { }
       }
       function persistSoon() { clearTimeout(persistT); persistT = setTimeout(persist, 800); }
+
+      // Session state persistence: save active tag/playlist/sort mode across page reloads
+      function saveSession() {
+        try {
+          jset('pe_session', {
+            activeTag: activeTag,
+            activeTagsDetail: activeTagsDetail || [],
+            tagPosts: (tagPosts && tagPosts.length) ? tagPosts.slice(0, 80) : [],
+            activePlaylistId: activePlaylistId,
+            selectedTags: selectedTags || [],
+            tagSortMode: tagSortMode,
+            tagTypeFilter: tagTypeFilter,
+            shuffleOn: shuffleOn,
+            tagView: tagView
+          });
+        } catch(e) {}
+      }
       playlists = loadPlaylists();
       function restoreFromBackup() {
         if (playlists.length) return;
@@ -2945,8 +3646,6 @@
         } else if (typeof tags === "string") {
           activeTagsDetail = [tags];
         }
-        if (reset && !activePlaylistId && !activeTag) returnId = current;
-        activeTag = tagLabel(activeTagsDetail);
         if (reset) {
           ++tagRequestToken;
           tagPosts = [];
@@ -2998,7 +3697,7 @@
           if (tagsParam) params.tags = tagsParam;
 
           var data = await rule34ApiFetch(params);
-          if (requestToken !== tagRequestToken || tagLabel(requestTags) !== activeTag) return;
+          if (requestToken !== tagRequestToken || tagLabel(requestTags) !== tagLabel(activeTagsDetail)) return;
           var rawItems = Array.isArray(data) ? data : [];
           if (rawItems.length > 0) {
             rawItems.forEach(function (item) {
@@ -3433,13 +4132,28 @@
       function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = lead(txt); return e; }
       function pill(txt, cls, fn) { var b = el("button", "pill " + (cls || ""), txt); b.onclick = fn; return b; }
       function resetSel() { selMode = false; sel = {}; plShown = 120; }
+      function syncNavActive() {
+        var isOpen = sheet && sheet.classList.contains("open");
+        var cur = isOpen ? sheetTab : "stream";
+        var bns = { stream: $("bnStream"), tags: $("tagBtn"), playlist: $("bnPlaylist"), settings: $("bnSettings") };
+        for (var k in bns) { if (bns[k]) bns[k].classList.toggle("active", k === cur); }
+        var sidebarItems = document.querySelectorAll(".app-sidebar .nav-item");
+        if (sidebarItems.length >= 6) {
+          sidebarItems[0].classList.toggle("active", cur === "stream");
+          sidebarItems[1].classList.toggle("active", cur === "tags");
+          sidebarItems[2].classList.toggle("active", cur === "playlist");
+          sidebarItems[4].classList.toggle("active", cur === "history");
+          sidebarItems[5].classList.toggle("active", cur === "settings");
+        }
+      }
       function openSheet(tab, mode) {
         if (tab) sheetTab = tab;
         if (tab === "playlist") { plView = "list"; plDetailId = null; resetSel(); }
         if (tab === "tags") { tagView = mode === "detail" ? "detail" : "list"; tagPickMode = mode === "block" ? "block" : "want"; }
         renderSheet(); sheet.classList.add("open"); sheetBackdrop.classList.add("open");
+        syncNavActive();
       }
-      function closeSheet() { sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); }
+      function closeSheet() { sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); syncNavActive(); }
       function sheetBack() {
         if (sheetTab === "playlist" && plView === "detail") { plView = "list"; plDetailId = null; resetSel(); renderSheet(); }
         else if (sheetTab === "tags" && tagView === "detail") { tagView = "list"; renderSheet(); }
@@ -3682,10 +4396,23 @@
         } catch (e) { }
         var lsKb = (lsBytes / 1024).toFixed(1);
 
+        // Count items for display
+        var _plCount = playlists.length;
+        var _plPosts = playlists.reduce(function(a,p){ return a+(p.postIds?p.postIds.length:0); },0);
+        var _histCount = hist.length;
+        var _blCount = (typeof blacklistTags !== "undefined" && Array.isArray(blacklistTags)) ? blacklistTags.length : 0;
+        var _alphaCacheLetters = Object.keys(alphaTagCache||{}).length;
+        var _alphaCacheTotal = Object.keys(alphaTagCache||{}).reduce(function(a,k){ return a+((alphaTagCache[k]||[]).length); },0);
+
         var sStats = el("div", "storage-stats");
-        sStats.innerHTML = "<div><b>Data Aplikasi (Playlists, Setelan):</b> <span>" + lsKb + " KB</span></div>" +
-          "<div><b>Cache RAM:</b> <span>" + cache.size + " / " + MAX_CACHE + " post</span></div>" +
-          "<div><b>Cache Disk Browser:</b> <span id='storageQuotaVal'>Memeriksa...</span></div>";
+        sStats.innerHTML =
+          '<div class="storage-row"><b>LocalStorage</b><span>' + lsKb + ' KB</span></div>' +
+          '<div class="storage-row"><b>Riwayat Post</b><span>' + _histCount + ' post</span></div>' +
+          '<div class="storage-row"><b>Playlist</b><span>' + _plCount + ' playlist &middot; ' + _plPosts + ' post tersimpan</span></div>' +
+          '<div class="storage-row"><b>Blacklist</b><span>' + _blCount + ' tag</span></div>' +
+          '<div class="storage-row"><b>Cache RAM (meta/gambar)</b><span>' + cache.size + ' / ' + MAX_CACHE + ' post</span></div>' +
+          '<div class="storage-row"><b>Cache Tag Alfabet</b><span>' + _alphaCacheLetters + ' huruf &middot; ' + _alphaCacheTotal + ' tag</span></div>' +
+          '<div class="storage-row"><b>Cache Disk Browser</b><span id="storageQuotaVal">Memeriksa...</span></div>';
         sBox.appendChild(sStats);
 
         if (navigator.storage && navigator.storage.estimate) {
@@ -3710,6 +4437,12 @@
           hist = [];
           jset("pe_hist", hist);
           toast("Riwayat dikosongkan", "ok");
+          renderSettings();
+        }));
+        sActs.appendChild(ipill("tag", "Hapus Cache Tag", "", function () {
+          alphaTagCache = {};
+          lsSet("darknight_alpha_cache", "{}");
+          toast("Cache tag dibersihkan", "ok");
           renderSettings();
         }));
         sBox.appendChild(sActs);
@@ -4094,12 +4827,45 @@
           var v = zoomLayer.querySelector("video");
           if (v) { try { v.pause(); } catch (e) { } }
           persist();
+          saveSession();
         }
       });
-      window.addEventListener("pagehide", function () { persist(); });
+      window.addEventListener("pagehide", function () { persist(); saveSession(); });
 
       paintIcons();
       refreshBtns(); updateChip(); updateBack();
+      
+  // --- Restore session state on init ---
+      (function restoreSession() {
+        try {
+          var sess = jget('pe_session', null);
+          if (!sess) return;
+          if (sess.tagSortMode !== undefined) tagSortMode = sess.tagSortMode;
+          if (sess.tagTypeFilter !== undefined) tagTypeFilter = sess.tagTypeFilter;
+          if (Array.isArray(sess.selectedTags) && sess.selectedTags.length) selectedTags = sess.selectedTags;
+          if (sess.shuffleOn !== undefined) shuffleOn = sess.shuffleOn;
+          if (sess.tagView !== undefined) tagView = sess.tagView;
+          if (sess.activePlaylistId) {
+            var pls = getPL ? getPL(sess.activePlaylistId) : null;
+            if (pls) activePlaylistId = sess.activePlaylistId;
+          }
+          if (sess.activeTag && Array.isArray(sess.activeTagsDetail) && sess.activeTagsDetail.length) {
+            activeTag = sess.activeTag;
+            activeTagsDetail = sess.activeTagsDetail;
+            if (Array.isArray(sess.tagPosts) && sess.tagPosts.length) {
+              tagPosts = sess.tagPosts;
+            } else {
+              loadTagDetail(activeTagsDetail, false);
+            }
+          }
+        } catch(e) { console.warn('restoreSession error', e); }
+      })();
+
+      updateChip();
+      refreshBtns();
+      updateBack();
+      syncNavActive();
+
       loadPost(current, 0);
       fetchLatestPostId().then(function (id) {
         var numInp = $("numberInput");
