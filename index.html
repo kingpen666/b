@@ -2900,7 +2900,6 @@
     var PE = (function () {
       "use strict";
       var MAXID = 100000000;
-      var BASE = "https://r34xyz.b-cdn.net/posts/";
       function $(id) { return document.getElementById(id); }
       function now() { return performance.now(); }
       function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -3072,12 +3071,47 @@
         setTimeout(function () { URL.revokeObjectURL(u); }, 5000);
       }
 
-      function prefix(id) { return String(id).slice(0, -3) || "0"; }
-      function urls(id) {
-        var p = BASE + prefix(id) + "/" + id + "/" + id, full = p + ".jpg", small = p + ".small.jpg";
-        return { mp4: p + ".mp4", small: small, full: full, imgs: S.saver ? [small, full] : [full, small] };
+      var R34_API_KEY = "bebe222a50299520c4a08f2b0ad0d5e0194222fe80fe4d6e1b47efe8425470d9679a6ce79ccd3af2b9a983bfa0d7c194fad1d4b6bfb42ee5884f6d47611bf0c5";
+      var R34_USER_ID = "7058579";
+
+      async function rule34ApiFetch(params) {
+        params = params || {};
+        params.api_key = R34_API_KEY;
+        params.user_id = R34_USER_ID;
+        params.json = "1";
+        var qs = Object.keys(params).map(function (k) {
+          return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
+        }).join("&");
+
+        var directUrl = "https://api.rule34.xxx/index.php?" + qs;
+        var proxyUrl = "/api/dapi?" + qs;
+
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+          try {
+            var res = await fetch(proxyUrl);
+            if (res.ok) return await res.json();
+          } catch (e) { }
+        }
+
+        try {
+          var res2 = await fetch(directUrl);
+          if (res2.ok) return await res2.json();
+        } catch (e2) {
+          console.warn("Direct fetch Rule34 gagal, mencoba allorigins proxy...", e2);
+        }
+
+        try {
+          var res3 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl));
+          if (res3.ok) return await res3.json();
+        } catch (e3) { }
+
+        throw new Error("Gagal mengambil data dari Rule34 API");
       }
-      function thumbURL(id) { return urls(id).small; }
+
+      function thumbURL(id) {
+        var meta = postMetaCache.get(id);
+        return (meta && meta.preview_url) ? meta.preview_url : "";
+      }
 
       var cache = new Map(), pending = new Map(), queue = [], queuedResolvers = new Map(), queuedPromises = new Map(), running = 0, MAX_PAR = 4, MAX_CACHE = 40, cacheGeneration = 0;
       function invalidateCache() { cacheGeneration++; cache.clear(); }
@@ -3106,28 +3140,52 @@
           v.preload = "metadata"; v.muted = true; v.src = url;
         });
       }
+      function buildResultFromMeta(post) {
+        if (!post || !post.file_url) return Promise.resolve({ type: null, miss: true });
+        var url = post.file_url;
+        var isVid = !!(url.match(/\.(mp4|webm|mov)(\?|$)/i) || (post.image && post.image.match(/\.(mp4|webm|mov)$/i)));
+        if (isVid) {
+          return Promise.resolve({ type: "mp4", url: url, meta: post });
+        }
+        var targetUrl = (S.saver && post.sample_url) ? post.sample_url : url;
+        return loadImg(targetUrl).then(function (im) {
+          if (im) return { type: "jpg", url: targetUrl, el: im, meta: post };
+          var fallbackUrl = (targetUrl === post.sample_url) ? post.file_url : (post.sample_url || post.preview_url);
+          if (fallbackUrl && fallbackUrl !== targetUrl) {
+            return loadImg(fallbackUrl).then(function (im2) {
+              if (im2) return { type: "jpg", url: fallbackUrl, el: im2, meta: post };
+              return { type: null, miss: true };
+            });
+          }
+          return { type: null, miss: true };
+        });
+      }
       function startResolve(id) {
         running++;
         var generation = cacheGeneration;
-        var u = urls(id);
-        var p = new Promise(function (resolve) {
-          var vDone = false, vOk = false, iDone = false, img = null, imgUrl = null, fin = false, wait = null;
-          function finish(r) { if (fin) return; fin = true; clearTimeout(wait); if (generation === cacheGeneration) cacheSet(id, r); resolve(r); }
-          function check() {
-            if (fin) return;
-            if (vDone && vOk) return finish({ type: "mp4", url: u.mp4 });
-            if (vDone && iDone) return finish(img ? { type: "jpg", url: imgUrl, el: img } : { type: null, url: null, miss: true });
-            if (iDone && img && !vDone && !wait) wait = setTimeout(function () { vDone = true; check(); }, 800);
-          }
-          probeVideo(u.mp4).then(function (ok) { vDone = true; vOk = ok; check(); });
-          loadImg(u.imgs[0]).then(function (im) {
-            if (im) { img = im; imgUrl = u.imgs[0]; return; }
-            return loadImg(u.imgs[1]).then(function (im2) { if (im2) { img = im2; imgUrl = u.imgs[1]; } });
-          }).then(function () { iDone = true; check(); });
-        });
+        var p;
+        if (postMetaCache.has(id)) {
+          p = buildResultFromMeta(postMetaCache.get(id));
+        } else {
+          p = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id })
+            .then(function (data) {
+              if (!Array.isArray(data) || !data.length) return { type: null, miss: true };
+              var post = data[0];
+              postMetaCache.set(id, post);
+              return buildResultFromMeta(post);
+            })
+            .catch(function () {
+              return { type: null, miss: true };
+            });
+        }
         function done() { running--; pending.delete(id); pump(); }
         p.then(done, done);
         pending.set(id, p);
+        if (generation === cacheGeneration) {
+          p.then(function (r) {
+            if (r && !r.miss) cacheSet(id, r);
+          });
+        }
         return p;
       }
       function get(id) {
@@ -3819,78 +3877,98 @@
         infoSuggEl.innerHTML = "";
         infoBackdrop.classList.add("open");
 
-        r34Fetch("/post/" + id).then(function (post) {
+        var postPromise;
+        if (postMetaCache.has(id)) {
+          postPromise = Promise.resolve(postMetaCache.get(id));
+        } else {
+          postPromise = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id }).then(function (data) {
+            if (Array.isArray(data) && data.length) {
+              postMetaCache.set(id, data[0]);
+              return data[0];
+            }
+            return null;
+          });
+        }
+
+        postPromise.then(function (post) {
           if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
-          if (!post) return;
+          if (!post) {
+            infoMetaEl.textContent = "Detail post tidak ditemukan";
+            return;
+          }
           infoMetaEl.innerHTML = "";
-          if (post.likes !== undefined) {
-            var lk = el("span", "", "Likes: " + post.likes);
+          if (post.score !== undefined) {
+            var lk = el("span", "", "Score: " + post.score);
             infoMetaEl.appendChild(lk);
           }
           if (post.width && post.height) {
             var sz = el("span", "", post.width + " × " + post.height);
             infoMetaEl.appendChild(sz);
           }
-          if (post.type === 1) {
-            var vt = el("span", "", "Video" + (post.duration ? " (" + post.duration + "s)" : ""));
+          var isVid = (post.file_url && post.file_url.match(/\.(mp4|webm|mov)(\?|$)/i)) || (post.image && post.image.match(/\.(mp4|webm)$/i));
+          if (isVid) {
+            var vt = el("span", "", "Video");
             vt.style.color = "var(--blue)";
             infoMetaEl.appendChild(vt);
           }
+          if (post.rating) {
+            var rt = el("span", "", post.rating);
+            infoMetaEl.appendChild(rt);
+          }
 
-          var tags = post.tags || [];
-          cacheAnyTags(tags);
-          if (!tags.length) {
+          var tagStr = (post.tags || "").trim();
+          var tagTokens = tagStr ? tagStr.split(/\s+/).filter(Boolean) : [];
+          if (!tagTokens.length) {
             infoTagsEl.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic">Tidak ada metadata tag untuk post ini</div>';
           } else {
             infoTagsEl.innerHTML = "";
-            var cats = {
-              8: { title: "Artist", cls: "artist", items: [] },
-              4: { title: "Character", cls: "character", items: [] },
-              2: { title: "Copyright / Seri", cls: "copyright", items: [] },
-              1: { title: "Tags", cls: "", items: [] }
-            };
-            tags.forEach(function (t) {
-              var c = cats[t.type] || cats[1];
-              c.items.push(t);
+            var sec = el("div", "infotag-sec");
+            sec.appendChild(el("div", "infotag-title", "Tags (" + tagTokens.length + ")"));
+            var chips = el("div", "infotag-chips");
+            tagTokens.forEach(function (tVal) {
+              var chip = el("button", "tagchip", tVal);
+              chip.onclick = function () {
+                closeInfo();
+                openTag(tVal);
+              };
+              chips.appendChild(chip);
             });
-            [8, 4, 2, 1].forEach(function (k) {
-              var cat = cats[k];
-              if (cat.items.length) {
-                var sec = el("div", "infotag-sec");
-                sec.appendChild(el("div", "infotag-title", cat.title));
-                var chips = el("div", "infotag-chips");
-                cat.items.forEach(function (t) {
-                  var chip = el("button", "tagchip " + cat.cls, t.value);
-                  chip.onclick = function () {
-                    closeInfo();
-                    openTag(t.value);
-                  };
-                  chips.appendChild(chip);
-                });
-                sec.appendChild(chips);
-                infoTagsEl.appendChild(sec);
+            sec.appendChild(chips);
+            infoTagsEl.appendChild(sec);
+
+            // Post serupa berdasarkan tag yang menarik (pilih tag selain tag generik seperti 1girl/video jika ada)
+            var chosenTag = tagTokens[0];
+            for (var ti = 0; ti < tagTokens.length; ti++) {
+              var candidate = tagTokens[ti];
+              if (candidate !== "video" && candidate !== "sound" && candidate !== "1girl" && candidate !== "tagme") {
+                chosenTag = candidate;
+                break;
               }
-            });
+            }
+            if (chosenTag) {
+              rule34ApiFetch({ page: "dapi", s: "post", q: "index", tags: chosenTag, limit: 12 }).then(function (suggs) {
+                if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
+                if (!Array.isArray(suggs) || !suggs.length) return;
+                var filtered = suggs.filter(function (item) { return Number(item.id) !== id; }).slice(0, 8);
+                if (!filtered.length) return;
+                infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">Post serupa (' + chosenTag + ')</div>';
+                var grid = el("div", "sugg-grid");
+                filtered.forEach(function (item) {
+                  var sid = Number(item.id);
+                  postMetaCache.set(sid, item);
+                  var th = thumb(sid, function () {
+                    closeInfo();
+                    loadPost(sid, 0);
+                  });
+                  grid.appendChild(th);
+                });
+                infoSuggEl.appendChild(grid);
+              }).catch(function () { });
+            }
           }
         }).catch(function (err) {
           if (infoToken === infoRequestToken && infoBackdrop.classList.contains("open")) infoMetaEl.textContent = "Detail post tidak tersedia";
         });
-
-        r34Fetch("/post/suggestion/" + id).then(function (suggs) {
-          if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
-          if (!Array.isArray(suggs) || !suggs.length) return;
-          infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">Post serupa</div>';
-          var grid = el("div", "sugg-grid");
-          suggs.slice(0, 12).forEach(function (item) {
-            var sid = item.id;
-            var th = thumb(sid, function () {
-              closeInfo();
-              loadPost(sid, 0);
-            });
-            grid.appendChild(th);
-          });
-          infoSuggEl.appendChild(grid);
-        }).catch(function () { });
       }
 
       function closeInfo(e) {
@@ -3899,39 +3977,6 @@
         infoBackdrop.classList.remove("open");
       }
 
-      var API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "/api/v2" : "https://r-34.xyz/api/v2";
-
-      async function r34Fetch(endpoint, opts) {
-        opts = opts || {};
-        opts.headers = opts.headers || {};
-        if (opts.body && typeof opts.body === "object" && !(opts.body instanceof FormData)) {
-          opts.headers["Content-Type"] = "application/json";
-          opts.body = JSON.stringify(opts.body);
-        }
-        // 1. Prioritaskan rewrite Vercel / domain saat ini (/api/v2)
-        try {
-          var res = await fetch(API_BASE + endpoint, opts);
-          if (res.ok) return await res.json();
-        } catch (err) {
-          console.warn("Fetch /api/v2 gagal, mencoba fallback proxy...", err);
-        }
-        // 2. Fallback proxy dengan URL absolut r-34.xyz jika offline / file://
-        var absTarget = (API_BASE.indexOf("http") === 0 ? API_BASE : "https://r-34.xyz/api/v2") + endpoint;
-        try {
-          var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(absTarget);
-          var res2 = await fetch(proxyUrl, opts);
-          if (res2.ok) return await res2.json();
-        } catch (err2) {
-          console.warn("Proxy 1 gagal...", err2);
-        }
-        if (!opts.method || opts.method.toUpperCase() === "GET") {
-          try {
-            var res3 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(absTarget));
-            if (res3.ok) return await res3.json();
-          } catch (err3) { }
-        }
-        throw new Error("Gagal mengambil data dari API r-34.xyz");
-      }
 
       function parseAutocompleteList(list) {
         if (!Array.isArray(list)) return [];
@@ -4002,20 +4047,22 @@
       var tagRequestToken = 0;
       async function fetchLatestPostId() {
         try {
-          var data = await r34Fetch("/post/search/root", {
-            method: "POST",
-            body: { take: 1, sortOrder: 1 }
+          var data = await rule34ApiFetch({
+            page: "dapi",
+            s: "post",
+            q: "index",
+            limit: 1
           });
-          if (data && Array.isArray(data.items) && data.items.length && data.items[0].id) {
-            var latestId = Number(data.items[0].id);
+          if (Array.isArray(data) && data.length && data[0].id) {
+            var latestId = Number(data[0].id);
             lsSet("knownMaxId", String(latestId));
             return latestId;
           }
         } catch (e) {
-          console.warn("Gagal mengambil post terbaru dari API:", e);
+          console.warn("Gagal mengambil post terbaru dari Rule34 API:", e);
         }
         var km = parseInt(lsGet("knownMaxId"), 10);
-        return (isFinite(km) && km > 1300000) ? km : 1353567;
+        return (isFinite(km) && km > 1000000) ? km : 16000000;
       }
 
 
@@ -4245,12 +4292,8 @@
             if (alphaFetchTokens[key] !== token || tagAlphaActive !== key) break;
             var q = queryQueue[cursor++];
             try {
-              var [res, autoRes] = await Promise.all([
-                r34Fetch("/tag/search/" + encodeURIComponent(q)).catch(function () { return []; }),
-                r34Autocomplete(q).catch(function () { return []; })
-              ]);
+              var autoRes = await r34Autocomplete(q).catch(function () { return []; });
               if (alphaFetchTokens[key] !== token) break;
-              if (Array.isArray(res) && res.length) processTagList(res);
               if (Array.isArray(autoRes) && autoRes.length) processTagList(autoRes);
             } catch (err) { }
           }
@@ -4283,75 +4326,69 @@
         if (reset) {
           ++tagRequestToken;
           tagPosts = [];
-          tagCursor = null;
+          tagCursor = 0;
           tagHasMore = true;
           tagLoading = false;
         }
         if (!tagHasMore || tagLoading) return;
-        var requestToken = tagRequestToken, requestTags = activeTagsDetail.slice(), requestCursor = tagCursor;
+        var requestToken = tagRequestToken, requestTags = activeTagsDetail.slice(), requestCursor = Number(tagCursor) || 0;
         tagLoading = true;
         rerender();
         try {
-          var payload = {
-            status: 2,
-            filterAi: !!S.filterAi,
-            take: 30,
-            excludeTags: blacklistTags.length ? blacklistTags : undefined
-          };
+          var queryTags = [];
           if (activeTagsDetail && activeTagsDetail.length) {
-            payload.includeTags = activeTagsDetail;
+            activeTagsDetail.forEach(function (t) {
+              if (t) queryTags.push(t.trim().replace(/\s+/g, "_"));
+            });
           }
-          if (tagSortMode === "hot") {
-            payload.sortBy = 3;
-            payload.sortOrder = 1;
-          } else if (tagSortMode === "popular" || tagSortMode === "top") {
-            payload.sortBy = 1;
-            payload.sortOrder = 1;
-          } else if (tagSortMode === "views") {
-            payload.sortBy = 2;
-            payload.sortOrder = 1;
+          if (tagSortMode === "popular" || tagSortMode === "top" || tagSortMode === "hot") {
+            queryTags.push("sort:score:desc");
           } else if (tagSortMode === "oldest") {
-            payload.sortBy = 0;
-            payload.sortOrder = 2;
-          } else {
-            // Latest (newest)
-            payload.sortBy = 0;
-            payload.sortOrder = 1;
+            queryTags.push("sort:id:asc");
           }
-          if (tagTypeFilter !== null && tagTypeFilter !== undefined) {
-            payload.type = tagTypeFilter;
+
+          if (tagTypeFilter === 1) {
+            queryTags.push("video");
+          } else if (tagTypeFilter === 0) {
+            queryTags.push("-video");
           }
-          if (requestCursor) payload.cursor = String(requestCursor);
-          var data = await r34Fetch("/post/search/root", { method: "POST", body: payload });
-          if (requestToken !== tagRequestToken || tagLabel(requestTags) !== activeTag) return;
-          var rawItems = data && Array.isArray(data.items) ? data.items : [];
-          var items = rawItems.slice();
+
+          if (S.filterAi) {
+            queryTags.push("-ai_generated");
+          }
+
           if (blacklistTags.length > 0) {
-            items = items.filter(function (item) {
-              if (!item) return false;
-              if (item.tags && Array.isArray(item.tags)) {
-                for (var b = 0; b < blacklistTags.length; b++) {
-                  if (item.tags.indexOf(blacklistTags[b]) !== -1) return false;
-                }
-              }
-              return true;
+            blacklistTags.forEach(function (bt) {
+              if (bt) queryTags.push("-" + bt.trim().replace(/\s+/g, "_"));
             });
           }
-          if (items.length > 0) {
-            items.forEach(function (item) {
-              if (item.id) {
-                postMetaCache.set(item.id, item);
-                if (tagPosts.indexOf(item.id) === -1) {
-                  tagPosts.push(item.id);
+
+          var tagsParam = queryTags.join(" ").trim();
+          var params = {
+            page: "dapi",
+            s: "post",
+            q: "index",
+            limit: 40,
+            pid: requestCursor
+          };
+          if (tagsParam) params.tags = tagsParam;
+
+          var data = await rule34ApiFetch(params);
+          if (requestToken !== tagRequestToken || tagLabel(requestTags) !== activeTag) return;
+          var rawItems = Array.isArray(data) ? data : [];
+          if (rawItems.length > 0) {
+            rawItems.forEach(function (item) {
+              if (item && item.id) {
+                var numId = Number(item.id);
+                postMetaCache.set(numId, item);
+                if (tagPosts.indexOf(numId) === -1) {
+                  tagPosts.push(numId);
                 }
               }
             });
+            tagCursor = requestCursor + 1;
           }
-          if (rawItems.length) {
-            var lastRaw = rawItems[rawItems.length - 1];
-            if (lastRaw && lastRaw.id !== undefined) tagCursor = lastRaw.id;
-          }
-          if (rawItems.length < 30) tagHasMore = false;
+          if (rawItems.length < 40) tagHasMore = false;
         } catch (err) {
           if (requestToken === tagRequestToken) toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
         } finally {
@@ -4520,8 +4557,20 @@
           box.appendChild(el("div", "empty", tagFetching ? "Memuat tag bertahap…" : "Memuat tag…"));
           if (!tagFetching && !tagAlphaActive) {
             tagFetching = true;
-            r34Fetch("/tag").then(function (tags) {
-              popularTagsCache = Array.isArray(tags) ? tags : [];
+            rule34ApiFetch({ page: "dapi", s: "tag", q: "index", limit: 100, orderby: "count" }).then(function (tags) {
+              if (Array.isArray(tags)) {
+                popularTagsCache = tags.map(function (t) {
+                  var rType = Number(t.type);
+                  var dnType = rType === 1 ? 8 : (rType === 4 ? 4 : (rType === 3 ? 2 : 1));
+                  return {
+                    value: t.name,
+                    count: Number(t.count) || 0,
+                    type: dnType
+                  };
+                });
+              } else {
+                popularTagsCache = [];
+              }
               if (!popularTagsCache.length) tagListErr = true;
             }).catch(function () { tagListErr = true; }).then(function () { tagFetching = false; renderTagList(); });
           }
@@ -4580,12 +4629,9 @@
         tagDebounceT = setTimeout(async function () {
           try {
             var queryTerm = term.replace(/\s+/g, "_");
-            var [res, autoRes] = await Promise.all([
-              r34Fetch("/tag/search/" + encodeURIComponent(queryTerm)).catch(function () { return []; }),
-              r34Autocomplete(queryTerm).catch(function () { return []; })
-            ]);
+            var autoRes = await r34Autocomplete(queryTerm).catch(function () { return []; });
             if (term !== tagSearchTerm) return;
-            var combined = (Array.isArray(res) ? res : []).concat(Array.isArray(autoRes) ? autoRes : []);
+            var combined = Array.isArray(autoRes) ? autoRes : [];
             var seen = new Map();
             combined.forEach(function (t) {
               if (t && t.value) {
@@ -4795,11 +4841,22 @@
         else renderSettings();
       }
       function thumb(id, onclick) {
-        var d = el("div", "thumb"); var im = new Image(); im.loading = "lazy"; im.decoding = "async"; im.alt = ""; im.src = thumbURL(id);
+        var d = el("div", "thumb");
+        var im = new Image(); im.loading = "lazy"; im.decoding = "async"; im.alt = "";
+        var meta = postMetaCache.get(id);
+        if (meta && meta.preview_url) {
+          im.src = meta.preview_url;
+        } else {
+          get(id).then(function (r) {
+            if (r && r.meta && r.meta.preview_url && !im.src) {
+              im.src = r.meta.preview_url;
+            }
+          });
+        }
         im.onerror = function () { if (im.parentNode) im.parentNode.removeChild(im); d.classList.add("nothumb"); };
         d.appendChild(im); d.appendChild(el("span", "tid", "#" + id));
-        var meta = postMetaCache.get(id);
-        if (meta && meta.type === 1) {
+        var isVid = meta && (meta.type === 1 || (meta.file_url && meta.file_url.match(/\.(mp4|webm|mov)(\?|$)/i)));
+        if (isVid) {
           var vb = el("span", "vid-badge", meta.duration ? meta.duration + "s" : "VIDEO");
           d.appendChild(vb);
         }
@@ -4817,7 +4874,16 @@
         playlists.forEach(function (pl) {
           var card = el("div", "card"), cv = el("div", "cv", "");
           if (pl.postIds.length) {
-            var im = new Image(); im.loading = "lazy"; im.src = thumbURL(pl.last && isIn(pl, pl.last) ? pl.last : pl.postIds[0]); im.alt = "";
+            var covId = pl.last && isIn(pl, pl.last) ? pl.last : pl.postIds[0];
+            var im = new Image(); im.loading = "lazy"; im.alt = "";
+            var meta = postMetaCache.get(covId);
+            if (meta && meta.preview_url) {
+              im.src = meta.preview_url;
+            } else if (covId) {
+              get(covId).then(function (r) {
+                if (r && r.meta && r.meta.preview_url && !im.src) im.src = r.meta.preview_url;
+              });
+            }
             im.onerror = function () { if (im.parentNode) im.parentNode.removeChild(im); var fb = el("span"); fb.innerHTML = ic("layers"); cv.insertBefore(fb, cv.firstChild); };
             cv.appendChild(im);
           } else cv.innerHTML = ic("layers");
@@ -4965,7 +5031,7 @@
         var allTagBox = el("div", "storage-card");
         allTagBox.appendChild(el("div", "storage-title", "Direktori & Semua Tag"));
         var atStats = el("div", "storage-stats");
-        atStats.innerHTML = "<div>Jelajahi seluruh koleksi tag r-34 berdasarkan abjad (A–Z) dan kategori (Artist, Karakter, Seri).</div>";
+        atStats.innerHTML = "<div>Jelajahi seluruh koleksi tag Rule34 berdasarkan abjad (A–Z) dan kategori (Artist, Karakter, Seri).</div>";
         allTagBox.appendChild(atStats);
         var atActs = el("div", "arow");
         atActs.style.marginTop = "6px";
@@ -5122,10 +5188,22 @@
           }
           function next() {
             if (i >= list.length) { finish(); return; }
-            var id = list[i++], u = urls(id);
+            var id = list[i++];
             toast("Mengambil " + i + "/" + list.length + "…");
-            tryFetch([[u.mp4, "mp4"], [u.full, "jpg"], [u.small, "jpg"]], 0).then(function (r) {
-              if (totalBytes + r.blob.size > MAX_ZIP_BYTES) { fail++; toast("ZIP dihentikan: batas aman 80 MB terlampaui", "bad"); i = list.length; return; }
+            get(id).then(function (r) {
+              if (!r || r.miss || !r.url) throw 0;
+              var ext = r.type === "mp4" ? "mp4" : "jpg";
+              return fetch(r.url).then(function (res) {
+                if (!res.ok) throw 0;
+                return res.blob().then(function (b) { return { blob: b, ext: ext }; });
+              });
+            }).then(function (r) {
+              if (totalBytes + r.blob.size > MAX_ZIP_BYTES) {
+                fail++;
+                toast("ZIP dihentikan: batas aman 80 MB terlampaui", "bad");
+                i = list.length;
+                return;
+              }
               totalBytes += r.blob.size;
               return r.blob.arrayBuffer().then(function (buf) {
                 files.push({ name: "post_" + id + "." + r.ext, blob: r.blob, size: r.blob.size, crc: crc32(new Uint8Array(buf)) });

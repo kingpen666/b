@@ -2,12 +2,12 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/autocomplete(.*)",
-      "destination": "https://api.rule34.xxx/autocomplete.php$1"
+      "source": "/api/dapi(.*)",
+      "destination": "https://api.rule34.xxx/index.php$1"
     },
     {
-      "source": "/api/v2/(.*)",
-      "destination": "https://r-34.xyz/api/v2/$1"
+      "source": "/api/autocomplete(.*)",
+      "destination": "https://api.rule34.xxx/autocomplete.php$1"
     },
     {
       "source": "/(.*)",
