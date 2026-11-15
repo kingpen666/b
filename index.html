@@ -378,9 +378,8 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .autobar .fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; background: var(--blue); }
 .autobar .lbl {
   position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 38px;
+  left: 8px;
   padding: 2px 8px;
   border-radius: 6px;
   background: rgba(18, 19, 26, 0.85);
@@ -1212,6 +1211,22 @@ body.fs .toast { bottom: 20px; }
   .top { gap: 6px; }
   .brand { font-size: 12px; }
 }
+
+.stdesc { font-size: 11px; color: var(--text-faint); line-height: 1.45; }
+.strow { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--border); }
+.stl { min-width: 0; flex: 1; }
+.stt { font-size: 12px; font-weight: 700; color: #fff; }
+.str { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: 0 0 auto; }
+.stz { font: 700 11px monospace; color: var(--blue); white-space: nowrap; }
+.stb { padding: 4px 9px; border-radius: 6px; background: var(--surface3); border: 1px solid var(--border); color: var(--text); font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+.stb:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
+.stb.dng { color: #fca5a5; border-color: rgba(239,68,68,.35); }
+.stb.dng:hover { background: var(--red); border-color: var(--red); color: #fff; }
+.stkeys { margin-top: 4px; }
+.stkeys summary { font-size: 11.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 6px 0; }
+.stkrow { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; padding: 2px 0; color: var(--text-muted); }
+.stkrow code { font: 600 10.5px monospace; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.stkrow span { font: 600 10.5px monospace; color: var(--blue); flex: 0 0 auto; }
 </style>
 </head>
 <body>
@@ -1820,7 +1835,48 @@ function updateChip(){
   chip.title=kind+": "+name;
   chip.classList.add("on");
 }
-function exitPlaylist(){ activeTag=null; activePlaylistId=null; shuffleOn=false; playOrder=[]; returnId=null; updateChip(); }
+function saveSession(){
+  try{
+    var s={cur:current,sort:tagSortMode,type:tagTypeFilter,sel:selectedTags,ret:returnId,shuf:shuffleOn};
+    if(activeTag){
+      s.mode="tag"; s.tags=activeTagsDetail; s.label=activeTag;
+      var lim=800, ps=tagPosts;
+      s.more=tagHasMore; s.cursor=tagCursor;
+      if(ps.length>lim){ ps=ps.slice(0,lim); s.more=true; s.cursor=ps[lim-1]; }
+      s.posts=ps; s.order=shuffleOn?playOrder.slice(0,lim):null;
+    } else if(activePlaylistId){
+      s.mode="pl"; s.pl=activePlaylistId; s.order=shuffleOn?playOrder.slice():null;
+    }
+    jset("pe_session",s);
+  }catch(e){}
+}
+function restoreSession(){
+  var s=jget("pe_session",null);
+  if(!s||typeof s!=="object"||Array.isArray(s)) return;
+  if(["newest","hot","popular","top","views","oldest"].indexOf(s.sort)>-1) tagSortMode=s.sort;
+  if(s.type===0||s.type===1) tagTypeFilter=s.type;
+  if(Array.isArray(s.sel)) selectedTags=s.sel.filter(function(x){ return typeof x==="string"; });
+  if(s.mode==="tag"&&Array.isArray(s.posts)&&s.posts.length){
+    tagPosts=s.posts.filter(validId);
+    if(!tagPosts.length) return;
+    if(tagPosts.indexOf(current)<0) tagPosts.unshift(current);
+    activeTagsDetail=Array.isArray(s.tags)?s.tags.filter(function(x){ return typeof x==="string"; }):[];
+    activeTag=(typeof s.label==="string"&&s.label)?s.label:tagLabel(activeTagsDetail);
+    tagCursor=s.cursor||null; tagHasMore=s.more!==false; tagLoading=false;
+    shuffleOn=!!s.shuf;
+    playOrder=Array.isArray(s.order)?s.order.filter(validId):[];
+    returnId=validId(s.ret)?s.ret:null;
+  } else if(s.mode==="pl"&&typeof s.pl==="string"){
+    var p=getPL(s.pl);
+    if(p&&p.postIds.length){
+      activePlaylistId=p.id; shuffleOn=!!s.shuf;
+      playOrder=Array.isArray(s.order)?s.order.filter(validId):[];
+      returnId=validId(s.ret)?s.ret:null;
+      if(isIn(p,current)===false) current=(shuffleOn&&playOrder.length?playOrder[0]:p.postIds[0]);
+    }
+  }
+}
+function exitPlaylist(){ activeTag=null; activePlaylistId=null; shuffleOn=false; playOrder=[]; returnId=null; updateChip(); saveSession(); }
 function leavePlaylist(){
   var back=returnId;
   exitPlaylist();
@@ -1937,14 +1993,14 @@ function makeVideo(id,url){
   var v=document.createElement("video");
   v._pid=id;
   v.controls=true; v.playsInline=true; v.setAttribute("playsinline","");
-  v.preload="auto"; v.muted=S.muted; v.loop=!(autoEnabled || S.autoNextVid);
+  v.preload="auto"; v.muted=S.muted; v.loop=autoEnabled?true:!S.autoNextVid;
   v.defaultPlaybackRate=S.speed; v.playbackRate=S.speed;
   v.addEventListener("loadedmetadata",function(){
     var t=vpos.get(id);
     if(t&&isFinite(v.duration)&&t<v.duration-2){ try{ v.currentTime=t; }catch(e){} }
     v.playbackRate=S.speed;
   });
-  v.addEventListener("ended",function(){ if((autoEnabled||S.autoNextVid)&&v.parentNode&&id===current) change(1); });
+  v.addEventListener("ended",function(){ if(S.autoNextVid&&!autoEnabled&&v.parentNode&&id===current) change(1); });
   v.addEventListener("error",function(){ if(autoEnabled&&v.parentNode&&id===current) resetAutoTimer(); });
   v.src=url;
   return v;
@@ -2006,13 +2062,12 @@ function present(r,tok,dir,tries){
   shownId=current;
   if(r.type==="mp4"){
     var el=makeVideo(current,r.url); setMedia(el);
-    clearAutoTimer();
-    if(autoEnabled){ lastLbl="VIDEO"; autoLbl.textContent="VIDEO"; autoFill.style.width="100%"; }
+    if(autoEnabled) resetAutoTimer();
     var pr=el.play();
     if(pr&&pr.catch) pr.catch(function(){
       el.muted=true;
       var p2=el.play();
-      if(p2&&p2.catch) p2.catch(function(){ if(autoEnabled&&tok===token) resetAutoTimer(); });
+      if(p2&&p2.catch) p2.catch(function(){});
     });
   } else {
     setMedia(r.el);
@@ -2074,9 +2129,9 @@ function startAuto(){
   var wakeToken=++wakeLockRequest;
   $("autoBtn").classList.add("on"); $("autoIco").innerHTML=ic("pause"); $("autoTxt").textContent="Stop";
   autoBar.classList.add("on");
-  var v=zoomLayer.querySelector("video"); if(v) v.loop=false;
+  var v=zoomLayer.querySelector("video"); if(v) v.loop=true;
   try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){ if(autoEnabled&&wakeToken===wakeLockRequest){ wakeLock=l; l.addEventListener("release",function(){ if(wakeLock===l) wakeLock=null; }); } else { l.release().catch(function(){}); } }).catch(function(){}); }catch(e){}
-  if(isVideo()){ lastLbl="VIDEO"; autoLbl.textContent="VIDEO"; autoFill.style.width="100%"; } else resetAutoTimer();
+  resetAutoTimer();
 }
 function stopAuto(){
   autoEnabled=false; ++wakeLockRequest; clearAutoTimer();
@@ -2637,15 +2692,30 @@ async function fetchAlphaTags(key) {
 
   var concurrency = 4;
   var cursor = 0;
+  var MAX_REQ = 700, MAX_DEPTH = 6, capSeen = 0;
+  var queued = {};
+  queryQueue.forEach(function(q) { queued[q] = 1; });
+  var expandChars = key === "0-9" ? "0123456789".split("") : "abcdefghijklmnopqrstuvwxyz_".split("");
 
   async function worker() {
-    while (cursor < queryQueue.length) {
+    while (cursor < queryQueue.length && cursor < MAX_REQ) {
       if (alphaFetchTokens[key] !== token || tagAlphaActive !== key) break;
       var q = queryQueue[cursor++];
       try {
         var res = await r34Fetch("/tag/search/" + encodeURIComponent(q));
         if (alphaFetchTokens[key] !== token) break;
         processTagList(res);
+        // Hasil API dibatasi per pencarian: jika penuh, persempit dengan awalan lebih panjang
+        if (Array.isArray(res)) {
+          if (res.length > capSeen) capSeen = res.length;
+          var core = q.replace(/_$/, "");
+          if (res.length >= 8 && res.length >= capSeen && core.length < MAX_DEPTH) {
+            expandChars.forEach(function(ch) {
+              var nq = core + ch;
+              if (!queued[nq]) { queued[nq] = 1; queryQueue.push(nq); }
+            });
+          }
+        }
       } catch (err) {}
     }
   }
@@ -2749,7 +2819,7 @@ async function loadTagDetail(tags, reset) {
   } catch (err) {
     if(requestToken===tagRequestToken) toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
   } finally {
-    if(requestToken===tagRequestToken){ tagLoading=false; rerender(); }
+    if(requestToken===tagRequestToken){ tagLoading=false; rerender(); saveSession(); }
   }
 }
 
@@ -2799,6 +2869,7 @@ function filterSummary(){
   return a;
 }
 function refreshBadges(){
+  saveSession();
   try {
     var f = filterSummary().length > 0, fb = $("filterBtn"), tb = $("tagBtn");
     if (fb) fb.classList.toggle("dot", f);
@@ -3325,8 +3396,8 @@ function seg(opts,val,cb){
 function renderSettings(){
   var b=sheetBody, onoff=[[true,"On"],[false,"Off"]];
   b.innerHTML = "";
-  b.appendChild(setRow("Auto-Next Video","Otomatis lanjut post berikutnya saat video selesai",seg(onoff,!!S.autoNextVid,function(v){ S.autoNextVid=v; saveS(); var vid=zoomLayer.querySelector("video"); if(vid) vid.loop=!(autoEnabled||S.autoNextVid); })));
-  b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled&&!isVideo()) resetAutoTimer(); })));
+  b.appendChild(setRow("Auto-Next Video","Otomatis lanjut post berikutnya saat video selesai",seg(onoff,!!S.autoNextVid,function(v){ S.autoNextVid=v; saveS(); var vid=zoomLayer.querySelector("video"); if(vid) vid.loop=autoEnabled?true:!S.autoNextVid; })));
+  b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled) resetAutoTimer(); })));
   b.appendChild(setRow("Lewati post kosong","Loncat otomatis ID yang tidak ada",seg(onoff,S.skipMissing,function(v){ S.skipMissing=v; saveS(); })));
   b.appendChild(setRow("Hemat data","Pakai gambar kecil dulu",seg(onoff,S.saver,function(v){ S.saver=v; saveS(); invalidateCache(); })));
   b.appendChild(setRow("Pertahankan zoom","Level zoom tetap saat pindah post",seg(onoff,S.keepZoom,function(v){ S.keepZoom=v; saveS(); })));
@@ -3354,52 +3425,7 @@ function renderSettings(){
   allTagBox.appendChild(atActs);
   b.appendChild(allTagBox);
 
-  var sBox = el("div", "storage-card");
-  var sTitle = el("div", "storage-title", "Pengelola Penyimpanan & Cache");
-  sBox.appendChild(sTitle);
-
-  var lsBytes = 0;
-  try {
-    for (var k in localStorage) {
-      if (localStorage.hasOwnProperty(k)) {
-        lsBytes += (localStorage[k].length + k.length) * 2;
-      }
-    }
-  } catch(e) {}
-  var lsKb = (lsBytes / 1024).toFixed(1);
-
-  var sStats = el("div", "storage-stats");
-  sStats.innerHTML = "<div><b>Data Aplikasi (Playlists, Setelan):</b> <span>" + lsKb + " KB</span></div>" +
-                     "<div><b>Cache RAM:</b> <span>" + cache.size + " / " + MAX_CACHE + " post</span></div>" +
-                     "<div><b>Cache Disk Browser:</b> <span id='storageQuotaVal'>Memeriksa...</span></div>";
-  sBox.appendChild(sStats);
-
-  if (navigator.storage && navigator.storage.estimate) {
-    navigator.storage.estimate().then(function(est) {
-      var qRow = $("storageQuotaVal");
-      if (qRow && est.usage !== undefined) {
-        var mb = (est.usage / (1024 * 1024)).toFixed(1);
-        qRow.textContent = mb + " MB";
-      }
-    }).catch(function() {});
-  }
-
-  var sActs = el("div", "arow");
-  sActs.style.marginTop = "6px";
-  sActs.appendChild(ipill("refresh", "Bersihkan Cache", "pri", function() {
-    invalidateCache();
-    clearQueued();
-    toast("Cache RAM dibersihkan", "ok");
-    renderSettings();
-  }));
-  sActs.appendChild(ipill("trash", "Kosongkan Riwayat", "", function() {
-    hist = [];
-    jset("pe_hist", hist);
-    toast("Riwayat dikosongkan", "ok");
-    renderSettings();
-  }));
-  sBox.appendChild(sActs);
-  b.appendChild(sBox);
+  renderStorageCard(b);
 
   var gRow=el("div","arow"); gRow.style.marginTop="8px";
   gRow.appendChild(ipill("book", "Buka Panduan","pri",openGuide));
@@ -3407,6 +3433,58 @@ function renderSettings(){
   var tip=el("div","","Gestur: swipe ↑ = post berikutnya · swipe ↓ = post sebelumnya · swipe → = simpan ke playlist · swipe ← = hapus dari playlist · pinch = zoom gambar · double-tap = favorit (animasi heart). Keyboard: ←↑ = sebelumnya · →↓ = berikutnya · Spasi = play/pause · A=auto · F=favorit · R=acak · P=playlist · B=kembali · Esc=tutup. Filter AI & sembunyikan tag ada di menu Filter.");
   tip.style.cssText="font-size:11px;color:var(--text-faint);line-height:1.6;margin-top:10px";
   b.appendChild(tip);
+}
+
+function fmtB(n){ n=Number(n)||0; if(n>=1048576) return (n/1048576).toFixed(1)+" MB"; if(n>=1024) return (n/1024).toFixed(1)+" KB"; return n+" B"; }
+function storRow(title,desc,size,btn,fn,danger){
+  var r=el("div","strow"), l=el("div","stl");
+  l.appendChild(el("div","stt",title)); l.appendChild(el("div","stdesc",desc)); r.appendChild(l);
+  var rt=el("div","str"), sz=el("div","stz",size); rt.appendChild(sz);
+  if(btn){ var bt=el("button","stb"+(danger?" dng":""),btn); bt.onclick=fn; rt.appendChild(bt); }
+  r.appendChild(rt); r.sizeEl=sz; return r;
+}
+function renderStorageCard(b){
+  var box=el("div","storage-card");
+  box.appendChild(el("div","storage-title","Pengelola Penyimpanan & Cache"));
+  box.appendChild(el("div","stdesc","Semua data disimpan lokal di browser ini dan tidak dikirim ke server. Berikut isi yang dikelola:"));
+  var keys=[], total=0;
+  try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i), by=(k.length+(localStorage.getItem(k)||"").length)*2; total+=by; keys.push([k,by]); } }catch(e){}
+  keys.sort(function(a,c){ return c[1]-a[1]; });
+  function kb(k){ for(var i=0;i<keys.length;i++) if(keys[i][0]===k) return keys[i][1]; return 0; }
+  var nPost=0; playlists.forEach(function(p){ nPost+=p.postIds.length; });
+  var mode=activeTag?("mode Tag: "+activeTag):(activePlaylistId?"mode Playlist":"mode Post biasa");
+
+  box.appendChild(storRow("Playlist & Favorit",playlists.length+" playlist, "+nPost+" ID post. Disimpan di localStorage dan dicadangkan otomatis di IndexedDB.",fmtB(kb("playlists_v1")),"Buka Koleksi",function(){ openSheet("playlist"); }));
+  var idbRow=storRow("Cadangan Playlist (IndexedDB)","Salinan playlist untuk pemulihan jika localStorage terhapus.","…");
+  box.appendChild(idbRow);
+  idbGet("playlists_v1").then(function(raw){ idbRow.sizeEl.textContent=raw?fmtB(String(raw).length*2):"kosong"; });
+  box.appendChild(storRow("Sesi terakhir","Posisi dan mode yang dipulihkan saat web dibuka lagi. Saat ini: "+mode+", post #"+current+". Diperbarui otomatis.",fmtB(kb("pe_session")),(activeTag||activePlaylistId)?"Keluar mode":null,function(){ exitPlaylist(); toast("Kembali ke mode post","ok"); renderSettings(); }));
+  box.appendChild(storRow("Riwayat tontonan",hist.length+" post terakhir (maks 60).",fmtB(kb("pe_hist")),hist.length?"Kosongkan":null,function(){ hist=[]; jset("pe_hist",hist); toast("Riwayat dikosongkan","ok"); renderSettings(); },true));
+  box.appendChild(storRow("Tag disembunyikan",blacklistTags.length+" tag"+(blacklistTags.length?": "+blacklistTags.slice(0,6).join(", ")+(blacklistTags.length>6?"…":""):"")+".",fmtB(kb("pe_blacklist")),blacklistTags.length?"Kosongkan":null,function(){ blacklistTags=[]; saveBlacklist(); syncTagUI(); toast("Daftar sembunyi dikosongkan","ok"); renderSettings(); },true));
+  box.appendChild(storRow("Setelan & penanda kecil","Setelan aplikasi, post terakhir, posisi utama, ID terbaru, penanda panduan.",fmtB(kb("pe_settings")+kb("lastPost")+kb("pe_anchor_post")+kb("knownMaxId")+kb("pe_onboarded")),null));
+  var ids=[]; cache.forEach(function(v,id){ ids.push(id); });
+  box.appendChild(storRow("Cache RAM (sementara)",cache.size+" / "+MAX_CACHE+" post yang sudah dimuat agar geser cepat"+(ids.length?": #"+ids.slice(-5).join(", #")+(ids.length>5?" …":""):"")+". Hilang saat tab ditutup.",cache.size+" item",cache.size?"Bersihkan":null,function(){ invalidateCache(); clearQueued(); toast("Cache RAM dibersihkan","ok"); renderSettings(); }));
+  var swRow=storRow("Cache offline (Service Worker)","Salinan file aplikasi/media yang disimpan browser agar bisa dibuka offline.","…","Hapus",function(){
+    dialog("Hapus semua cache offline? Aplikasi akan memuat ulang file dari jaringan.",{ok:"Hapus",danger:true},function(){
+      caches.keys().then(function(ns){ return Promise.all(ns.map(function(n){ return caches.delete(n); })); }).then(function(){ toast("Cache offline dihapus","ok"); renderSettings(); });
+    });
+  },true);
+  box.appendChild(swRow);
+  if(window.caches&&caches.keys){
+    caches.keys().then(function(ns){
+      return Promise.all(ns.map(function(n){ return caches.open(n).then(function(c){ return c.keys(); }).then(function(k){ return n+": "+k.length+" file"; }); }));
+    }).then(function(arr){ swRow.sizeEl.textContent=arr.length?arr.length+" cache":"kosong"; if(arr.length) swRow.querySelector(".stdesc").textContent+=" Isi: "+arr.join("; ")+"."; });
+  } else swRow.sizeEl.textContent="tidak didukung";
+  var totRow=storRow("Total pemakaian browser","Seluruh penyimpanan situs ini (localStorage "+fmtB(total)+" + IndexedDB + cache).","…");
+  box.appendChild(totRow);
+  if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(function(e){ totRow.sizeEl.textContent=fmtB(e.usage||0)+(e.quota?" / "+fmtB(e.quota):""); }).catch(function(){ totRow.sizeEl.textContent="?"; });
+  else totRow.sizeEl.textContent="?";
+
+  var det=el("details","stkeys"); det.appendChild(el("summary","","Detail kunci localStorage ("+keys.length+")"));
+  var labels={playlists_v1:"Playlist & Favorit",pe_settings:"Setelan",pe_hist:"Riwayat",pe_blacklist:"Tag disembunyikan",pe_session:"Sesi terakhir",lastPost:"Post terakhir",pe_anchor_post:"Posisi utama",knownMaxId:"ID post terbaru",pe_onboarded:"Penanda panduan"};
+  keys.forEach(function(k){ var r=el("div","stkrow"); r.appendChild(el("code","",k[0]+(labels[k[0]]?" · "+labels[k[0]]:""))); r.appendChild(el("span","",fmtB(k[1]))); det.appendChild(r); });
+  box.appendChild(det);
+  b.appendChild(box);
 }
 function newPlaylist(){
   dialog("Nama playlist baru",{input:true,ok:"Buat"},function(v){
@@ -3764,11 +3842,12 @@ document.addEventListener("visibilitychange",function(){
   if(document.hidden){
     var v=zoomLayer.querySelector("video");
     if(v){ try{ v.pause(); }catch(e){} }
-    persist();
+    persist(); saveSession();
   }
 });
-window.addEventListener("pagehide",function(){ persist(); });
+window.addEventListener("pagehide",function(){ persist(); saveSession(); });
 
+restoreSession();
 paintIcons();
 refreshBtns(); updateChip(); updateBack();
 loadPost(current,0);
