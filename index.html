@@ -524,10 +524,37 @@ body.fs .stage { border-radius: 0; border: 0; }
 .tag-cat-btn.artist.on { background: rgba(196,181,253,.2); color: #c4b5fd; border-color: #a78bfa; }
 .tag-cat-btn.char.on { background: rgba(110,231,183,.2); color: #6ee7b7; border-color: #34d399; }
 .tag-cat-btn.copy.on { background: rgba(253,230,138,.2); color: #fde68a; border-color: #fbbf24; }
-.tag-alpha-bar { display: flex; gap: 3px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 2px; scrollbar-width: none; }
-.tag-alpha-bar::-webkit-scrollbar { display: none; }
-.tag-alpha-btn { flex: 0 0 auto; width: 23px; height: 23px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-.tag-alpha-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.tag-alpha-pad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3.5px;
+  justify-content: center;
+  margin-bottom: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 4px;
+}
+.tag-alpha-btn {
+  flex: 0 0 auto;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.tag-alpha-btn:hover { background: var(--surface4); color: #fff; }
+.tag-alpha-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+.tag-alpha-btn.wide { padding: 0 8px; font-size: 10px; }
 
 .tagsearchbox {
   display: flex;
@@ -2445,6 +2472,60 @@ async function fetchLatestPostId() {
   return (isFinite(km) && km > 1300000) ? km : 1353567;
 }
 
+
+async function fetchAlphaTags(key) {
+  if (alphaTagCache[key] && alphaTagCache[key].length) return alphaTagCache[key];
+  var tagMap = new Map();
+  var subQueries = [];
+  
+  if (key === "0-9") {
+    // Queries for number-starting tags
+    var digits = "0123456789".split("");
+    subQueries = digits.concat(["1g", "2g", "3d", "4k", "69"]);
+  } else {
+    // 26 prefix fanouts: a -> aa, ab, ac ... az
+    var lower = key.toLowerCase();
+    subQueries = [lower];
+    "abcdefghijklmnopqrstuvwxyz".split("").forEach(function(ch) {
+      subQueries.push(lower + ch);
+    });
+  }
+
+  var promises = subQueries.map(function(q) {
+    return r34Fetch("/tag/search/" + encodeURIComponent(q)).catch(function(){ return []; });
+  });
+
+  try {
+    var allRes = await Promise.all(promises);
+    allRes.forEach(function(list) {
+      if (Array.isArray(list)) {
+        list.forEach(function(t) {
+          if (t && t.value) {
+            var v = t.value.toLowerCase();
+            var matches = false;
+            if (key === "0-9") {
+              matches = /^[0-9]/.test(v);
+            } else {
+              matches = v.indexOf(key.toLowerCase()) === 0;
+            }
+            if (matches) {
+              tagMap.set(t.value, t);
+            }
+          }
+        });
+      }
+    });
+  } catch(e) {
+    console.warn("Alpha tag fetch error:", e);
+  }
+
+  var sorted = Array.from(tagMap.values()).sort(function(a, b) {
+    return a.value.localeCompare(b.value);
+  });
+  alphaTagCache[key] = sorted;
+  return sorted;
+}
+
 async function loadTagDetail(tags, reset) {
   if (Array.isArray(tags)) {
     activeTagsDetail = tags.slice();
@@ -2560,7 +2641,7 @@ function saveTagAsPlaylist(tagTitle) {
 
 var tagDebounceT = null;
 
-var tagListErr = false, tagFetching = false, tagSearching = false, tagPickMode = "want", tagCatFilter = null, tagAlphaActive = null;
+var tagListErr = false, tagFetching = false, tagSearching = false, tagPickMode = "want", tagCatFilter = null, tagAlphaActive = null, alphaTagCache = {};
 function normTag(v){ return String(v || "").trim().toLowerCase().replace(/\s+/g, "_"); }
 function tagLabel(arr){ return arr && arr.length ? arr.join(" + ") : (tagSortMode === "popular" ? "Terpopuler" : "Semua post"); }
 function fmtN(n){ n = Number(n) || 0; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M"; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k"; return String(n); }
@@ -2662,7 +2743,20 @@ function renderTagBar(){
 function renderTagList(){
   var box = $("tagListContainer"); if (!box) return;
   box.innerHTML = "";
-  var rawSrc = tagSearchTerm ? searchedTags : popularTagsCache;
+  var rawSrc = [];
+  var listTitle = "Tag Populer";
+  
+  if (tagAlphaActive) {
+    rawSrc = alphaTagCache[tagAlphaActive] || [];
+    listTitle = "Semua Tag Berawalan '" + tagAlphaActive + "'";
+  } else if (tagSearchTerm) {
+    rawSrc = searchedTags;
+    listTitle = "Hasil Pencarian";
+  } else {
+    rawSrc = popularTagsCache;
+    listTitle = "Tag Populer";
+  }
+
   var src = tagCatFilter !== null ? rawSrc.filter(function(t){ return t.type === tagCatFilter; }) : rawSrc;
   if (!src.length) {
     if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : "Tag tidak ditemukan")); return; }
@@ -2683,7 +2777,7 @@ function renderTagList(){
     }
     return;
   }
-  box.appendChild(el("div", "tlabel", tagSearchTerm ? "Hasil pencarian" : "Tag populer"));
+  box.appendChild(el("div", "tlabel", listTitle + " (" + src.length + " tag)"));
   src.forEach(function(t){
     var val = t.value;
     var blockMode = tagPickMode === "block";
@@ -2769,32 +2863,51 @@ function renderTagsView(){
   });
   b.appendChild(catBar);
 
-  // A-Z Quick Jump Bar (Jelajah Semua Tag Berdasarkan Abjad)
-  var alphaBar = el("div", "tag-alpha-bar");
-  var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  var allLetterBtn = el("button", "tag-alpha-btn" + (!tagAlphaActive ? " on" : ""), "★");
-  allLetterBtn.title = "Tag populer";
-  allLetterBtn.onclick = function() {
+  // Keypad Abjad & Angka (0-9, A-Z) Tidak Terpotong
+  var alphaPad = el("div", "tag-alpha-pad");
+  
+  // Tombol Populer
+  var popBtn = el("button", "tag-alpha-btn wide" + (!tagAlphaActive ? " on" : ""), "★ Populer");
+  popBtn.onclick = function() {
     tagAlphaActive = null;
     tagSearchTerm = "";
     inp.value = "";
     renderTagsView();
   };
-  alphaBar.appendChild(allLetterBtn);
+  alphaPad.appendChild(popBtn);
 
-  letters.forEach(function(ch) {
+  // Tombol Angka 0-9
+  var numBtn = el("button", "tag-alpha-btn wide" + (tagAlphaActive === "0-9" ? " on" : ""), "0-9");
+  numBtn.onclick = async function() {
+    tagAlphaActive = "0-9";
+    tagSearchTerm = "";
+    inp.value = "";
+    renderTagsView();
+    tagFetching = true;
+    renderTagList();
+    await fetchAlphaTags("0-9");
+    tagFetching = false;
+    renderTagList();
+  };
+  alphaPad.appendChild(numBtn);
+
+  // Tombol Huruf A-Z
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function(ch) {
     var ab = el("button", "tag-alpha-btn" + (tagAlphaActive === ch ? " on" : ""), ch);
-    ab.onclick = function() {
+    ab.onclick = async function() {
       tagAlphaActive = ch;
-      tagSearchTerm = ch.toLowerCase();
-      inp.value = ch;
-      clr.style.display = "flex";
-      onTagSearchInput(ch.toLowerCase());
+      tagSearchTerm = "";
+      inp.value = "";
       renderTagsView();
+      tagFetching = true;
+      renderTagList();
+      await fetchAlphaTags(ch);
+      tagFetching = false;
+      renderTagList();
     };
-    alphaBar.appendChild(ab);
+    alphaPad.appendChild(ab);
   });
-  b.appendChild(alphaBar);
+  b.appendChild(alphaPad);
 
   if (tagPickMode === "block") {
     var blkNotice = el("div", "fsum");
