@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Post Explorer">
-<title>Post Explorer 6.1</title>
+<title>Post Explorer</title>
 <style>
 :root {
   --bg: #090a0f;
@@ -59,7 +59,6 @@ button:active { transform: scale(0.96); }
   padding: calc(6px + env(safe-area-inset-top, 0px)) 10px calc(8px + env(safe-area-inset-bottom, 0px));
 }
 
-/* top bar - minimalist & clean */
 .top { display: flex; align-items: center; gap: 8px; min-height: 28px; }
 .brand {
   flex: 0 0 auto;
@@ -70,16 +69,6 @@ button:active { transform: scale(0.96); }
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.brand i {
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 600;
-  background: var(--surface2);
-  color: var(--text-muted);
-  padding: 1px 6px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
 }
 .backbtn {
   display: none;
@@ -135,7 +124,6 @@ button:active { transform: scale(0.96); }
 .helpbtn:hover { color: #fff; border-color: var(--text-muted); }
 .chip.on + .helpbtn { margin-left: 0; }
 
-/* nav id row - clean, sharp, intuitive */
 .idrow { display: flex; gap: 6px; align-items: center; }
 .idbox {
   flex: 1;
@@ -149,16 +137,8 @@ button:active { transform: scale(0.96); }
   padding: 0 6px 0 10px;
   transition: border-color 0.15s;
 }
-.idbox:focus-within {
-  border-color: var(--border-focus);
-}
-.idprefix {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-faint);
-  margin-right: 4px;
-  user-select: none;
-}
+.idbox:focus-within { border-color: var(--border-focus); }
+.idprefix { font-size: 15px; font-weight: 700; color: var(--text-faint); margin-right: 4px; user-select: none; }
 .idrow input {
   flex: 1;
   min-width: 0;
@@ -201,7 +181,6 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .ib:hover { background: var(--surface2); color: #fff; border-color: var(--border); }
 .ib.rnd { font-size: 16px; }
 
-/* stage - clean canvas focused on media */
 .stage {
   flex: 1 1 auto;
   min-height: 0;
@@ -264,7 +243,6 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .spin.show { opacity: 1; }
 @keyframes rot { to { transform: rotate(360deg); } }
 
-/* stage overlay glass controls (minimal & tidy) */
 .glass-controls {
   position: absolute;
   top: 8px;
@@ -307,7 +285,6 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 }
 .zoom-badge.visible { opacity: 1; }
 
-/* clean, subtle bottom overlay badge */
 .idtag-box {
   position: absolute;
   left: 8px;
@@ -334,7 +311,6 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
   border-radius: 4px;
 }
 
-/* clean swipe hints */
 .hint {
   position: absolute;
   top: 50%;
@@ -384,7 +360,6 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .hintv.visible { opacity: 1; }
 .hintv.armed { background: rgba(59, 130, 246, 0.95); transform: translateX(-50%) scale(1.05); }
 
-/* auto progress bar */
 .autobar {
   position: absolute;
   top: 0;
@@ -416,7 +391,6 @@ body.fs .top, body.fs .idrow, body.fs .dock { display: none; }
 body.fs .app { padding: 0; gap: 0; }
 body.fs .stage { border-radius: 0; border: 0; }
 
-/* bottom dock navigation - clean & tactile */
 .dock {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -448,7 +422,6 @@ body.fs .stage { border-radius: 0; border: 0; }
 .dk.auto.on { color: #34d399; }
 .dk.auto.on small { color: #34d399; }
 
-/* sheet bottom drawer */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -481,21 +454,8 @@ body.fs .stage { border-radius: 0; border: 0; }
   visibility: hidden;
 }
 .sheet.open { transform: none; visibility: visible; }
-.grab {
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--border);
-  margin: 0 auto 10px;
-  flex: 0 0 auto;
-}
-.shead {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-  flex: 0 0 auto;
-}
+.grab { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 10px; flex: 0 0 auto; }
+.shead { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex: 0 0 auto; }
 .hb {
   width: 34px;
   height: 34px;
@@ -512,38 +472,13 @@ body.fs .stage { border-radius: 0; border: 0; }
 }
 .hb:disabled { opacity: 0.25; }
 .hb:hover { color: #fff; background: var(--surface3); }
-.tabs {
-  flex: 1;
-  display: flex;
-  background: var(--surface2);
-  border-radius: 9px;
-  padding: 2px;
-  gap: 2px;
-  border: 1px solid var(--border);
-}
-.tabs button {
-  flex: 1;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 7px 4px;
-  border-radius: 7px;
-}
-.tabs button.on {
-  background: var(--surface4);
-  color: #fff;
-}
-.sbody {
-  overflow-y: auto;
-  min-height: 80px;
-  padding-bottom: 6px;
-  -webkit-overflow-scrolling: touch;
-}
+.tabs { flex: 1; display: flex; background: var(--surface2); border-radius: 9px; padding: 2px; gap: 2px; border: 1px solid var(--border); }
+.tabs button { flex: 1; background: transparent; color: var(--text-muted); font-size: 11.5px; font-weight: 600; padding: 7px 4px; border-radius: 7px; }
+.tabs button.on { background: var(--surface4); color: #fff; }
+.sbody { overflow-y: auto; min-height: 80px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
 .sbody::-webkit-scrollbar { width: 5px; }
 .sbody::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* action rows & pills */
 .arow { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 .pill {
   flex: 1;
@@ -559,19 +494,14 @@ body.fs .stage { border-radius: 0; border: 0; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
 }
 .pill:hover { color: #fff; background: var(--surface3); }
-.pill.pri {
-  background: var(--blue);
-  color: #fff;
-  border-color: var(--blue);
-}
+.pill.pri { background: var(--blue); color: #fff; border-color: var(--blue); }
 .pill.pri:hover { background: var(--blue-hover); }
 .pill.dng { color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
 .selinfo { font-size: 12px; font-weight: 600; color: var(--amber); margin: 2px 2px 8px; }
 
-/* segmented filter control */
 .seg {
   display: flex;
   flex-wrap: wrap;
@@ -582,22 +512,9 @@ body.fs .stage { border-radius: 0; border: 0; }
   flex: 1;
   border: 1px solid var(--border);
 }
-.seg button {
-  flex: 1;
-  background: transparent;
-  color: var(--text-muted);
-  padding: 6px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.seg button.on {
-  background: var(--surface4);
-  color: #fff;
-}
+.seg button { flex: 1; background: transparent; color: var(--text-muted); padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.seg button.on { background: var(--surface4); color: #fff; }
 
-/* tag explorer styles - clean, human-designed */
 .tagsearchbox {
   display: flex;
   gap: 8px;
@@ -609,15 +526,7 @@ body.fs .stage { border-radius: 0; border: 0; }
   padding: 0 10px;
 }
 .tagsearchbox span.search-ico { font-size: 13px; color: var(--text-faint); user-select: none; }
-.tagsearchbox input {
-  flex: 1;
-  padding: 9px 0;
-  background: transparent;
-  border: 0;
-  outline: none;
-  font-size: 13px;
-  color: #fff;
-}
+.tagsearchbox input { flex: 1; padding: 9px 0; background: transparent; border: 0; outline: none; font-size: 13px; color: #fff; }
 .tagsearchbox input::placeholder { color: var(--text-faint); }
 .tagsearchbox .clear-btn {
   background: rgba(255, 255, 255, 0.1);
@@ -631,381 +540,6 @@ body.fs .stage { border-radius: 0; border: 0; }
   color: var(--text-muted);
 }
 
-.tag-cat-bar {
-  display: flex;
-  gap: 5px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  scrollbar-width: none;
-}
-.tag-cat-bar::-webkit-scrollbar { display: none; }
-.tag-cat-btn {
-  flex: 0 0 auto;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-.tag-cat-btn.on {
-  background: var(--surface4);
-  color: #fff;
-  border-color: var(--text-muted);
-}
-
-.tag-sel-box {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.tag-sel-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
-.sel-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  color: #fff;
-  border-radius: 999px;
-  padding: 3px 6px 3px 9px;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-.sel-pill button {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: #fff;
-  padding: 0;
-  cursor: pointer;
-}
-.sel-pill button:hover { background: var(--red); }
-
-.tagitem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-.tagitem:hover { background: var(--surface3); }
-.tagitem.sel {
-  border-color: var(--blue);
-  background: rgba(59, 130, 246, 0.12);
-}
-.tagitem .tn {
-  font-weight: 600;
-  font-size: 13px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tagitem .tc {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--surface3);
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-.tagitem .ttype {
-  font-size: 9px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  font-weight: 600;
-  border: 1px solid var(--border);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-.tagitem .ttype.artist { color: #c4b5fd; border-color: rgba(167, 139, 250, 0.4); }
-.tagitem .ttype.character { color: #6ee7b7; border-color: rgba(110, 231, 183, 0.4); }
-.tagitem .ttype.copyright { color: #fde68a; border-color: rgba(253, 230, 138, 0.4); }
-.tag-quickbtn {
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-left: 6px;
-  cursor: pointer;
-}
-.tag-quickbtn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
-
-
-/* Revamped Unified Tag Manager (Mau / Whitelist + Gamau / Blacklist) */
-.tag-manager-hub {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.tm-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.tm-card.want {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(18, 22, 34, 0.75);
-}
-.tm-card.block {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(30, 18, 22, 0.75);
-}
-.tm-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.tm-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.tm-card.want .tm-title { color: #93c5fd; }
-.tm-card.block .tm-title { color: #fca5a5; }
-.tm-count {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--surface3);
-  font-weight: 700;
-}
-.tm-card.want .tm-count { background: rgba(59, 130, 246, 0.25); color: #bfdbfe; }
-.tm-card.block .tm-count { background: rgba(239, 68, 68, 0.25); color: #fecaca; }
-.tm-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  min-height: 22px;
-}
-.tm-empty {
-  font-size: 11.5px;
-  color: var(--text-faint);
-  font-style: italic;
-}
-.tm-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border-radius: 999px;
-  padding: 3px 8px 3px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-.tm-chip.want {
-  background: rgba(59, 130, 246, 0.18);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #dbeafe;
-}
-.tm-chip.block {
-  background: rgba(239, 68, 68, 0.18);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fee2e2;
-}
-.tm-chip button {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-  width: 15px;
-  height: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  color: #fff;
-  padding: 0;
-  cursor: pointer;
-  border: 0;
-}
-.tm-chip.want button:hover { background: #ef4444; }
-.tm-chip.block button:hover { background: #3b82f6; }
-.tm-act-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-}
-.tm-quick-input-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 8px;
-  padding: 2px 4px 2px 8px;
-}
-.tm-quick-input-row input {
-  flex: 1;
-  background: transparent;
-  border: 0;
-  outline: none;
-  font-size: 11.5px;
-  color: #fff;
-  padding: 4px 0;
-}
-.tm-quick-input-row input::placeholder { color: var(--text-faint); }
-.tm-quick-input-row button {
-  background: rgba(239, 68, 68, 0.25);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-  border-radius: 6px;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 3px 8px;
-  cursor: pointer;
-}
-.tm-quick-input-row button:hover { background: rgba(239, 68, 68, 0.45); color: #fff; }
-
-/* Sub filter bar in Tab Tag */
-.tag-subtabs {
-  display: flex;
-  gap: 5px;
-  overflow-x: auto;
-  margin-bottom: 8px;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-.tag-subtabs::-webkit-scrollbar { display: none; }
-.tag-subtab-btn {
-  flex: 0 0 auto;
-  padding: 5px 10px;
-  border-radius: 7px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.tag-subtab-btn.on {
-  background: var(--surface3);
-  color: #fff;
-  border-color: var(--text-muted);
-}
-.tag-subtab-btn.want.on {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: var(--blue);
-  color: #93c5fd;
-}
-.tag-subtab-btn.block.on {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: var(--red);
-  color: #fca5a5;
-}
-
-/* Tag row items with dual buttons */
-.tagitem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  transition: background 0.12s, border-color 0.12s;
-  gap: 8px;
-}
-.tagitem.sel {
-  border-color: var(--blue);
-  background: rgba(59, 130, 246, 0.12);
-}
-.tagitem.blocked {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.08);
-}
-.tagitem.blocked .tn-name {
-  text-decoration: line-through;
-  color: var(--text-muted);
-}
-.tag-item-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-  cursor: pointer;
-}
-.tag-item-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-.tag-act-btn {
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 10.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--surface3);
-  color: var(--text-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  transition: all 0.12s;
-}
-.tag-act-btn:hover { color: #fff; background: var(--surface4); }
-.tag-act-btn.want.active {
-  background: rgba(59, 130, 246, 0.22);
-  border-color: var(--blue);
-  color: #93c5fd;
-  font-weight: 700;
-}
-.tag-act-btn.block.active {
-  background: rgba(239, 68, 68, 0.22);
-  border-color: var(--red);
-  color: #fca5a5;
-  font-weight: 700;
-}
-.tag-act-btn.play {
-  padding: 4px 7px;
-  color: var(--text-muted);
-}
-.tag-act-btn.play:hover {
-  background: var(--blue);
-  border-color: var(--blue);
-  color: #fff;
-}
-
-/* grid & thumbnails */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -1034,7 +568,7 @@ body.fs .stage { border-radius: 0; border: 0; }
 }
 .thumb:hover { border-color: var(--text-muted); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb.nothumb::before { content: "🎞"; font-size: 24px; opacity: 0.35; }
+.thumb.nothumb::before { content: "NO IMG"; font: 700 9px monospace; opacity: 0.4; }
 .thumb.act { border-color: var(--blue); box-shadow: 0 0 0 1.5px var(--blue); }
 .thumb.sel { border-color: var(--blue); box-shadow: 0 0 0 1.5px var(--blue); }
 .thumb.sel img { opacity: 0.6; }
@@ -1093,7 +627,6 @@ body.fs .stage { border-radius: 0; border: 0; }
   pointer-events: none;
 }
 
-/* card (playlist) */
 .card {
   position: relative;
   aspect-ratio: 1;
@@ -1147,10 +680,21 @@ body.fs .stage { border-radius: 0; border: 0; }
   z-index: 3;
 }
 .card .acts.show { display: flex; }
-.card .acts button { width: 82%; padding: 7px; font-size: 11px; font-weight: 600; border-radius: 6px; background: var(--surface3); color: #fff; }
+.card .acts button {
+  width: 82%;
+  padding: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--surface3);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 .card .acts .d { background: var(--red); color: #fff; }
 
-/* settings rows */
 .setrow {
   display: flex;
   align-items: center;
@@ -1163,7 +707,6 @@ body.fs .stage { border-radius: 0; border: 0; }
 .setrow label { font-size: 13px; font-weight: 600; color: #fff; }
 .setrow small { display: block; color: var(--text-faint); font-size: 11px; margin-top: 1px; }
 
-/* modal / dialog */
 .modal {
   position: fixed;
   inset: 0;
@@ -1236,7 +779,6 @@ body.fs .stage { border-radius: 0; border: 0; }
 .d-ok.danger { background: var(--red); color: #fff; }
 #dlgInput { display: none; margin-bottom: 10px; }
 
-/* guide modal */
 .guide-box { max-width: 420px; }
 .guide-content { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; max-height: 58vh; padding-right: 2px; }
 .guide-item {
@@ -1263,7 +805,6 @@ body.fs .stage { border-radius: 0; border: 0; }
 .gi-txt b { display: block; font-size: 12.5px; color: #fff; margin-bottom: 1px; }
 .gi-txt span { color: var(--text-muted); }
 
-/* info & tag modal chips */
 .infotag-sec { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
 .infotag-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); letter-spacing: 0.5px; }
 .infotag-chips { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -1286,7 +827,6 @@ body.fs .stage { border-radius: 0; border: 0; }
 .tagchip.copyright { color: #fde68a; border-color: rgba(253, 230, 138, 0.4); }
 .sugg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 5px; }
 
-/* toast */
 .toast {
   position: fixed;
   left: 50%;
@@ -1313,47 +853,12 @@ body.fs .stage { border-radius: 0; border: 0; }
 .toast.ok { border-color: var(--green); color: #a7f3d0; }
 .toast.bad { border-color: var(--red); color: #fca5a5; }
 body.fs .toast { bottom: 20px; }
+
 @media (max-width: 380px) {
   .dk small { font-size: 8.5px; }
   .ib { width: 38px; }
 }
 
-/* sort popover */
-.sort-popover {
-  position: absolute;
-  top: 42px;
-  right: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 4px;
-  display: none;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 135px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-  z-index: 25;
-}
-.sort-popover.open { display: flex; }
-.sp-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-  user-select: none;
-}
-.sp-item:hover { background: var(--surface2); color: #fff; }
-.sp-item.on { background: var(--surface3); color: #fff; }
-.sp-item span { font-size: 14px; }
-
-
-/* Quick Filter Hub Popover / Modal */
 .filter-hub-backdrop {
   position: fixed;
   inset: 0;
@@ -1379,13 +884,7 @@ body.fs .toast { bottom: 20px; }
   gap: 12px;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7);
 }
-.fh-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
-}
+.fh-head { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
 .fh-head b { font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
 .fh-close {
   background: var(--surface2);
@@ -1420,10 +919,7 @@ body.fs .toast { bottom: 20px; }
   border-radius: 6px;
   white-space: nowrap;
 }
-.fh-sort-seg button.on {
-  background: var(--surface4);
-  color: #fff;
-}
+.fh-sort-seg button.on { background: var(--surface4); color: #fff; }
 .fh-input-row { display: flex; gap: 6px; }
 .fh-input-row input {
   flex: 1;
@@ -1448,6 +944,7 @@ body.fs .toast { bottom: 20px; }
   white-space: nowrap;
 }
 .fh-input-row button:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.fh-input-row button.btn-dng { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
 .fh-input-row button.btn-dng:hover { background: var(--red); color: #fff; border-color: var(--red); }
 .fh-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px; }
 .fh-chip {
@@ -1462,11 +959,7 @@ body.fs .toast { bottom: 20px; }
   border: 1px solid var(--border);
   color: #fff;
 }
-.fh-chip.block {
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.1);
-}
+.fh-chip.block { border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; background: rgba(239, 68, 68, 0.1); }
 .fh-chip button {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 50%;
@@ -1491,16 +984,13 @@ body.fs .toast { bottom: 20px; }
 }
 .fh-apply-btn:hover { background: var(--blue-hover); }
 
-
-/* Heart Pop Animation on Double-Tap */
 .heart-pop {
   position: fixed;
-  font-size: 56px;
-  color: #ef4444;
   pointer-events: none;
   z-index: 99;
   transform: translate(-50%, -50%) scale(0.4);
   opacity: 0;
+  color: #ef4444;
   animation: heartPopAnim 0.75s var(--ease) forwards;
 }
 @keyframes heartPopAnim {
@@ -1510,7 +1000,6 @@ body.fs .toast { bottom: 20px; }
   100% { transform: translate(-50%, -100%) scale(0.85); opacity: 0; }
 }
 
-/* Storage Manager Card */
 .storage-card {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -1525,15 +1014,117 @@ body.fs .toast { bottom: 20px; }
 .storage-stats { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--text-muted); }
 .storage-stats b { color: var(--text); }
 .storage-stats span { color: var(--blue); font-weight: 600; }
-.tag-blk-btn {
-  background: transparent;
-  padding: 0 4px;
-  font-size: 10px;
-  opacity: 0.55;
-  border-radius: 4px;
-}
-.tag-blk-btn:hover { opacity: 1; background: rgba(239, 68, 68, 0.2); }
 
+.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; flex: 0 0 auto; }
+.ic.fill { fill: currentColor; }
+.dk { position: relative; }
+.dk b { display: flex; }
+.dk b .ic { width: 21px; height: 21px; }
+.dk.dot::after { content: ""; position: absolute; top: 7px; left: calc(50% + 9px); width: 7px; height: 7px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 2px var(--surface); }
+.sbtn .ic { width: 17px; height: 17px; }
+.sbtn.on { background: var(--blue); border-color: var(--blue); }
+.ib .ic { width: 20px; height: 20px; }
+.hint .h-ico { display: flex; }
+.hint .h-ico .ic, .hintv .h-ico .ic { width: 16px; height: 16px; }
+.hintv .h-ico { display: flex; }
+.backbtn.on { display: flex; align-items: center; gap: 4px; }
+.backbtn .ic { width: 13px; height: 13px; }
+.chip button { display: flex; align-items: center; justify-content: center; }
+.chip button .ic { width: 10px; height: 10px; stroke-width: 2.6; }
+.hb .ic { width: 16px; height: 16px; }
+.gi-ico .ic { width: 18px; height: 18px; }
+.gi-txt span b { display: inline; color: #fff; margin: 0; font-size: inherit; }
+.pill .ic { width: 15px; height: 15px; }
+.pill span { white-space: nowrap; }
+.card .cv .ic { width: 28px; height: 28px; opacity: 0.4; }
+.card .play .ic { width: 12px; height: 12px; }
+.vid-badge { letter-spacing: 0.2px; }
+
+.tagsearchbox { margin-bottom: 10px; }
+.tagsearchbox .search-ico { display: flex; }
+.tagsearchbox .search-ico .ic { width: 16px; height: 16px; }
+.tagsearchbox .clear-btn .ic { width: 10px; height: 10px; stroke-width: 2.6; }
+.fsum { display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 10px; margin-bottom: 10px; border-radius: 9px; background: rgba(59,130,246,.10); border: 1px solid rgba(59,130,246,.3); color: #bfdbfe; font-size: 11.5px; font-weight: 600; text-align: left; }
+.fsum .ic { width: 14px; height: 14px; }
+.fsum span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fsum u { text-decoration: none; color: #fff; font-weight: 700; cursor: pointer; }
+.tlabel { font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-faint); margin: 2px 4px 4px; }
+.tlist { display: flex; flex-direction: column; gap: 2px; }
+.trow { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 10px; cursor: pointer; }
+.trow:hover { background: var(--surface2); }
+.trow.sel { background: rgba(59,130,246,.12); }
+.trow.blk .tnm { color: var(--text-faint); text-decoration: line-through; }
+.tck { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--surface4); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; color: #fff; }
+.tck .ic { width: 12px; height: 12px; stroke-width: 3; }
+.trow.sel .tck { background: var(--blue); border-color: var(--blue); }
+.trow.blk .tck { background: var(--red); border-color: var(--red); }
+.trow.blk .tck .ic { width: 12px; height: 12px; stroke-width: 2.4; }
+.tnm { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tkind { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-faint); }
+.tkind.artist { color: #c4b5fd; }
+.tkind.character { color: #6ee7b7; }
+.tkind.copyright { color: #fde68a; }
+.tcnt { font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; min-width: 30px; text-align: right; }
+.tgo { width: 30px; height: 30px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+.tgo .ic { width: 13px; height: 13px; }
+.tgo:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
+.tagbar { position: sticky; bottom: 0; margin-top: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px; display: none; flex-direction: column; gap: 8px; box-shadow: 0 -8px 20px rgba(0,0,0,.5); }
+.tagbar.on { display: flex; }
+.tagbar-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.tagbar-row { display: flex; gap: 6px; }
+.tagbar-row .bwide { margin: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tagbar-row .bwide.b-sec { width: auto; padding: 10px 14px; }
+.tagbar-row .bwide .ic { width: 14px; height: 14px; }
+.tdhead { margin: 0 2px 10px; }
+.tdtitle { font-size: 15px; font-weight: 700; color: #fff; word-break: break-word; }
+.tdsub { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+
+.fh-head b { align-items: center; }
+.fh-head b .ic { width: 16px; height: 16px; }
+.fh-close .ic { width: 12px; height: 12px; }
+.fh-chip button .ic { width: 9px; height: 9px; stroke-width: 3; }
+.fh-chip { display: inline-flex; align-items: center; }
+.fh-chip button { display: flex; align-items: center; justify-content: center; }
+.fh-empty { font-size: 11.5px; color: var(--text-faint); }
+.fh-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600; color: #fff; }
+.switch { width: 42px; height: 24px; border-radius: 999px; background: var(--surface4); position: relative; padding: 0; flex: 0 0 auto; }
+.switch i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s var(--ease); }
+.switch.on { background: var(--blue); }
+.switch.on i { transform: translateX(18px); }
+.fh-actions { display: flex; gap: 8px; margin-top: 2px; }
+.fh-actions .fh-apply-btn { flex: 1; margin-top: 0; }
+.fh-reset { padding: 11px 14px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-size: 12.5px; font-weight: 600; }
+.fh-reset:hover { color: #fff; }
+.heart-pop .ic { width: 56px; height: 56px; fill: currentColor; stroke: none; }
+.pli .ck .ic { width: 12px; height: 12px; stroke-width: 3; }
+
+.chip { margin-left: 6px; flex: 1 1 0; max-width: none; position: relative; overflow: hidden; gap: 7px; padding: 3px 4px 3px 8px; min-height: 32px; border-radius: 10px; border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.12); }
+.chip.pl { border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.12); }
+.chip .ck-ico { display: flex; color: #93c5fd; flex: 0 0 auto; }
+.chip.pl .ck-ico { color: #6ee7b7; }
+.chip .ck-ico .ic { width: 15px; height: 15px; }
+.ck-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.2; }
+.ck-txt small { font-size: 8.5px; font-weight: 700; letter-spacing: .6px; color: #93c5fd; }
+.chip.pl .ck-txt small { color: #6ee7b7; }
+.ck-txt b { font-size: 11.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-pos { font: 700 10.5px monospace; color: var(--text-muted); flex: 0 0 auto; }
+.chip button.ck-x { width: 24px; height: 24px; border-radius: 7px; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; }
+.ck-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.08); }
+.ck-bar u { display: block; height: 100%; width: 0; background: var(--blue); transition: width .2s var(--ease); }
+.chip.pl .ck-bar u { background: var(--green); }
+.helpbtn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; margin-left: auto; flex: 0 0 auto; }
+.helpbtn .ic { width: 15px; height: 15px; }
+
+/* ===== v6.3 responsive polish ===== */
+@media (max-width: 360px) {
+  .glass-controls { gap: 3px; right: 6px; top: 6px; }
+  .sbtn { width: 30px; height: 30px; border-radius: 7px; }
+  .sbtn .ic { width: 15px; height: 15px; }
+  .idtag-box { font-size: 10px; padding: 2px 6px; gap: 4px; bottom: 6px; left: 6px; }
+  .zoom-badge { font-size: 10px; padding: 2px 6px; }
+  .top { gap: 6px; }
+  .brand { font-size: 12px; }
+}
 </style>
 </head>
 <body>
@@ -1541,58 +1132,51 @@ body.fs .toast { bottom: 20px; }
 <div class="app">
 
   <div class="top">
-    <div class="brand">Post Explorer<i>6.1</i></div>
-    <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya">← <span id="backId"></span></button>
-    <div class="chip" id="chip"><span id="chipTxt"></span><button onclick="PE.leavePlaylist()" title="Keluar playlist & kembali">✕</button></div>
-    <button class="helpbtn" onclick="PE.openGuide()" title="Panduan Gestur & Fitur">Panduan</button>
+    <div class="brand">Post Explorer</div>
+    <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya"><span data-ic="back"></span><span id="backId"></span></button>
+    <div class="chip" id="chip">
+      <span class="ck-ico" id="chipIco"></span>
+      <span class="ck-txt"><small id="chipKind">TAG</small><b id="chipName"></b></span>
+      <span class="ck-pos" id="chipPos"></span>
+      <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dan kembali ke post sebelumnya" aria-label="Keluar"><span data-ic="x"></span></button>
+      <i class="ck-bar"><u id="chipBar"></u></i>
+    </div>
+    <button class="helpbtn" onclick="PE.openGuide()" title="Panduan" aria-label="Panduan"><span data-ic="help"></span></button>
   </div>
 
   <div class="idrow">
-    <button class="ib" onclick="PE.prev()" aria-label="Sebelumnya" title="Sebelumnya (Panah Atas / Kiri)">‹</button>
+    <button class="ib" onclick="PE.prev()" aria-label="Sebelumnya" title="Sebelumnya"><span data-ic="chevL"></span></button>
     <div class="idbox">
       <span class="idprefix">#</span>
       <input id="numberInput" type="number" inputmode="numeric" min="1" max="100000000" placeholder="Nomor Post...">
       <button class="idgo" onclick="PE.goToInput()" title="Buka ID">Go</button>
     </div>
-    <button class="ib" onclick="PE.next()" aria-label="Berikutnya" title="Berikutnya (Panah Bawah / Kanan)">›</button>
-    <button class="ib rnd" onclick="PE.randomPost()" aria-label="Acak" title="Lompat ke Post Acak">🎲</button>
+    <button class="ib" onclick="PE.next()" aria-label="Berikutnya" title="Berikutnya"><span data-ic="chevR"></span></button>
+    <button class="ib rnd" onclick="PE.randomPost()" aria-label="Acak" title="Post acak"><span data-ic="dice"></span></button>
   </div>
 
   <div class="stage" id="stage">
     <div class="swipe-layer" id="swipeLayer"><div class="zoom-layer" id="zoomLayer"><span id="status">Pilih nomor post</span></div></div>
-    
-    <!-- Informative Swipe Action Pills -->
-    <div class="hint l" id="hintL"><span class="h-ico">🗑</span><span class="h-txt">Hapus</span></div>
-    <div class="hint r" id="hintR"><span class="h-ico">➕</span><span class="h-txt">Simpan</span></div>
-    <div class="hintv d" id="hintD"><span class="h-ico">⏭</span><span class="h-txt">Berikutnya</span></div>
-    <div class="hintv u" id="hintU"><span class="h-ico">⏮</span><span class="h-txt">Sebelumnya</span></div>
-    
+
+    <div class="hint l" id="hintL"><span class="h-ico" data-ic="trash"></span><span class="h-txt">Hapus</span></div>
+    <div class="hint r" id="hintR"><span class="h-ico" data-ic="plus"></span><span class="h-txt">Simpan</span></div>
+    <div class="hintv d" id="hintD"><span class="h-ico" data-ic="arrowUp"></span><span class="h-txt">Berikutnya</span></div>
+    <div class="hintv u" id="hintU"><span class="h-ico" data-ic="arrowDown"></span><span class="h-txt">Sebelumnya</span></div>
+
     <div class="autobar" id="autoBar"><div class="fill" id="autoFill"></div><div class="lbl" id="autoLbl">5.0s</div></div>
     <div class="spin" id="spin"></div>
 
-    <!-- Zoom badge top-left -->
     <div class="zoom-badge" id="zoomBadge">1.0x</div>
 
-    <!-- Stage controls group top-right -->
     <div class="glass-controls">
-      <div style="position:relative">
-        <button class="sbtn" id="sortBtn" onclick="PE.toggleSortMenu(event)" title="Urutan Post (Terbaru / Populer / Terlama)">
-          <span id="sortIco">✨</span>
-        </button>
-        <div class="sort-popover" id="sortPopover">
-          <div class="sp-item on" id="spNewest" onclick="PE.setSort('newest')"><span>✨</span><b>Terbaru</b></div>
-          <div class="sp-item" id="spPopular" onclick="PE.setSort('popular')"><span>🔥</span><b>Terpopuler</b></div>
-          <div class="sp-item" id="spOldest" onclick="PE.setSort('oldest')"><span>⏳</span><b>Terlama</b></div>
-        </div>
-      </div>
-      <button class="sbtn" id="soundBtn" onclick="PE.toggleSound()" title="Suara Video" style="display:none">🔇</button>
-      <button class="sbtn" id="infoBtn" onclick="PE.openInfo()" title="Info Post & Tag (Shortcut: I)">ℹ</button>
-      <button class="sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / Penuhi Layar">◫</button>
-      <button class="sbtn" id="dlBtn" onclick="PE.download()" title="Unduh Post Ini">⬇</button>
-      <button class="sbtn" id="fsBtn" onclick="PE.toggleFs()" title="Layar Penuh (Shortcut: F)">⛶</button>
+      <button class="sbtn" id="plBtn" onclick="PE.togglePopup()" title="Simpan ke playlist"><span id="plIco" data-ic="plus"></span></button>
+      <button class="sbtn" id="infoBtn" onclick="PE.openInfo()" title="Info post & tag"><span data-ic="info"></span></button>
+      <button class="sbtn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span data-ic="mute"></span></button>
+      <button class="sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span data-ic="fit"></span></button>
+      <button class="sbtn" id="dlBtn" onclick="PE.download()" title="Unduh"><span data-ic="download"></span></button>
+      <button class="sbtn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span data-ic="expand"></span></button>
     </div>
 
-    <!-- Post ID & Media Format badge bottom-left -->
     <div class="idtag-box" id="idTagBox">
       <span class="idtag" id="idTag">#1</span>
       <span class="idfmt" id="idFormat"></span>
@@ -1600,39 +1184,37 @@ body.fs .toast { bottom: 20px; }
   </div>
 
   <div class="dock">
-    <button class="dk auto" id="autoBtn" onclick="PE.toggleAuto()"><b id="autoIco">▶</b><small id="autoTxt">Auto</small></button>
-    <button class="dk fav" id="favBtn" onclick="PE.toggleFav()"><b id="favIco">♡</b><small>Favorit</small></button>
-    <button class="dk" id="tagBtn" onclick="PE.openSheet('tags')"><b>🏷️</b><small>Tag</small></button>
-    <button class="dk" id="plBtn" onclick="PE.togglePopup()"><b id="plIco">➕</b><small>Simpan</small></button>
-    <button class="dk" onclick="PE.openSheet('playlist')"><b>📚</b><small>Koleksi</small></button>
-    <button class="dk" onclick="PE.openSheet('settings')"><b>⚙</b><small>Setelan</small></button>
+    <button class="dk auto" id="autoBtn" onclick="PE.toggleAuto()"><b id="autoIco" data-ic="play"></b><small id="autoTxt">Auto</small></button>
+    <button class="dk fav" id="favBtn" onclick="PE.toggleFav()"><b id="favIco" data-ic="heart"></b><small>Favorit</small></button>
+    <button class="dk" id="tagBtn" onclick="PE.openSheet('tags')"><b data-ic="tag"></b><small>Tag</small></button>
+    <button class="dk" id="filterBtn" onclick="PE.toggleFilterHub()"><b data-ic="filter"></b><small>Filter</small></button>
+    <button class="dk" onclick="PE.openSheet('playlist')"><b data-ic="layers"></b><small>Koleksi</small></button>
+    <button class="dk" onclick="PE.openSheet('settings')"><b data-ic="gear"></b><small>Setelan</small></button>
   </div>
 </div>
 
-<!-- sheet -->
 <div class="backdrop" id="sheetBackdrop" onclick="PE.closeSheet()"></div>
-<div class="sheet" id="sheet">
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Panel">
   <div class="grab"></div>
   <div class="shead">
-    <button class="hb" id="sheetBack" onclick="PE.sheetBack()" disabled>←</button>
+    <button class="hb" id="sheetBack" onclick="PE.sheetBack()" disabled><span data-ic="back"></span></button>
     <div class="tabs">
       <button data-tab="tags">Tag</button>
-      <button data-tab="playlist">Playlist</button>
+      <button data-tab="playlist">Koleksi</button>
       <button data-tab="history">Riwayat</button>
       <button data-tab="settings">Setelan</button>
     </div>
-    <button class="hb" onclick="PE.closeSheet()">✕</button>
+    <button class="hb" onclick="PE.closeSheet()"><span data-ic="x"></span></button>
   </div>
   <div class="sbody" id="sheetBody"></div>
 </div>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none">
 
-<!-- info / tag modal -->
-<div class="modal" id="infoBackdrop" onclick="PE.closeInfo(event)">
+<div class="modal" id="infoBackdrop" role="dialog" aria-modal="true" aria-labelledby="infoTitle" onclick="PE.closeInfo(event)">
   <div class="box" style="max-width:420px;max-height:82vh" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <h4 id="infoTitle" style="margin:0;font-size:14px;font-weight:700">Post #<span id="infoId"></span></h4>
-      <button class="hb" onclick="PE.closeInfo()" style="width:28px;height:28px">✕</button>
+      <button class="hb" onclick="PE.closeInfo()" style="width:28px;height:28px"><span data-ic="x"></span></button>
     </div>
     <div id="infoMeta" style="display:flex;gap:8px;font-size:11.5px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap"></div>
     <div id="infoBody" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;padding-right:2px">
@@ -1642,45 +1224,47 @@ body.fs .toast { bottom: 20px; }
   </div>
 </div>
 
-<!-- guide modal -->
-<div class="modal" id="guideBackdrop" onclick="PE.closeGuide(event)">
+<div class="modal" id="guideBackdrop" role="dialog" aria-modal="true" aria-label="Panduan penggunaan" onclick="PE.closeGuide(event)">
   <div class="box guide-box" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <h4 style="margin:0;font-size:14px;font-weight:700">Panduan Penggunaan</h4>
-      <button class="hb" onclick="PE.closeGuide()" style="width:28px;height:28px">✕</button>
+      <button class="hb" onclick="PE.closeGuide()" style="width:28px;height:28px"><span data-ic="x"></span></button>
     </div>
     <div class="guide-content">
       <div class="guide-item">
-        <div class="gi-ico">↕</div>
+        <div class="gi-ico" data-ic="info"></div>
+        <div class="gi-txt"><b>Mulai dari sini</b><span>Ketik nomor post lalu tekan Go, atau tekan tombol dadu untuk post acak. Tombol Favorit menyimpan post dengan satu tap.</span></div>
+      </div>
+      <div class="guide-item">
+        <div class="gi-ico" data-ic="swap"></div>
         <div class="gi-txt"><b>Geser Layar Atas / Bawah</b><span>Swipe atas = post berikutnya. Swipe bawah = post sebelumnya.</span></div>
       </div>
       <div class="guide-item">
-        <div class="gi-ico">➡</div>
+        <div class="gi-ico" data-ic="arrowRight"></div>
         <div class="gi-txt"><b>Geser Layar ke Kanan</b><span>Simpan post ke playlist Favorit.</span></div>
       </div>
       <div class="guide-item">
-        <div class="gi-ico">⬅</div>
+        <div class="gi-ico" data-ic="arrowLeft"></div>
         <div class="gi-txt"><b>Geser Layar ke Kiri</b><span>Hapus post dari playlist yang sedang diputar.</span></div>
       </div>
       <div class="guide-item">
-        <div class="gi-ico">🔍</div>
-        <div class="gi-txt"><b>Pinch / Double-Tap</b><span>Zoom gambar secara bebas. Video: double-tap kiri/kanan seek 10s.</span></div>
+        <div class="gi-ico" data-ic="heart"></div>
+        <div class="gi-txt"><b>Pinch · Double-Tap</b><span>Pinch = zoom gambar. Double-tap = simpan ke Favorit (dengan animasi heart).</span></div>
       </div>
       <div class="guide-item">
-        <div class="gi-ico">🏷️</div>
-        <div class="gi-txt"><b>Jelajah Tag</b><span>Buka tab Tag untuk mencari artis, karakter, atau seri. Bisa gabungkan beberapa tag.</span></div>
+        <div class="gi-ico" data-ic="tag"></div>
+        <div class="gi-txt"><b>Tag dan Filter</b><span>Tag: cari dan tonton post bertag. Filter: atur urutan, jenis, tag aktif, sembunyikan tag, dan filter AI. Semua di Filter Hub.</span></div>
       </div>
       <div class="guide-item">
-        <div class="gi-ico">⌨️</div>
-        <div class="gi-txt"><b>Keyboard Shortcut (PC)</b><span><b>↓ / ↑</b>: Berikutnya / Sebelumnya · <b>F</b>: Fullscreen · <b>I</b>: Info · <b>T</b>: Tag · <b>Space</b>: Play/Pause</span></div>
+        <div class="gi-ico" data-ic="keyboard"></div>
+        <div class="gi-txt"><b>Keyboard Shortcut (PC)</b><span><b>↓ / →</b>: Berikutnya · <b>↑ / ←</b>: Sebelumnya · <b>F</b>: Fullscreen · <b>I</b>: Info · <b>T</b>: Tag · <b>Space</b>: Play/Pause · <b>A</b>: Auto · <b>R</b>: Acak</span></div>
       </div>
     </div>
-    <button class="bwide b-pri" style="margin-top:10px" onclick="PE.closeGuide()">Tutup</button>
+    <button class="bwide b-pri" style="margin-top:10px" onclick="PE.closeGuide()">Mengerti</button>
   </div>
 </div>
 
-<!-- popup tambah / pilih playlist -->
-<div class="modal" id="popupBackdrop" onclick="PE.closePopup(event)">
+<div class="modal" id="popupBackdrop" role="dialog" aria-modal="true" aria-labelledby="popupTitle" onclick="PE.closePopup(event)">
   <div class="box" onclick="event.stopPropagation()">
     <h4 id="popupTitle">Simpan ke playlist</h4>
     <div class="plist" id="popupList"></div>
@@ -1688,13 +1272,12 @@ body.fs .toast { bottom: 20px; }
       <input class="t" type="text" id="popupNewInput" placeholder="Nama playlist baru…" maxlength="40">
       <button class="bwide b-pri" style="width:auto;padding:0 14px" onclick="PE.confirmNewPl()">OK</button>
     </div>
-    <button class="bwide b-pri" onclick="PE.showNewRow()">➕ Buat playlist baru</button>
+    <button class="bwide b-pri" onclick="PE.showNewRow()">Buat playlist baru</button>
     <button class="bwide b-sec" onclick="PE.closePopup()">Tutup</button>
   </div>
 </div>
 
-<!-- dialog -->
-<div class="modal" id="dlgBackdrop">
+<div class="modal" id="dlgBackdrop" role="dialog" aria-modal="true" aria-labelledby="dlgMsg">
   <div class="box" style="max-width:320px">
     <p class="dmsg" id="dlgMsg"></p>
     <input class="t" id="dlgInput" type="text" maxlength="40">
@@ -1705,47 +1288,60 @@ body.fs .toast { bottom: 20px; }
   </div>
 </div>
 
-
-<!-- Quick Filter Hub Modal -->
-<div class="filter-hub-backdrop" id="filterHubBackdrop" onclick="PE.closeFilterHub(event)">
+<div class="filter-hub-backdrop" id="filterHubBackdrop" role="dialog" aria-modal="true" aria-label="Filter" onclick="PE.closeFilterHub(event)">
   <div class="filter-hub" id="filterHub" onclick="event.stopPropagation()">
     <div class="fh-head">
-      <b>🎛️ Filter & Urutan Post</b>
-      <button class="fh-close" onclick="PE.closeFilterHub()">✕</button>
+      <b><span data-ic="filter"></span>Filter</b>
+      <button class="fh-close" onclick="PE.closeFilterHub()" aria-label="Tutup"><span data-ic="x"></span></button>
     </div>
-    
-    <!-- Sort Option -->
+
     <div class="fh-sec">
-      <label>Urutan Tampilan</label>
+      <label>Urutan</label>
       <div class="fh-sort-seg">
-        <button id="fhSortNewest" class="on" onclick="PE.setHubSort('newest')">✨ Terbaru</button>
-        <button id="fhSortPopular" onclick="PE.setHubSort('popular')">🔥 Terpopuler</button>
-        <button id="fhSortOldest" onclick="PE.setHubSort('oldest')">⏳ Terlama</button>
+        <button id="fhSortNewest" onclick="PE.setHubSort('newest')">Terbaru</button>
+        <button id="fhSortPopular" onclick="PE.setHubSort('popular')">Terpopuler</button>
+        <button id="fhSortOldest" onclick="PE.setHubSort('oldest')">Terlama</button>
       </div>
     </div>
 
-    <!-- Active Tags (Include) -->
     <div class="fh-sec">
-      <label>Tag yang Dicari (Include)</label>
-      <div class="fh-input-row">
-        <input id="fhTagInput" type="text" placeholder="Tambah tag (misal: genshin_impact)..." maxlength="50">
-        <button onclick="PE.addHubTag()">+ Tambah</button>
+      <label>Jenis</label>
+      <div class="fh-sort-seg">
+        <button id="fhTypeAll" onclick="PE.setHubType(null)">Semua</button>
+        <button id="fhTypeVid" onclick="PE.setHubType(1)">Video</button>
+        <button id="fhTypeImg" onclick="PE.setHubType(0)">Gambar</button>
       </div>
+    </div>
+
+    <div class="fh-sec">
+      <label>Tag aktif</label>
       <div class="fh-chips" id="fhActiveTagChips"></div>
-    </div>
-
-    <!-- Blacklist Tags (Exclude) -->
-    <div class="fh-sec">
-      <label>Blacklist / Sembunyikan (Exclude)</label>
       <div class="fh-input-row">
-        <input id="fhBlockInput" type="text" placeholder="Tag yang dihindari (misal: gore, ai)..." maxlength="50">
-        <button class="btn-dng" onclick="PE.addHubBlockTag()">+ Blokir</button>
+        <input id="fhTagInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off" autocapitalize="off">
+        <button onclick="PE.addHubTag()">Tambah</button>
       </div>
-      <div class="fh-chips" id="fhBlockTagChips"></div>
+      <button class="fsum" style="margin-top:0;margin-bottom:0;background:transparent;border:0;padding:2px 0" onclick="PE.pickTags()"><span data-ic="tag"></span><span style="color:#93c5fd">Pilih dari daftar tag</span></button>
     </div>
 
-    <!-- Apply Button -->
-    <button class="fh-apply-btn" onclick="PE.applyFilterHub()">Terapkan & Jelajah Post</button>
+    <div class="fh-sec">
+      <label>Sembunyikan tag</label>
+      <div class="fh-chips" id="fhBlockTagChips"></div>
+      <div class="fh-input-row">
+        <input id="fhBlockInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off" autocapitalize="off">
+        <button class="btn-dng" onclick="PE.addHubBlockTag()">Sembunyikan</button>
+      </div>
+      <button class="fsum" style="margin-top:0;margin-bottom:0;background:transparent;border:0;padding:2px 0;color:#fca5a5" onclick="PE.pickBlockTags()"><span data-ic="ban"></span><span style="color:#fca5a5">Pilih dari daftar tag</span></button>
+    </div>
+
+    <div class="fh-row">
+      <span>Sembunyikan konten AI</span>
+      <button class="switch" id="fhAiBtn" onclick="PE.toggleHubAi()" aria-label="Sembunyikan konten AI"><i></i></button>
+    </div>
+
+    <div class="fh-actions">
+      <button class="fh-reset" onclick="PE.resetFilter()">Atur ulang</button>
+      <button class="fh-apply-btn" onclick="PE.applyFilterHub()">Cari &amp; Putar</button>
+    </div>
   </div>
 </div>
 
@@ -1762,7 +1358,58 @@ function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&a
 function validId(n){ return typeof n==="number" && Number.isInteger(n) && n>=1 && n<=MAXID; }
 function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){ s[x]=1; o.push(x); } }); return o; }
 
-/* ---------- storage ---------- */
+var ICONS = {
+  play: '<path d="M8 5.5v13l11-6.5z"/>',
+  pause: '<path d="M8.5 5v14M15.5 5v14"/>',
+  heart: '<path d="M12 20.5C7 17 3 13.6 3 9.4 3 6.9 4.9 5 7.2 5c1.9 0 3.7 1 4.8 2.8C13.1 6 14.9 5 16.8 5 19.1 5 21 6.9 21 9.4c0 4.2-4 7.6-9 11.1z"/>',
+  tag: '<path d="M3 4.5V11l9.5 9.5a1.5 1.5 0 0 0 2.1 0l5.9-5.9a1.5 1.5 0 0 0 0-2.1L11 3H4.5A1.5 1.5 0 0 0 3 4.5z"/><circle cx="7.5" cy="7.5" r="1.3"/>',
+  filter: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  layers: '<path d="M12 3.5l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".7"/>',
+  fit: '<rect x="4" y="6" width="16" height="12" rx="2"/>',
+  download: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/>',
+  upload: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/>',
+  expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  volume: '<path d="M4 10v4h3.5l4.5 3.5v-11L7.5 10z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
+  mute: '<path d="M4 10v4h3.5l4.5 3.5v-11L7.5 10z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  arrowLeft: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  arrowDown: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  chevL: '<path d="M15 5l-7 7 7 7"/>',
+  chevR: '<path d="M9 5l7 7-7 7"/>',
+  dice: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r=".8"/><circle cx="15" cy="9" r=".8"/><circle cx="9" cy="15" r=".8"/><circle cx="15" cy="15" r=".8"/>',
+  trash: '<path d="M5 7h14M10 4h4M7 7l1 13h8l1-13M10 11v6M14 11v6"/>',
+  swap: '<path d="M8 20V4M4.5 7.5L8 4l3.5 3.5M16 4v16M12.5 16.5L16 20l3.5-3.5"/>',
+  keyboard: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/>',
+  shuffle: '<path d="M4 7h3.5c5 0 5 10 10 10H20M4 17h3.5c1.8 0 3-.9 4-2M13 8.2c1-.8 2.2-1.2 4.5-1.2H20M17 4l3 3-3 3M17 14l3 3-3 3"/>',
+  ban: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1.9-1.1 1.7M12 17h.01"/>',
+  video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/>',
+  edit: '<path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  link: '<path d="M10 14a4 4 0 0 1 0-6l2-2a4 4 0 0 1 6 6l-2 2"/><path d="M14 10a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6l2-2"/>',
+  share: '<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/>',
+  book: '<path d="M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z"/>',
+  refresh: '<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 4v3h-3M6 20v-3h3"/>'
+};
+function ic(n){
+  var p = ICONS[n === "heartfill" ? "heart" : n] || "";
+  return '<svg class="ic' + (n === "heartfill" ? " fill" : "") + '" viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
+}
+function paintIcons(root){
+  var list = (root || document).querySelectorAll("[data-ic]");
+  for (var i = 0; i < list.length; i++) list[i].innerHTML = ic(list[i].getAttribute("data-ic"));
+}
+var LEAD = /^[\u{1F000}-\u{1FAFF}\u{2190}-\u{21FF}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}️‍\s]+/u;
+function lead(t){ return typeof t === "string" ? t.replace(LEAD, "") : t; }
+
 var okLS = true, mem = {};
 try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); } catch(e){ okLS=false; }
 function lsGet(k){ if(okLS){ try{ return localStorage.getItem(k); }catch(e){ okLS=false; } } return k in mem ? mem[k] : null; }
@@ -1770,16 +1417,24 @@ function lsSet(k,v){ if(okLS){ try{ localStorage.setItem(k,v); return; }catch(e)
 function jget(k,d){ try{ var r=lsGet(k); return r?JSON.parse(r):d; }catch(e){ return d; } }
 function jset(k,v){ try{ lsSet(k,JSON.stringify(v)); }catch(e){} }
 
-/* ---------- settings ---------- */
 var S = (function(){
   var d = {interval:5, skipMissing:true, fit:"contain", muted:true, saver:false, keepZoom:false, speed:1, filterAi:false, autoNextVid:false};
-  var s = jget("pe_settings",{}) || {};
-  for (var k in d) if (s[k]!==undefined) d[k]=s[k];
+  var s = jget("pe_settings",{});
+  if(!s || typeof s!=="object" || Array.isArray(s)) s={};
+  for (var k in d) if (Object.prototype.hasOwnProperty.call(s,k)) d[k]=s[k];
+  if(!isFinite(Number(d.interval)) || Number(d.interval)<0.5 || Number(d.interval)>3600) d.interval=5; else d.interval=Number(d.interval);
+  if(["contain","cover"].indexOf(d.fit)<0) d.fit="contain";
+  if(typeof d.skipMissing!=="boolean") d.skipMissing=true;
+  if(typeof d.muted!=="boolean") d.muted=true;
+  if(typeof d.saver!=="boolean") d.saver=false;
+  if(typeof d.keepZoom!=="boolean") d.keepZoom=false;
+  if(typeof d.filterAi!=="boolean") d.filterAi=false;
+  if(typeof d.autoNextVid!=="boolean") d.autoNextVid=false;
+  if(!isFinite(Number(d.speed)) || Number(d.speed)<0.25 || Number(d.speed)>4) d.speed=1; else d.speed=Number(d.speed);
   return d;
 })();
 function saveS(){ jset("pe_settings",S); }
 
-/* ---------- elements ---------- */
 var input=$("numberInput"), stage=$("stage"), swipeLayer=$("swipeLayer"), zoomLayer=$("zoomLayer");
 var spin=$("spin"), idTag=$("idTag"), zoomBadge=$("zoomBadge");
 var hintL=$("hintL"), hintR=$("hintR"), hintU=$("hintU"), hintD=$("hintD");
@@ -1790,11 +1445,17 @@ var dlgBackdrop=$("dlgBackdrop"), dlgMsg=$("dlgMsg"), dlgInput=$("dlgInput"), dl
 var infoBackdrop=$("infoBackdrop"), infoIdEl=$("infoId"), infoMetaEl=$("infoMeta"), infoTagsEl=$("infoTags"), infoSuggEl=$("infoSuggestions");
 var tagTypeFilter=null;
 var toastEl=$("toast");
+var soundBtn=$("soundBtn");
+var filterHubBackdrop=$("filterHubBackdrop");
+var fhActiveTagChips=$("fhActiveTagChips");
+var fhBlockTagChips=$("fhBlockTagChips");
+var fhTagInput=$("fhTagInput");
+var fhBlockInput=$("fhBlockInput");
 
 function showHeartPop(x, y) {
   var h = document.createElement("div");
   h.className = "heart-pop";
-  h.textContent = "❤️";
+  h.innerHTML = ic("heartfill");
   h.style.left = (x || window.innerWidth / 2) + "px";
   h.style.top = (y || window.innerHeight / 2) + "px";
   document.body.appendChild(h);
@@ -1803,13 +1464,9 @@ function showHeartPop(x, y) {
   }, 780);
 }
 
-
-/* ---------- state ---------- */
 var sp = parseInt(lsGet("lastPost"),10);
 var current = (isFinite(sp)&&sp>=1&&sp<=MAXID) ? sp : 1;
-var shownId = 0;                 // id terakhir yang benar-benar tampil
-var navStack = [], skipPush = false;
-
+var shownId = 0;
 var anchorPost = parseInt(lsGet("pe_anchor_post"), 10) || 1;
 
 function updateAnchor(id) {
@@ -1825,19 +1482,18 @@ var autoEnabled=false, autoTimer=null, autoStart=0, autoRAF=null, wakeLock=null,
 var playlists=[], activePlaylistId=null, shuffleOn=false, playOrder=[], returnId=null;
 var activeTag=null, tagPosts=[], tagCursor=null, tagLoading=false, tagHasMore=true;
 var selectedTags=[], activeTagsDetail=[];
-var tagSortMode="newest"; // "newest" | "popular" | "oldest"
-var postMetaCache=new Map(); // id -> item metadata (type, duration, likes)
-var tagView="list", activeTagDetail="", popularTagsCache=[], searchedTags=[], tagSearchTerm="";
+var tagSortMode="newest";
+var postMetaCache=new Map();
+var tagView="list", popularTagsCache=[], searchedTags=[], tagSearchTerm="";
 var sheetTab="playlist", plView="list", plDetailId=null;
 var selMode=false, sel={}, plShown=120, sortAsc=true, selCountEl=null;
 var popupPostId=null, popupMode="add", pickCb=null, pickExclude=null;
 var hist = (jget("pe_hist",[])||[]).filter(validId).slice(0,60);
 var vpos = new Map();
 
-/* ---------- toast & dialog ---------- */
 var toastT=null;
 function toast(msg,type){
-  toastEl.textContent=msg; toastEl.className="toast show"+(type?" "+type:"");
+  toastEl.textContent=lead(msg); toastEl.className="toast show"+(type?" "+type:"");
   clearTimeout(toastT); toastT=setTimeout(function(){ toastEl.classList.remove("show"); },1800);
 }
 var dlgCb=null;
@@ -1861,7 +1517,6 @@ function saveBlob(blob,name){
   setTimeout(function(){ URL.revokeObjectURL(u); },5000);
 }
 
-/* ---------- URL ---------- */
 function prefix(id){ return String(id).slice(0,-3)||"0"; }
 function urls(id){
   var p=BASE+prefix(id)+"/"+id+"/"+id, full=p+".jpg", small=p+".small.jpg";
@@ -1869,8 +1524,8 @@ function urls(id){
 }
 function thumbURL(id){ return urls(id).small; }
 
-/* ---------- loader ---------- */
-var cache=new Map(), pending=new Map(), queue=[], running=0, MAX_PAR=4, MAX_CACHE=40;
+var cache=new Map(), pending=new Map(), queue=[], queuedResolvers=new Map(), queuedPromises=new Map(), running=0, MAX_PAR=4, MAX_CACHE=40, cacheGeneration=0;
+function invalidateCache(){ cacheGeneration++; cache.clear(); }
 function cacheSet(id,r){ cache.delete(id); cache.set(id,r); while(cache.size>MAX_CACHE) cache.delete(cache.keys().next().value); }
 function loadImg(url,ms){
   return new Promise(function(res){
@@ -1892,25 +1547,23 @@ function probeVideo(url){
       res(ok===true);
     }
     v.onloadedmetadata=function(){ fin(true); };
-    v.onended=function(){ if (autoEnabled || S.autoNextVid) change(1); };
-  v.onerror=function(){ fin(false); };
+    v.onerror=function(){ fin(false); };
     v.preload="metadata"; v.muted=true; v.src=url;
   });
 }
 function startResolve(id){
   running++;
+  var generation=cacheGeneration;
   var u=urls(id);
   var p=new Promise(function(resolve){
     var vDone=false,vOk=false,iDone=false,img=null,imgUrl=null,fin=false,wait=null;
-    function finish(r){ if(fin) return; fin=true; clearTimeout(wait); cacheSet(id,r); resolve(r); }
+    function finish(r){ if(fin) return; fin=true; clearTimeout(wait); if(generation===cacheGeneration) cacheSet(id,r); resolve(r); }
     function check(){
       if(fin) return;
       if(vDone&&vOk) return finish({type:"mp4",url:u.mp4});
       if(vDone&&iDone) return finish(img?{type:"jpg",url:imgUrl,el:img}:{type:null,url:null,miss:true});
-      /* Image sudah ada tapi video belum selesai probe: tunggu 800ms sebelum anggap tidak ada video */
       if(iDone&&img&&!vDone&&!wait) wait=setTimeout(function(){ vDone=true; check(); },800);
     }
-    /* Probe video & image secara paralel - video tetap diprioritaskan jika ada */
     probeVideo(u.mp4).then(function(ok){ vDone=true; vOk=ok; check(); });
     loadImg(u.imgs[0]).then(function(im){
       if(im){ img=im; imgUrl=u.imgs[0]; return; }
@@ -1926,14 +1579,26 @@ function get(id){
   if(id<1||id>MAXID) return Promise.resolve({type:null,miss:true});
   if(cache.has(id)){ var r=cache.get(id); cacheSet(id,r); return Promise.resolve(r); }
   if(pending.has(id)) return pending.get(id);
-  var qi=queue.indexOf(id); if(qi>-1) queue.splice(qi,1);
-  return startResolve(id);
+  var qi=queue.indexOf(id);
+  if(qi<0) queue.push(id);
+  var promise=new Promise(function(resolve){ queuedResolvers.set(id,resolve); });
+  queuedPromises.set(id,promise);
+  pending.set(id,promise);
+  pump();
+  return promise;
 }
 function schedule(id){
   if(id<1||id>MAXID||cache.has(id)||pending.has(id)||queue.indexOf(id)>-1) return;
   queue.push(id); pump();
 }
-function pump(){ while(running<MAX_PAR&&queue.length) startResolve(queue.shift()); }
+function pump(){
+  while(running<MAX_PAR&&queue.length){
+    var id=queue.shift(), resolveQueued=queuedResolvers.get(id);
+    queuedResolvers.delete(id); queuedPromises.delete(id);
+    var task=startResolve(id);
+    if(resolveQueued) task.then(resolveQueued,function(){ resolveQueued({type:null,miss:true}); });
+  }
+}
 function neighbors(id){
   var out=[], offs=[1,-1,2,3,4,-2], ord=activeOrder();
   if(ord){
@@ -1942,11 +1607,47 @@ function neighbors(id){
   } else offs.forEach(function(o){ out.push(id+o); });
   return out;
 }
-function preloadAround(id){ queue.length=0; neighbors(id).forEach(schedule); }
+function clearQueued(){
+  while(queue.length){
+    var id=queue.shift(), resolveQueued=queuedResolvers.get(id), queuedPromise=queuedPromises.get(id);
+    queuedResolvers.delete(id); queuedPromises.delete(id);
+    if(pending.get(id)===queuedPromise) pending.delete(id);
+    if(resolveQueued) resolveQueued({type:null,miss:true,cancelled:true});
+  }
+}
+function preloadAround(id){ clearQueued(); neighbors(id).forEach(schedule); }
 
-/* ---------- playlists ---------- */
-function loadPlaylists(){
-  var arr=jget("playlists_v1",[]); if(!Array.isArray(arr)) return [];
+var idbP=null;
+function idb(){
+  if(idbP) return idbP;
+  idbP=new Promise(function(res){
+    try{
+      var r=indexedDB.open("pe_db",1);
+      r.onupgradeneeded=function(){ r.result.createObjectStore("kv"); };
+      r.onsuccess=function(){ res(r.result); };
+      r.onerror=function(){ res(null); };
+      r.onblocked=function(){ res(null); };
+    }catch(e){ res(null); }
+  });
+  return idbP;
+}
+function idbSet(k,v){
+  idb().then(function(db){ if(!db) return; try{ db.transaction("kv","readwrite").objectStore("kv").put(v,k); }catch(e){} });
+}
+function idbGet(k){
+  return idb().then(function(db){
+    return new Promise(function(res){
+      if(!db) return res(null);
+      try{
+        var q=db.transaction("kv").objectStore("kv").get(k);
+        q.onsuccess=function(){ res(q.result===undefined?null:q.result); };
+        q.onerror=function(){ res(null); };
+      }catch(e){ res(null); }
+    });
+  });
+}
+function loadPlaylists(src){
+  var arr=src||jget("playlists_v1",[]); if(!Array.isArray(arr)) return [];
   var out=[];
   arr.forEach(function(p){
     if(p&&typeof p.id==="string"&&typeof p.name==="string"&&Array.isArray(p.postIds))
@@ -1955,9 +1656,27 @@ function loadPlaylists(){
   return out;
 }
 var persistT=null;
-function persist(){ clearTimeout(persistT); jset("playlists_v1",playlists); }
+function persist(){
+  clearTimeout(persistT);
+  jset("playlists_v1",playlists);
+  try{ idbSet("playlists_v1",JSON.stringify(playlists)); }catch(e){}
+}
 function persistSoon(){ clearTimeout(persistT); persistT=setTimeout(persist,800); }
 playlists=loadPlaylists();
+function restoreFromBackup(){
+  if(playlists.length) return;
+  idbGet("playlists_v1").then(function(raw){
+    if(!raw||playlists.length) return;
+    try{
+      var restored=loadPlaylists(JSON.parse(raw));
+      if(!restored.length) return;
+      playlists=restored; jset("playlists_v1",playlists);
+      refreshBtns(); updateChip();
+      if(sheet.classList.contains("open")) rerender();
+      toast("Playlist dipulihkan dari cadangan ("+playlists.length+")","ok");
+    }catch(e){}
+  });
+}
 function getPL(id){ for(var i=0;i<playlists.length;i++) if(playlists[i].id===id) return playlists[i]; return null; }
 function genId(){ return "pl_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8); }
 function isIn(p,id){ return p.postIds.indexOf(id)!==-1; }
@@ -1987,17 +1706,22 @@ function activeOrder(){
   return playOrder;
 }
 function updateChip(){
-  var chip=$("chip");
+  var chip=$("chip"), ord, i, kind, name, ico;
   if(activeTag){
-    var ord=activeOrder()||[], i=ord.indexOf(current);
-    $("chipTxt").textContent=(shuffleOn?"🔀 ":"🏷️ ")+activeTag+(i>=0?"  "+(i+1)+"/"+ord.length:"");
-    chip.classList.add("on");
-    return;
+    kind=shuffleOn?"TAG · ACAK":"TAG"; name=activeTag; ico="tag"; chip.classList.remove("pl");
+  } else {
+    var p=activePlaylistId?getPL(activePlaylistId):null;
+    if(!p){ chip.classList.remove("on"); return; }
+    kind=shuffleOn?"PLAYLIST · ACAK":"PLAYLIST"; name=p.name; ico="layers"; chip.classList.add("pl");
   }
-  var p=activePlaylistId?getPL(activePlaylistId):null;
-  if(!p){ chip.classList.remove("on"); return; }
-  var ord=activeOrder()||[], i=ord.indexOf(current);
-  $("chipTxt").textContent=(shuffleOn?"🔀 ":"▶ ")+p.name+(i>=0?"  "+(i+1)+"/"+ord.length:"");
+  ord=activeOrder()||[]; i=ord.indexOf(current);
+  $("chipIco").innerHTML=ic(shuffleOn?"shuffle":ico);
+  $("chipKind").textContent=kind;
+  $("chipName").textContent=name;
+  var more=(activeTag&&tagHasMore)?"+":"";
+  $("chipPos").textContent=i>=0?(i+1)+"/"+ord.length+more:ord.length+more;
+  $("chipBar").style.width=(i>=0&&ord.length?((i+1)/ord.length*100):0)+"%";
+  chip.title=kind+": "+name;
   chip.classList.add("on");
 }
 function exitPlaylist(){ activeTag=null; activePlaylistId=null; shuffleOn=false; playOrder=[]; returnId=null; updateChip(); }
@@ -2021,20 +1745,19 @@ function startPlaylist(pid,startId,shuffle){
   else target=ord[0];
   closeSheet();
   loadPost(target,0);
-  toast(resumed&&target!==ord[0]?"▶ Lanjut dari #"+target:(shuffleOn?"🔀 Acak: ":"▶ Memutar: ")+p.name,"ok");
+  toast(resumed&&target!==ord[0]?"Lanjut dari #"+target:(shuffleOn?"Acak: ":"Memutar: ")+p.name,"ok");
 }
 
-/* ---------- buttons state ---------- */
 function refreshBtns(){
   var any=false, fav=false;
   playlists.forEach(function(p){ if(isIn(p,current)){ any=true; if(p.id==="pl_fav") fav=true; } });
-  $("plBtn").classList.toggle("on",any); $("plIco").textContent=any?"✓":"➕";
-  $("favBtn").classList.toggle("on",fav); $("favIco").textContent=fav?"♥":"♡";
+  $("plBtn").classList.toggle("on",any); $("plIco").innerHTML=ic(any?"check":"plus");
+  $("favBtn").classList.toggle("on",fav); $("favIco").innerHTML=ic(fav?"heartfill":"heart"); refreshBadges();
   idTag.textContent="#"+current;
 }
 function updateBack(){
   var b=$("backBtn");
-  var show = (activePlaylistId || activeTag || (anchorPost && anchorPost !== current));
+  var show = !activePlaylistId && anchorPost && anchorPost !== current;
   if (show && anchorPost) {
     b.classList.add("on");
     b.title = "Kembali ke posisi utama #" + anchorPost;
@@ -2057,12 +1780,16 @@ function toggleFav(){
   var p=getPL("pl_fav");
   if(!p){ p={id:"pl_fav",name:"Favorit",postIds:[],last:null}; playlists.unshift(p); }
   if(isIn(p,current)){ removeFrom("pl_fav",current); toast("Dihapus dari Favorit","bad"); }
-  else { addTo("pl_fav",current); toast("♥ Masuk Favorit","ok"); vibe(12); }
+  else { addTo("pl_fav",current); toast("Masuk Favorit","ok"); vibe(12); }
   refreshBtns(); updateChip();
   if(sheet.classList.contains("open")) rerender();
 }
+function addFav(id){
+  var p=getPL("pl_fav");
+  if(!p){ p={id:"pl_fav",name:"Favorit",postIds:[],last:null}; playlists.unshift(p); }
+  if(!isIn(p,id)){ addTo("pl_fav",id); toast("Masuk Favorit","ok"); vibe(12); refreshBtns(); if(sheet.classList.contains("open")) rerender(); }
+}
 
-/* ---------- media ---------- */
 var pendingEnter=null, enterTimer=null;
 function TR(){ return "transform 180ms cubic-bezier(.25,.1,.25,1),opacity 180ms cubic-bezier(.25,.1,.25,1)"; }
 function clearSwipeStyles(){
@@ -2098,8 +1825,7 @@ function setMedia(el,kind){
   if(el.tagName==="IMG"){ el.alt="Post "+current; el.className=kind==="ph"?"ph":""; el.draggable=false; }
   zoomLayer.appendChild(el);
   stage.classList.toggle("isvid",el.tagName==="VIDEO");
-  if (soundBtn) { soundBtn.style.display = el.tagName==="VIDEO" ? "flex" : "none"; soundBtn.textContent = S.muted ? "🔇" : "🔊"; }
-  if (soundBtn) { soundBtn.style.display = el.tagName==="VIDEO" ? "flex" : "none"; soundBtn.textContent = S.muted ? "🔇" : "🔊"; }
+  if (soundBtn) { soundBtn.style.display = el.tagName==="VIDEO" ? "flex" : "none"; soundBtn.innerHTML = ic(S.muted ? "mute" : "volume"); }
   if(S.keepZoom&&zoom.scale>1.02&&el.tagName==="IMG"){ zoom.tx=0; zoom.ty=0; clampPan(); applyZoom(); }
   else resetZoom();
   if(pendingEnter) settleEnter();
@@ -2108,20 +1834,21 @@ function showStatus(msg){
   emptyStage();
   var s=document.createElement("span"); s.id="status"; s.textContent=msg; zoomLayer.appendChild(s);
   stage.classList.remove("isvid");
+  if(soundBtn) soundBtn.style.display="none";
   resetZoom(); settleEnter();
 }
 function makeVideo(id,url){
   var v=document.createElement("video");
   v._pid=id;
   v.controls=true; v.playsInline=true; v.setAttribute("playsinline","");
-  v.preload="auto"; v.muted=S.muted; v.loop=!autoEnabled;
+  v.preload="auto"; v.muted=S.muted; v.loop=!(autoEnabled || S.autoNextVid);
   v.defaultPlaybackRate=S.speed; v.playbackRate=S.speed;
   v.addEventListener("loadedmetadata",function(){
     var t=vpos.get(id);
     if(t&&isFinite(v.duration)&&t<v.duration-2){ try{ v.currentTime=t; }catch(e){} }
     v.playbackRate=S.speed;
   });
-  v.addEventListener("ended",function(){ if(autoEnabled&&v.parentNode) change(1); });
+  v.addEventListener("ended",function(){ if((autoEnabled||S.autoNextVid)&&v.parentNode&&id===current) change(1); });
   v.addEventListener("error",function(){ if(autoEnabled&&v.parentNode&&id===current) resetAutoTimer(); });
   v.src=url;
   return v;
@@ -2133,11 +1860,7 @@ function addHist(id){
   jset("pe_hist",hist);
 }
 
-/* ---------- load post ---------- */
 function commit(id){
-  if(!skipPush&&shownId&&shownId!==id&&navStack[navStack.length-1]!==shownId){
-    navStack.push(shownId); if(navStack.length>60) navStack.shift();
-  }
   current=id; input.value=id; lsSet("lastPost",String(id)); updateAnchor(id);
   refreshBtns(); updateChip(); updateBack();
   if(activePlaylistId){
@@ -2159,7 +1882,6 @@ function loadPost(id,dir,tries){
   clearTimeout(phTimer);
   var c=cache.get(id);
   if(c){ present(c,tok,dir,tries); return; }
-  // placeholder kecil hanya kalau loading agak lama (hemat request)
   phTimer=setTimeout(function(){
     if(tok!==token||finalTok===tok) return;
     var th=new Image();
@@ -2171,10 +1893,11 @@ function loadPost(id,dir,tries){
 function present(r,tok,dir,tries){
   finalTok=tok; setLoading(false); clearTimeout(phTimer);
   if(r.miss||!r.type){
-    if(S.skipMissing&&dir&&!activePlaylistId&&tries<25){
-      var n=current+dir;
-      if(n>=1&&n<=MAXID){
-        for(var k=2;k<=5;k++) schedule(current+dir*k);   // cek beberapa ID di depan sekaligus
+    if(S.skipMissing&&dir&&tries<25){
+      var ord=activeOrder(), at=ord?ord.indexOf(current):-1;
+      var n=ord&&at>-1 ? ord[at+dir] : current+dir;
+      if(n!==undefined&&n>=1&&n<=MAXID){
+        if(!ord) for(var k=2;k<=5;k++) schedule(current+dir*k);
         loadPost(n,dir,tries+1); return;
       }
     }
@@ -2220,7 +1943,6 @@ function change(step){
   loadPost(n,step); return true;
 }
 
-/* ---------- random (3 kandidat paralel) ---------- */
 var randTries=0;
 function randomPost(){
   randTries=0;
@@ -2249,21 +1971,22 @@ function tryRandom(){
   });
 }
 
-/* ---------- auto ---------- */
 function toggleAuto(){ autoEnabled?stopAuto():startAuto(); }
+var wakeLockRequest=0;
 function startAuto(){
   autoEnabled=true;
-  $("autoBtn").classList.add("on"); $("autoIco").textContent="⏸"; $("autoTxt").textContent="Stop";
+  var wakeToken=++wakeLockRequest;
+  $("autoBtn").classList.add("on"); $("autoIco").innerHTML=ic("pause"); $("autoTxt").textContent="Stop";
   autoBar.classList.add("on");
   var v=zoomLayer.querySelector("video"); if(v) v.loop=false;
-  try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){ wakeLock=l; }).catch(function(){}); }catch(e){}
+  try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){ if(autoEnabled&&wakeToken===wakeLockRequest){ wakeLock=l; l.addEventListener("release",function(){ if(wakeLock===l) wakeLock=null; }); } else { l.release().catch(function(){}); } }).catch(function(){}); }catch(e){}
   if(isVideo()){ lastLbl="VIDEO"; autoLbl.textContent="VIDEO"; autoFill.style.width="100%"; } else resetAutoTimer();
 }
 function stopAuto(){
-  autoEnabled=false; clearAutoTimer();
-  $("autoBtn").classList.remove("on"); $("autoIco").textContent="▶"; $("autoTxt").textContent="Auto";
+  autoEnabled=false; ++wakeLockRequest; clearAutoTimer();
+  $("autoBtn").classList.remove("on"); $("autoIco").innerHTML=ic("play"); $("autoTxt").textContent="Auto";
   autoBar.classList.remove("on"); autoFill.style.width="0%";
-  var v=zoomLayer.querySelector("video"); if(v) v.loop=true;
+  var v=zoomLayer.querySelector("video"); if(v) v.loop=!S.autoNextVid;
   try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){}
 }
 function clearAutoTimer(){
@@ -2291,7 +2014,6 @@ function tickBar(iv){
   autoRAF=requestAnimationFrame(function(){ tickBar(iv); });
 }
 
-/* ---------- fullscreen / fit ---------- */
 function toggleFs(){
   var de=document.documentElement;
   var inFs=!!(document.fullscreenElement||document.webkitFullscreenElement);
@@ -2310,7 +2032,6 @@ function applyFit(){ stage.classList.toggle("fit-cover",S.fit==="cover"); }
 function toggleFit(){ S.fit=S.fit==="cover"?"contain":"cover"; saveS(); applyFit(); toast(S.fit==="cover"?"Mode: penuhi layar":"Mode: muat gambar"); }
 applyFit();
 
-/* ---------- zoom ---------- */
 var zoom={scale:1,tx:0,ty:0};
 function applyZoom(){
   zoomLayer.style.transform="translate("+zoom.tx+"px,"+zoom.ty+"px) scale("+zoom.scale+")";
@@ -2324,7 +2045,6 @@ function clampPan(){
   zoom.tx=Math.max(-mx,Math.min(mx,zoom.tx)); zoom.ty=Math.max(-my,Math.min(my,zoom.ty));
 }
 
-/* ---------- gestures ---------- */
 var SW_MIN=40, SW_MS=800, SW_CD=250, DOM=1.8, VCZ=56, DT_MS=280, SNAP=180;
 var sw={active:false,sx:0,sy:0,cx:0,cy:0,t:0,id:null,axis:null,last:0,dbl:false};
 var gm=null;
@@ -2424,14 +2144,6 @@ function snapToNew(dir,step){
     enterTimer=setTimeout(function(){ if(finalTok!==token) showStatus("Memuat #"+current+"…"); else settleEnter(); },1200);
   },SNAP);
 }
-function seekVideo(x){
-  var v=zoomLayer.querySelector("video"); if(!v) return;
-  var rc=stage.getBoundingClientRect(), fwd=x>rc.left+rc.width/2;
-  var t=v.currentTime+(fwd?10:-10);
-  if(isFinite(v.duration)) t=Math.min(v.duration,t);
-  v.currentTime=Math.max(0,t);
-  toast(fwd?"⏩ +10 detik":"⏪ −10 detik");
-}
 function onTouchEnd(){
   if(gm==="pinch"){ gm=null; zoomLayer.classList.remove("dragging"); if(zoom.scale<1.02) resetZoom(); else applyZoom(); g.lastTap=0; return; }
   if(gm==="pan"){ gm=null; zoomLayer.classList.remove("dragging"); if(zoom.scale<1.02) resetZoom(); return; }
@@ -2442,12 +2154,8 @@ function onTouchEnd(){
     clearSwipeStyles(); clearHints();
     if(sw.dbl){
       g.lastTap=0;
-      if(isVideo()) seekVideo(sw.sx);
-      else if(zoom.scale>1.02) resetZoom();
-      else {
-        var rc=stage.getBoundingClientRect(), tx=sw.sx-rc.left-rc.width/2, ty=sw.sy-rc.top-rc.height/2;
-        zoom.scale=2.5; zoom.tx=-tx*1.5; zoom.ty=-ty*1.5; clampPan(); applyZoom();
-      }
+      showHeartPop(sw.sx, sw.sy);
+      addFav(current);
     } else { g.lastTap=now(); g.lx=sw.sx; g.ly=sw.sy; }
     return;
   }
@@ -2494,7 +2202,6 @@ function swipeDelete(){
   }
 }
 
-/* ---------- popup: tambah / pilih playlist ---------- */
 function openPopup(id){
   popupMode="add"; pickCb=null; popupPostId=id;
   $("popupTitle").innerHTML='Simpan ke playlist <span>#'+id+'</span>';
@@ -2519,7 +2226,7 @@ function renderPopup(){
   list.forEach(function(pl){
     var inl=popupMode==="add"&&isIn(pl,popupPostId);
     var it=el("div","pli"+(inl?" in":"")+(popupMode==="pick"?" pick":""));
-    it.innerHTML='<span class="ck">'+(inl?"✓":"")+'</span><span class="nm">'+esc(pl.name)+'</span><span class="ct">'+pl.postIds.length+' post</span>';
+    it.innerHTML='<span class="ck">'+(inl?ic("check"):"")+'</span><span class="nm">'+esc(pl.name)+'</span><span class="ct">'+pl.postIds.length+' post</span>';
     it.onclick=function(){
       if(popupMode==="pick"){ var cb=pickCb; closePopup(); if(cb) cb(pl); return; }
       if(inl){ removeFrom(pl.id,popupPostId); toast("Dihapus dari "+pl.name,"bad"); }
@@ -2547,43 +2254,44 @@ function confirmNewPl(){
 }
 popupNewInput.addEventListener("keydown",function(e){ if(e.key==="Enter") confirmNewPl(); });
 
-/* ---------- Info & Tag Modal ---------- */
+var infoRequestToken=0;
 function openInfo(id){
   id = id || current;
+  var infoToken=++infoRequestToken;
   infoIdEl.textContent = id;
-  infoMetaEl.innerHTML = "⏳ Mengambil detail post...";
+  infoMetaEl.innerHTML = "Mengambil detail post…";
   infoTagsEl.innerHTML = "";
   infoSuggEl.innerHTML = "";
   infoBackdrop.classList.add("open");
 
-  // 1. Fetch Post Detail & Tags
   r34Fetch("/post/" + id).then(function(post){
+    if(infoToken!==infoRequestToken||!infoBackdrop.classList.contains("open")) return;
     if(!post) return;
     infoMetaEl.innerHTML = "";
     if(post.likes !== undefined){
-      var lk = el("span", "", "❤️ " + post.likes + " suka");
+      var lk = el("span", "", "Likes: " + post.likes);
       infoMetaEl.appendChild(lk);
     }
     if(post.width && post.height){
-      var sz = el("span", "", "📐 " + post.width + " × " + post.height);
+      var sz = el("span", "", post.width + " × " + post.height);
       infoMetaEl.appendChild(sz);
     }
     if(post.type === 1){
-      var vt = el("span", "", "🎬 Video" + (post.duration ? " (" + post.duration + "s)" : ""));
-      vt.style.color = "var(--blue2)";
+      var vt = el("span", "", "Video" + (post.duration ? " (" + post.duration + "s)" : ""));
+      vt.style.color = "var(--blue)";
       infoMetaEl.appendChild(vt);
     }
 
     var tags = post.tags || [];
     if(!tags.length){
-      infoTagsEl.innerHTML = '<div style="font-size:12px;color:var(--faint);font-style:italic">Tidak ada metadata tag untuk post ini</div>';
+      infoTagsEl.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic">Tidak ada metadata tag untuk post ini</div>';
     } else {
       infoTagsEl.innerHTML = "";
       var cats = {
-        8: { title: "🎨 Artist", cls: "artist", items: [] },
-        4: { title: "👤 Character", cls: "character", items: [] },
-        2: { title: "📚 Copyright / Seri", cls: "copyright", items: [] },
-        1: { title: "🏷️ Tags", cls: "", items: [] }
+        8: { title: "Artist", cls: "artist", items: [] },
+        4: { title: "Character", cls: "character", items: [] },
+        2: { title: "Copyright / Seri", cls: "copyright", items: [] },
+        1: { title: "Tags", cls: "", items: [] }
       };
       tags.forEach(function(t){
         var c = cats[t.type] || cats[1];
@@ -2609,13 +2317,13 @@ function openInfo(id){
       });
     }
   }).catch(function(err){
-    infoMetaEl.textContent = "Detail post tidak tersedia";
+    if(infoToken===infoRequestToken&&infoBackdrop.classList.contains("open")) infoMetaEl.textContent = "Detail post tidak tersedia";
   });
 
-  // 2. Fetch Post Suggestions (Post Serupa)
   r34Fetch("/post/suggestion/" + id).then(function(suggs){
+    if(infoToken!==infoRequestToken||!infoBackdrop.classList.contains("open")) return;
     if(!Array.isArray(suggs) || !suggs.length) return;
-    infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">✨ Post Serupa / Rekomendasi</div>';
+    infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">Post serupa</div>';
     var grid = el("div", "sugg-grid");
     suggs.slice(0, 12).forEach(function(item){
       var sid = item.id;
@@ -2631,9 +2339,10 @@ function openInfo(id){
 
 function closeInfo(e){
   if(e && e.target !== infoBackdrop) return;
+  ++infoRequestToken;
   infoBackdrop.classList.remove("open");
 }
-/* ---------- Tag & API Integration ---------- */
+
 var API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "/api/v2" : "https://r-34.xyz/api/v2";
 
 async function r34Fetch(endpoint, opts) {
@@ -2673,7 +2382,7 @@ function startTag(tags, startId, shuffle) {
   if (!activePlaylistId && !activeTag) returnId = current;
   if (Array.isArray(tags)) {
     activeTagsDetail = tags.slice();
-    activeTag = tags.join(" + ");
+    activeTag = tagLabel(tags);
   } else {
     activeTagsDetail = [tags];
     activeTag = tags;
@@ -2690,22 +2399,27 @@ function startTag(tags, startId, shuffle) {
   var ord = activeOrder(), target = startId || ord[0];
   closeSheet();
   loadPost(target, 0);
-  toast((shuffleOn ? "🔀 Acak Tag: " : "🏷️ Tag: ") + activeTag, "ok");
+  toast((shuffleOn ? "Acak Tag: " : "Tag: ") + activeTag, "ok");
 }
 
+var tagRequestToken=0;
 async function loadTagDetail(tags, reset) {
   if (Array.isArray(tags)) {
     activeTagsDetail = tags.slice();
   } else if (typeof tags === "string") {
     activeTagsDetail = [tags];
   }
-  activeTag = activeTagsDetail.join(" + ");
+  if (reset && !activePlaylistId && !activeTag) returnId = current;
+  activeTag = tagLabel(activeTagsDetail);
   if (reset) {
+    ++tagRequestToken;
     tagPosts = [];
     tagCursor = null;
     tagHasMore = true;
+    tagLoading = false;
   }
   if (!tagHasMore || tagLoading) return;
+  var requestToken=tagRequestToken, requestTags=activeTagsDetail.slice(), requestCursor=tagCursor;
   tagLoading = true;
   rerender();
   try {
@@ -2727,9 +2441,11 @@ async function loadTagDetail(tags, reset) {
     if (tagTypeFilter !== null && tagTypeFilter !== undefined) {
       payload.type = tagTypeFilter;
     }
-    if (tagCursor) payload.cursor = String(tagCursor);
+    if (requestCursor) payload.cursor = String(requestCursor);
     var data = await r34Fetch("/post/search/root", { method: "POST", body: payload });
-        var items = data && data.items ? data.items : [];
+    if(requestToken!==tagRequestToken || tagLabel(requestTags)!==activeTag) return;
+    var rawItems = data && Array.isArray(data.items) ? data.items : [];
+    var items = rawItems.slice();
     if (blacklistTags.length > 0) {
       items = items.filter(function(item) {
         if (!item) return false;
@@ -2750,16 +2466,16 @@ async function loadTagDetail(tags, reset) {
           }
         }
       });
-      tagCursor = items[items.length - 1].id;
-      if (items.length < 30) tagHasMore = false;
-    } else {
-      tagHasMore = false;
     }
+    if(rawItems.length){
+      var lastRaw=rawItems[rawItems.length-1];
+      if(lastRaw&&lastRaw.id!==undefined) tagCursor=lastRaw.id;
+    }
+    if(rawItems.length<30) tagHasMore=false;
   } catch (err) {
-    toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
+    if(requestToken===tagRequestToken) toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
   } finally {
-    tagLoading = false;
-    rerender();
+    if(requestToken===tagRequestToken){ tagLoading=false; rerender(); }
   }
 }
 
@@ -2791,458 +2507,254 @@ function saveTagAsPlaylist(tagTitle) {
 
 var tagDebounceT = null;
 
+var tagListErr = false, tagFetching = false, tagSearching = false, tagPickMode = "want";
+function normTag(v){ return String(v || "").trim().toLowerCase().replace(/\s+/g, "_"); }
+function tagLabel(arr){ return arr && arr.length ? arr.join(" + ") : (tagSortMode === "popular" ? "Terpopuler" : "Semua post"); }
+function fmtN(n){ n = Number(n) || 0; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M"; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k"; return String(n); }
+function openTag(t){
+  selectedTags = Array.isArray(t) ? t.slice() : [t];
+  tagView = "detail"; refreshBadges();
+  openSheet("tags", "detail"); loadTagDetail(selectedTags.slice(), true);
+}
+function filterSummary(){
+  var a = [];
+  if (tagSortMode === "popular") a.push("Terpopuler"); else if (tagSortMode === "oldest") a.push("Terlama");
+  if (tagTypeFilter === 1) a.push("Video"); else if (tagTypeFilter === 0) a.push("Gambar");
+  if (S.filterAi) a.push("Tanpa AI");
+  if (blacklistTags.length) a.push(blacklistTags.length + " tag disembunyikan");
+  return a;
+}
+function refreshBadges(){
+  try {
+    var f = filterSummary().length > 0, fb = $("filterBtn"), tb = $("tagBtn");
+    if (fb) fb.classList.toggle("dot", f);
+    if (tb) tb.classList.toggle("dot", selectedTags.length > 0);
+  } catch (e) {}
+}
+function syncTagUI(){
+  refreshBadges();
+  if (filterHubBackdrop && filterHubBackdrop.classList.contains("open")) renderFilterHub();
+  if ($("tagListContainer")) { renderTagFsum(); renderTagBar(); renderTagList(); }
+}
+function chipEl(label, cls, onRemove){
+  var c = el("span", "fh-chip " + (cls || ""), label);
+  var x = el("button", ""); x.innerHTML = ic("x"); x.title = "Hapus";
+  x.onclick = function(e){ e.stopPropagation(); onRemove(); };
+  c.appendChild(x); return c;
+}
 
-var tagListFilterMode = "all"; // "all" | "want" | "block"
-
-function toggleTagWant(val) {
-  if (!val) return;
-  var name = String(val).trim().toLowerCase().replace(/\s+/g, "_");
-  var idx = selectedTags.indexOf(name);
-  if (idx !== -1) {
-    selectedTags.splice(idx, 1);
-    toast("Dihapus dari pilihan: " + name);
-  } else {
+function toggleTagWant(val){
+  var name = normTag(val); if (!name) return;
+  var i = selectedTags.indexOf(name);
+  if (i !== -1) { selectedTags.splice(i, 1); }
+  else {
     selectedTags.push(name);
-    // Jika ada di blacklist, otomatis lepaskan dari blacklist
-    var bIdx = blacklistTags.indexOf(name);
-    if (bIdx !== -1) {
-      blacklistTags.splice(bIdx, 1);
-      saveBlacklist();
-    }
-    toast("✓ Dipilih untuk filter: " + name, "ok");
+    var bi = blacklistTags.indexOf(name);
+    if (bi !== -1) { blacklistTags.splice(bi, 1); saveBlacklist(); toast("Dikeluarkan dari daftar sembunyi: " + name); }
   }
-  renderTagManagerBars();
-  renderTagItemsOnly();
-  if (typeof renderFilterHub === "function") renderFilterHub();
+  syncTagUI();
 }
-
-function toggleTagBlock(val) {
-  if (!val) return;
-  var name = String(val).trim().toLowerCase().replace(/\s+/g, "_");
-  var idx = blacklistTags.indexOf(name);
-  if (idx !== -1) {
-    blacklistTags.splice(idx, 1);
-    saveBlacklist();
-    toast("Dihapus dari blacklist: " + name);
-  } else {
+function toggleTagBlock(val){
+  var name = normTag(val); if (!name) return;
+  var i = blacklistTags.indexOf(name);
+  if (i !== -1) { blacklistTags.splice(i, 1); }
+  else {
     blacklistTags.push(name);
-    // Jika ada di selectedTags, otomatis lepaskan dari selectedTags
-    var sIdx = selectedTags.indexOf(name);
-    if (sIdx !== -1) {
-      selectedTags.splice(sIdx, 1);
-    }
-    saveBlacklist();
-    toast("⛔ Diblacklist: " + name, "bad");
+    var si = selectedTags.indexOf(name);
+    if (si !== -1) selectedTags.splice(si, 1);
   }
-  renderTagManagerBars();
-  renderTagItemsOnly();
-  if (typeof renderFilterHub === "function") renderFilterHub();
+  saveBlacklist(); syncTagUI();
 }
 
-function renderTagManagerBars() {
-  var wantChips = $("tagWantChips");
-  var blockChips = $("tagBlockChips");
-  var wantCount = $("tagWantCount");
-  var blockCount = $("tagBlockCount");
-  var wantActRow = $("tagWantActRow");
-  var blockActRow = $("tagBlockActRow");
-  var subtabWant = $("subtabWant");
-  var subtabBlock = $("subtabBlock");
-
-  // 1. Want / Selected Tags Bar
-  if (wantCount) wantCount.textContent = selectedTags.length;
-  if (subtabWant) subtabWant.textContent = "🏷️ Dipilih (" + selectedTags.length + ")";
-  if (wantChips) {
-    wantChips.innerHTML = "";
-    if (!selectedTags.length) {
-      var emW = el("span", "tm-empty", "Belum ada tag dipilih (tap '+ Mau' pada daftar di bawah)");
-      wantChips.appendChild(emW);
-    } else {
-      selectedTags.forEach(function(t) {
-        var cp = el("span", "tm-chip want", "🏷️ " + t);
-        var x = el("button", "", "✕");
-        x.title = "Hapus tag";
-        x.onclick = function(e) { e.stopPropagation(); toggleTagWant(t); };
-        cp.appendChild(x);
-        wantChips.appendChild(cp);
-      });
-    }
-  }
-  if (wantActRow) {
-    wantActRow.style.display = selectedTags.length ? "flex" : "none";
-    var goBtn = $("tagGoExploreBtn");
-    if (goBtn) goBtn.textContent = "🔍 Jelajah Post (" + selectedTags.length + " Tag)";
-  }
-
-  // 2. Block / Blacklist Tags Bar
-  if (blockCount) blockCount.textContent = blacklistTags.length;
-  if (subtabBlock) subtabBlock.textContent = "⛔ Blacklist (" + blacklistTags.length + ")";
-  if (blockChips) {
-    blockChips.innerHTML = "";
-    if (!blacklistTags.length) {
-      var emB = el("span", "tm-empty", "Belum ada blacklist (tap '⛔ Gamau' atau ketik manual)");
-      blockChips.appendChild(emB);
-    } else {
-      blacklistTags.forEach(function(b) {
-        var cp = el("span", "tm-chip block", "⛔ " + b);
-        var x = el("button", "", "✕");
-        x.title = "Lepas dari blacklist";
-        x.onclick = function(e) { e.stopPropagation(); toggleTagBlock(b); };
-        cp.appendChild(x);
-        blockChips.appendChild(cp);
-      });
-    }
-  }
-  if (blockActRow) {
-    blockActRow.style.display = blacklistTags.length ? "flex" : "none";
-  }
+function renderTagFsum(){
+  var f = $("tagFsum"); if (!f) return;
+  var a = filterSummary();
+  if (!a.length) { f.style.display = "none"; return; }
+  f.style.display = "flex";
+  f.innerHTML = ic("filter") + "<span>Filter aktif: " + esc(a.join(" · ")) + "</span><u>Ubah</u>";
 }
-
-function renderTagItemsOnly() {
-  var listContainer = $("tagListContainer");
-  if (!listContainer) return;
-  listContainer.innerHTML = "";
-
-  var tagsToShow = [];
-  if (tagListFilterMode === "want") {
-    tagsToShow = selectedTags.map(function(t) { return { value: t }; });
-    if (!tagsToShow.length) {
-      listContainer.appendChild(el("div", "empty", "Belum ada tag yang dipilih untuk ditonton."));
+function renderBlockBar(bar){
+  if (!blacklistTags.length) { bar.classList.remove("on"); return; }
+  bar.classList.add("on");
+  var chips = el("div", "tagbar-chips");
+  blacklistTags.forEach(function(t){ chips.appendChild(chipEl(t, "block", function(){ toggleTagBlock(t); })); });
+  bar.appendChild(chips);
+  var row = el("div", "tagbar-row");
+  var ok = el("button", "bwide b-pri");
+  ok.innerHTML = ic("check") + "<span>Selesai (" + blacklistTags.length + " disembunyikan)</span>";
+  ok.onclick = function(){ closeSheet(); openFilterHub(); };
+  var clr = el("button", "bwide b-sec", "Kosongkan");
+  clr.onclick = function(){ blacklistTags = []; saveBlacklist(); syncTagUI(); };
+  row.appendChild(ok); row.appendChild(clr);
+  bar.appendChild(row);
+}
+function renderTagBar(){
+  var bar = $("tagBar"); if (!bar) return;
+  bar.innerHTML = "";
+  if (tagPickMode === "block") { renderBlockBar(bar); return; }
+  if (!selectedTags.length) { bar.classList.remove("on"); return; }
+  bar.classList.add("on");
+  var chips = el("div", "tagbar-chips");
+  selectedTags.forEach(function(t){ chips.appendChild(chipEl(t, "", function(){ toggleTagWant(t); })); });
+  bar.appendChild(chips);
+  var row = el("div", "tagbar-row");
+  var go = el("button", "bwide b-pri");
+  go.innerHTML = ic("play") + "<span>" + (selectedTags.length === 1 ? "Tonton tag ini" : "Tonton " + selectedTags.length + " tag sekaligus") + "</span>";
+  go.onclick = function(){ tagView = "detail"; loadTagDetail(selectedTags.slice(), true); };
+  var clr = el("button", "bwide b-sec", "Kosongkan");
+  clr.onclick = function(){ selectedTags = []; syncTagUI(); };
+  row.appendChild(go); row.appendChild(clr);
+  bar.appendChild(row);
+}
+function renderTagList(){
+  var box = $("tagListContainer"); if (!box) return;
+  box.innerHTML = "";
+  var src = tagSearchTerm ? searchedTags : popularTagsCache;
+  if (!src.length) {
+    if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : "Tag tidak ditemukan")); return; }
+    if (tagListErr) {
+      box.appendChild(el("div", "empty", "Gagal memuat daftar tag."));
+      var rb = el("button", "pill", "Coba lagi");
+      rb.onclick = function(){ tagListErr = false; renderTagList(); };
+      box.appendChild(rb);
       return;
     }
-  } else if (tagListFilterMode === "block") {
-    tagsToShow = blacklistTags.map(function(t) { return { value: t }; });
-    if (!tagsToShow.length) {
-      listContainer.appendChild(el("div", "empty", "Tidak ada tag dalam daftar blacklist."));
-      return;
+    box.appendChild(el("div", "empty", "Memuat tag…"));
+    if (!tagFetching) {
+      tagFetching = true;
+      r34Fetch("/tag").then(function(tags){
+        popularTagsCache = Array.isArray(tags) ? tags : [];
+        if (!popularTagsCache.length) tagListErr = true;
+      }).catch(function(){ tagListErr = true; }).then(function(){ tagFetching = false; renderTagList(); });
     }
-  } else {
-    // Mode "all"
-    tagsToShow = tagSearchTerm ? searchedTags : popularTagsCache;
-    if (tagSearchTerm && !searchedTags.length) {
-      listContainer.appendChild(el("div", "empty", "Mencari tag atau tidak ditemukan..."));
-    } else if (!tagsToShow.length) {
-      listContainer.appendChild(el("div", "empty", "Memuat tag populer dari r-34.xyz..."));
-      if (!popularTagsCache.length) {
-        r34Fetch("/tag").then(function(tags) {
-          if (Array.isArray(tags)) {
-            popularTagsCache = tags;
-            renderTagItemsOnly();
-          }
-        }).catch(function() {
-          renderTagItemsOnly();
-        });
-      }
-    }
+    return;
   }
-
-  tagsToShow.forEach(function(t) {
+  box.appendChild(el("div", "tlabel", tagSearchTerm ? "Hasil pencarian" : "Tag populer"));
+  src.forEach(function(t){
     var val = t.value;
-    var isSel = selectedTags.indexOf(val) !== -1;
-    var isBlocked = blacklistTags.indexOf(val) !== -1;
-
-    var item = el("div", "tagitem" + (isSel ? " sel" : "") + (isBlocked ? " blocked" : ""));
-
-    // Left info (click toggles want)
-    var left = el("div", "tag-item-left");
-    var ico = el("span", "", isBlocked ? "⛔" : (isSel ? "✓" : "🏷️"));
-    ico.style.cssText = "font-size:12px;color:" + (isBlocked ? "var(--red)" : (isSel ? "var(--blue2)" : "var(--text-faint)"));
-    left.appendChild(ico);
-
-    var nameSpan = el("span", "tn-name", val);
-    nameSpan.style.cssText = "font-weight:600;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-    left.appendChild(nameSpan);
-
-    if (t.type) {
-      var typeName = t.type === 1 ? "General" : t.type === 2 ? "Copyright" : t.type === 4 ? "Character" : t.type === 8 ? "Artist" : "";
-      if (typeName) {
-        var tb = el("span", "ttype", typeName);
-        left.appendChild(tb);
-      }
-    }
-
-    if (t.count) {
-      var countBadge = el("span", "tc", Number(t.count).toLocaleString());
-      left.appendChild(countBadge);
-    }
-    left.onclick = function() { toggleTagWant(val); };
-    item.appendChild(left);
-
-    // Right Action Buttons: [Mau] [Gamau] [▶]
-    var right = el("div", "tag-item-right");
-
-    // Button 1: Mau / Dipilih
-    var btnWant = el("button", "tag-act-btn want" + (isSel ? " active" : ""), isSel ? "✓ Dipilih" : "+ Mau");
-    btnWant.title = isSel ? "Batalkan pilihan tag ini" : "Pilih tag ini untuk difilter / ditonton";
-    btnWant.onclick = function(e) {
-      e.stopPropagation();
-      toggleTagWant(val);
-    };
-    right.appendChild(btnWant);
-
-    // Button 2: Gamau / Blacklist
-    var btnBlock = el("button", "tag-act-btn block" + (isBlocked ? " active" : ""), isBlocked ? "⛔ Diblokir" : "⛔ Gamau");
-    btnBlock.title = isBlocked ? "Hapus dari blacklist" : "Blacklist tag ini (jangan tampilkan post bertag ini)";
-    btnBlock.onclick = function(e) {
-      e.stopPropagation();
-      toggleTagBlock(val);
-    };
-    right.appendChild(btnBlock);
-
-    // Button 3: Quick Direct Play
-    var qk = el("button", "tag-act-btn play", "▶");
-    qk.title = "Langsung tonton tag ini saja";
-    qk.onclick = function(e) {
-      e.stopPropagation();
-      selectedTags = [val];
-      tagView = "detail";
-      loadTagDetail([val], true);
-    };
-    right.appendChild(qk);
-
-    item.appendChild(right);
-    listContainer.appendChild(item);
+    var blockMode = tagPickMode === "block";
+    var isSel = !blockMode && selectedTags.indexOf(val) !== -1, isBlk = blacklistTags.indexOf(val) !== -1;
+    var row = el("div", "trow" + (isSel ? " sel" : "") + (isBlk ? " blk" : ""));
+    var ck = el("span", "tck"); if (isSel) ck.innerHTML = ic("check"); else if (blockMode && isBlk) ck.innerHTML = ic("ban");
+    row.appendChild(ck);
+    row.appendChild(el("span", "tnm", val));
+    var kind = t.type === 8 ? ["artist", "Artist"] : t.type === 4 ? ["character", "Karakter"] : t.type === 2 ? ["copyright", "Seri"] : null;
+    if (isBlk) row.appendChild(el("span", "tkind", "disembunyikan"));
+    else if (kind) row.appendChild(el("span", "tkind " + kind[0], kind[1]));
+    if (t.count) row.appendChild(el("span", "tcnt", fmtN(t.count)));
+    var go = el("button", "tgo"); go.innerHTML = ic("play"); go.title = "Lihat post";
+    go.onclick = function(e){ e.stopPropagation(); selectedTags = [val]; tagView = "detail"; refreshBadges(); loadTagDetail([val], true); };
+    if (!blockMode) row.appendChild(go);
+    row.onclick = function(){ if (blockMode) toggleTagBlock(val); else toggleTagWant(val); };
+    box.appendChild(row);
   });
 }
-
-function onTagSearchInput(val) {
+function onTagSearchInput(val){
   tagSearchTerm = val.trim();
+  var clr = $("tagSearchClear"); if (clr) clr.style.display = tagSearchTerm ? "flex" : "none";
   clearTimeout(tagDebounceT);
-  tagDebounceT = setTimeout(async function() {
-    if (!tagSearchTerm) {
-      searchedTags = [];
-      renderTagItemsOnly();
-      return;
-    }
+  if (!tagSearchTerm) { searchedTags = []; tagSearching = false; renderTagList(); return; }
+  tagSearching = true; renderTagList();
+  var term = tagSearchTerm;
+  tagDebounceT = setTimeout(async function(){
     try {
-      var res = await r34Fetch("/tag/search/" + encodeURIComponent(tagSearchTerm));
+      var res = await r34Fetch("/tag/search/" + encodeURIComponent(term));
+      if (term !== tagSearchTerm) return;
       searchedTags = Array.isArray(res) ? res : [];
-      renderTagItemsOnly();
     } catch (e) {
-      console.warn("Tag search error:", e);
+      if (term !== tagSearchTerm) return;
+      searchedTags = [];
     }
+    tagSearching = false; renderTagList();
   }, 250);
 }
-
-function renderTagsView() {
+function renderTagsView(){
   var b = sheetBody;
-  if (tagView === "detail") {
-    renderTagDetailView();
-    return;
-  }
-
-  // Jika input box dan manager sudah ada, update isinya saja agar keyboard tidak tertutup!
-  var existingInp = $("tagSearchInput");
-  if (existingInp && $("tagListContainer") && $("tagWantChips") && $("tagBlockChips")) {
-    renderTagManagerBars();
-    renderTagItemsOnly();
-    return;
-  }
-
+  if (tagView === "detail") { renderTagDetailView(); return; }
   b.innerHTML = "";
-
-  // 1. Unified Tag Manager Hub (Tag yang Mau + Tag yang Gamau / Blacklist)
-  var hub = el("div", "tag-manager-hub");
-
-  // --- CARD 1: TAG YANG MAU (SELECTED) ---
-  var cardWant = el("div", "tm-card want");
-  var headWant = el("div", "tm-head");
-  headWant.innerHTML = '<div class="tm-title"><span>🏷️</span> Tag Dipilih <span class="tm-count" id="tagWantCount">0</span></div>';
-  cardWant.appendChild(headWant);
-
-  var chipsWant = el("div", "tm-chips");
-  chipsWant.id = "tagWantChips";
-  cardWant.appendChild(chipsWant);
-
-  var actWant = el("div", "tm-act-row");
-  actWant.id = "tagWantActRow";
-  var goBtn = pill("🔍 Jelajah Post (0 Tag)", "pri", function() {
-    if (!selectedTags.length) return;
-    tagView = "detail";
-    loadTagDetail(selectedTags.slice(), true);
-  });
-  goBtn.id = "tagGoExploreBtn";
-  var clrWantBtn = pill("✕ Kosongkan", "dng", function() {
-    selectedTags = [];
-    renderTagManagerBars();
-    renderTagItemsOnly();
-  });
-  actWant.appendChild(goBtn);
-  actWant.appendChild(clrWantBtn);
-  cardWant.appendChild(actWant);
-  hub.appendChild(cardWant);
-
-  // --- CARD 2: TAG YANG GAMAU (BLACKLIST) ---
-  var cardBlock = el("div", "tm-card block");
-  var headBlock = el("div", "tm-head");
-  headBlock.innerHTML = '<div class="tm-title"><span>⛔</span> Tag Blacklist <span class="tm-count" id="tagBlockCount">0</span></div>';
-  cardBlock.appendChild(headBlock);
-
-  var chipsBlock = el("div", "tm-chips");
-  chipsBlock.id = "tagBlockChips";
-  cardBlock.appendChild(chipsBlock);
-
-  // Quick manual blacklist input row
-  var quickRow = el("div", "tm-quick-input-row");
-  var blkInp = el("input");
-  blkInp.id = "tagQuickBlockInp";
-  blkInp.type = "text";
-  blkInp.placeholder = "⛔ Ketik tag untuk blacklist langsung...";
-  var blkBtn = el("button", "", "+ Blokir");
-  function doQuickBlock() {
-    var v = blkInp.value.trim().toLowerCase().replace(/\s+/g, "_");
-    if (!v) return;
-    if (blacklistTags.indexOf(v) === -1) {
-      toggleTagBlock(v);
-    } else {
-      toast("Tag sudah ada di blacklist", "ok");
-    }
-    blkInp.value = "";
-  }
-  blkBtn.onclick = doQuickBlock;
-  blkInp.onkeydown = function(e) { if (e.key === "Enter") doQuickBlock(); };
-  quickRow.appendChild(blkInp);
-  quickRow.appendChild(blkBtn);
-  cardBlock.appendChild(quickRow);
-
-  var actBlock = el("div", "tm-act-row");
-  actBlock.id = "tagBlockActRow";
-  var clrBlockBtn = pill("🗑️ Hapus Semua Blacklist", "dng", function() {
-    if (!blacklistTags.length) return;
-    blacklistTags = [];
-    saveBlacklist();
-    renderTagManagerBars();
-    renderTagItemsOnly();
-    toast("Semua tag blacklist dihapus");
-  });
-  actBlock.appendChild(clrBlockBtn);
-  cardBlock.appendChild(actBlock);
-  hub.appendChild(cardBlock);
-
-  b.appendChild(hub);
-
-  // 2. Search Input Box
   var sb = el("div", "tagsearchbox");
-  var searchIco = el("span", "search-ico", "🔍");
+  var si = el("span", "search-ico"); si.innerHTML = ic("search");
   var inp = el("input");
-  inp.id = "tagSearchInput";
-  inp.type = "text";
-  inp.placeholder = "Ketik tag untuk mencari (misal: armpits, video, genshin)...";
+  inp.id = "tagSearchInput"; inp.type = "text"; inp.autocomplete = "off";
+  inp.setAttribute("autocapitalize", "off");
+  inp.placeholder = "Cari tag (artist, karakter, seri…)";
   inp.value = tagSearchTerm;
-  inp.oninput = function() { onTagSearchInput(inp.value); };
-  sb.appendChild(searchIco);
-  sb.appendChild(inp);
+  inp.oninput = function(){ onTagSearchInput(inp.value); };
+  var clr = el("button", "clear-btn"); clr.id = "tagSearchClear"; clr.innerHTML = ic("x");
+  clr.style.display = tagSearchTerm ? "flex" : "none";
+  clr.onclick = function(){ inp.value = ""; onTagSearchInput(""); inp.focus(); };
+  sb.appendChild(si); sb.appendChild(inp); sb.appendChild(clr);
   b.appendChild(sb);
 
-  // 3. Subtabs Bar (Semua / Populer, Dipilih, Blacklist)
-  var subtabs = el("div", "tag-subtabs");
-  var tAll = el("button", "tag-subtab-btn" + (tagListFilterMode === "all" ? " on" : ""), "🔥 Semua / Populer");
-  var tWant = el("button", "tag-subtab-btn want" + (tagListFilterMode === "want" ? " on" : ""), "🏷️ Dipilih (" + selectedTags.length + ")");
-  tWant.id = "subtabWant";
-  var tBlock = el("button", "tag-subtab-btn block" + (tagListFilterMode === "block" ? " on" : ""), "⛔ Blacklist (" + blacklistTags.length + ")");
-  tBlock.id = "subtabBlock";
+  // Mode Switcher: Pilih Tag vs Sembunyikan langsung di Tab Tag
+  var segRow = el("div", "seg");
+  segRow.style.marginBottom = "8px";
+  var btnWant = el("button", tagPickMode === "want" ? "on" : "", "🏷️ Pilih (" + selectedTags.length + ")");
+  btnWant.onclick = function(){ tagPickMode = "want"; renderTagsView(); };
+  var btnBlock = el("button", tagPickMode === "block" ? "on" : "", "⛔ Sembunyikan (" + blacklistTags.length + ")");
+  btnBlock.onclick = function(){ tagPickMode = "block"; renderTagsView(); };
+  segRow.appendChild(btnWant); segRow.appendChild(btnBlock);
+  b.appendChild(segRow);
 
-  function setFilterMode(m) {
-    tagListFilterMode = m;
-    tAll.classList.toggle("on", m === "all");
-    tWant.classList.toggle("on", m === "want");
-    tBlock.classList.toggle("on", m === "block");
-    renderTagItemsOnly();
+  if (tagPickMode === "block") {
+    var blkNotice = el("div", "fsum");
+    blkNotice.style.cssText = "background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.3);color:#fca5a5";
+    blkNotice.innerHTML = ic("ban") + "<span>Mode sembunyikan — tap tag untuk menyembunyikan post bertag itu.</span>";
+    var doneBtn = el("u", "", "Selesai");
+    doneBtn.onclick = function(){ closeSheet(); openFilterHub(); };
+    blkNotice.appendChild(doneBtn);
+    b.appendChild(blkNotice);
+  } else {
+    b.appendChild(el("div", "tagmode-hint", "Tap tag untuk memilih, lalu tonton."));
   }
-  tAll.onclick = function() { setFilterMode("all"); };
-  tWant.onclick = function() { setFilterMode("want"); };
-  tBlock.onclick = function() { setFilterMode("block"); };
-  subtabs.appendChild(tAll);
-  subtabs.appendChild(tWant);
-  subtabs.appendChild(tBlock);
-  b.appendChild(subtabs);
 
-  // 4. Tag List Container
-  var listContainer = el("div");
-  listContainer.id = "tagListContainer";
-  listContainer.style.cssText = "display:flex;flex-direction:column;gap:6px;";
-  b.appendChild(listContainer);
+  var fs = el("button", "fsum"); fs.id = "tagFsum"; fs.style.display = "none";
+  fs.onclick = function(){ openFilterHub(); };
+  b.appendChild(fs);
 
-  renderTagManagerBars();
-  renderTagItemsOnly();
+  var box = el("div", "tlist"); box.id = "tagListContainer";
+  b.appendChild(box);
+  var bar = el("div", "tagbar"); bar.id = "tagBar";
+  b.appendChild(bar);
+  renderTagFsum(); renderTagBar(); renderTagList();
 }
-function renderTagDetailView() {
+function ipill(icon, txt, cls, fn){
+  var b = el("button", "pill " + (cls || ""));
+  b.innerHTML = ic(icon) + "<span>" + esc(txt) + "</span>";
+  b.onclick = fn; return b;
+}
+function renderTagDetailView(){
   var b = sheetBody;
-  var titleStr = activeTagsDetail.join(" + ");
-
-  var head = el("div", "arow");
-  head.appendChild(pill("▶ Putar Semua", "pri", function() { startTag(activeTagsDetail, null, false); }));
-  head.appendChild(pill("🔀 Acak", "", function() { startTag(activeTagsDetail, null, true); }));
-  head.appendChild(pill("➕ Jadikan Playlist", "", function() { saveTagAsPlaylist(titleStr); }));
+  var titleStr = activeTagsDetail.length ? activeTagsDetail.join(" + ") : "Semua post";
+  var head = el("div", "tdhead");
+  head.appendChild(el("div", "tdtitle", titleStr));
+  var sm = filterSummary();
+  head.appendChild(el("div", "tdsub", tagPosts.length + " post" + (sm.length ? " · " + sm.join(" · ") : "")));
   b.appendChild(head);
 
-  var filterWrap = el("div");
-  filterWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:10px;";
-
-  // Baris 1: Filter Tipe Media
-  var typeRow = el("div", "arow");
-  typeRow.style.margin = "0";
-  var fSeg = seg([
-    [null, "Semua Tipe"],
-    [1, "🎬 Video Saja"],
-    [0, "🖼️ Gambar Saja"]
-  ], tagTypeFilter, function(v) {
-    tagTypeFilter = v;
-    loadTagDetail(activeTagsDetail, true);
-  });
-  typeRow.appendChild(fSeg);
-  filterWrap.appendChild(typeRow);
-
-  // Baris 2: Filter Urutan / Sortir
-  var sortRow = el("div", "arow");
-  sortRow.style.margin = "0";
-  var sSeg = seg([
-    ["newest", "✨ Terbaru"],
-    ["popular", "🔥 Terpopuler"],
-    ["oldest", "⏮️ Terlama"]
-  ], tagSortMode, function(v) {
-    tagSortMode = v;
-    loadTagDetail(activeTagsDetail, true);
-  });
-  sortRow.appendChild(sSeg);
-  filterWrap.appendChild(sortRow);
-
-  b.appendChild(filterWrap);
-
-  var sub = el("div", "selinfo", "🏷️ " + titleStr + " · " + tagPosts.length + " post termuat");
-  b.appendChild(sub);
+  var row = el("div", "arow");
+  row.appendChild(ipill("play", "Putar semua", "pri", function(){ startTag(activeTagsDetail, null, false); }));
+  row.appendChild(ipill("shuffle", "Acak", "", function(){ startTag(activeTagsDetail, null, true); }));
+  row.appendChild(ipill("filter", "Filter", "", function(){ openFilterHub(); }));
+  row.appendChild(ipill("plus", "Ke playlist", "", function(){ saveTagAsPlaylist(titleStr); }));
+  b.appendChild(row);
 
   var grid = el("div", "grid");
   b.appendChild(grid);
-
-  if (!tagPosts.length && !tagLoading) {
-    grid.appendChild(el("div", "empty", "Tidak ada post yang cocok dengan kombinasi tag ini."));
-  }
-
-  tagPosts.forEach(function(id) {
-    var t = thumb(id, function() {
-      startTag(activeTagsDetail, id, false);
-    });
-    grid.appendChild(t);
+  if (!tagPosts.length && !tagLoading) grid.appendChild(el("div", "empty", "Tidak ada post yang cocok. Coba ubah Filter atau tag."));
+  tagPosts.forEach(function(id){
+    grid.appendChild(thumb(id, function(){ startTag(activeTagsDetail, id, false); }));
   });
-
-  if (tagLoading) {
-    var l = el("div", "empty", "⏳ Memuat post dari r-34.xyz…");
-    grid.appendChild(l);
-  } else if (tagHasMore && tagPosts.length > 0) {
-    var moreBtn = pill("⬇ Muat 30 Lagi", "more", function() {
-      loadMoreTagPosts();
-    });
-    grid.appendChild(moreBtn);
-  }
+  if (tagLoading) grid.appendChild(el("div", "empty", "Memuat post…"));
+  else if (tagHasMore && tagPosts.length > 0) grid.appendChild(pill("Muat 30 lagi", "more", function(){ loadMoreTagPosts(); }));
 }
-function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=txt; return e; }
+function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=lead(txt); return e; }
 function pill(txt,cls,fn){ var b=el("button","pill "+(cls||""),txt); b.onclick=fn; return b; }
 function resetSel(){ selMode=false; sel={}; plShown=120; }
-function openSheet(tab){
+function openSheet(tab,mode){
   if(tab) sheetTab=tab;
   if(tab==="playlist"){ plView="list"; plDetailId=null; resetSel(); }
-  if(tab==="tags"){ tagView="list"; }
+  if(tab==="tags"){ tagView=mode==="detail" ? "detail" : "list"; tagPickMode = mode==="block" ? "block" : "want"; }
   renderSheet(); sheet.classList.add("open"); sheetBackdrop.classList.add("open");
 }
 function closeSheet(){ sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); }
@@ -3254,11 +2766,14 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"),function(b)
   b.addEventListener("click",function(){
     sheetTab=b.getAttribute("data-tab");
     if(sheetTab==="playlist"){ plView="list"; plDetailId=null; }
+    if(sheetTab==="tags"){ tagView="list"; tagPickMode="want"; }
     resetSel(); renderSheet();
   });
 });
 function rerender(){ var st=sheetBody.scrollTop; renderSheet(); sheetBody.scrollTop=st; }
 function renderSheet(){
+  var labelMap = {tags:"Tag", playlist:"Koleksi", history:"Riwayat", settings:"Setelan"};
+  sheet.setAttribute("aria-label", "Panel " + (labelMap[sheetTab] || ""));
   Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"),function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===sheetTab); });
   sheetBackBtn.disabled=!((sheetTab==="playlist"&&plView==="detail")||(sheetTab==="tags"&&tagView==="detail"));
   sheetBody.innerHTML="";
@@ -3273,7 +2788,7 @@ function thumb(id,onclick){
   d.appendChild(im); d.appendChild(el("span","tid","#"+id));
   var meta = postMetaCache.get(id);
   if(meta && meta.type === 1){
-    var vb = el("span", "vid-badge", "🎬" + (meta.duration ? " " + meta.duration + "s" : ""));
+    var vb = el("span", "vid-badge", meta.duration ? meta.duration + "s" : "VIDEO");
     d.appendChild(vb);
   }
   if(id===current) d.classList.add("act");
@@ -3281,26 +2796,26 @@ function thumb(id,onclick){
 }
 function renderPlList(){
   var row=el("div","arow");
-  row.appendChild(pill("➕ Baru","pri",newPlaylist));
-  row.appendChild(pill("⬆ Ekspor","",exportPlaylists));
-  row.appendChild(pill("⬇ Impor","",function(){ $("importFile").click(); }));
+  row.appendChild(ipill("plus","Baru","pri",newPlaylist));
+  row.appendChild(ipill("upload","Ekspor","",exportPlaylists));
+  row.appendChild(ipill("download","Impor","",function(){ $("importFile").click(); }));
   sheetBody.appendChild(row);
   var grid=el("div","grid"); sheetBody.appendChild(grid);
-  if(!playlists.length){ grid.appendChild(el("div","empty","Belum ada playlist. Tap ➕ Baru, atau swipe kanan di post.")); return; }
+  if(!playlists.length){ grid.appendChild(el("div","empty","Belum ada playlist. Tap Baru, atau swipe kanan di post.")); return; }
   playlists.forEach(function(pl){
     var card=el("div","card"), cv=el("div","cv","");
     if(pl.postIds.length){
       var im=new Image(); im.loading="lazy"; im.src=thumbURL(pl.last&&isIn(pl,pl.last)?pl.last:pl.postIds[0]); im.alt="";
-      im.onerror=function(){ if(im.parentNode) im.parentNode.removeChild(im); cv.insertBefore(document.createTextNode("📚"),cv.firstChild); };
+      im.onerror=function(){ if(im.parentNode) im.parentNode.removeChild(im); var fb=el("span"); fb.innerHTML=ic("layers"); cv.insertBefore(fb,cv.firstChild); };
       cv.appendChild(im);
-    } else cv.textContent="📚";
-    var play=el("button","play","▶"); play.onclick=function(e){ e.stopPropagation(); startPlaylist(pl.id); };
+    } else cv.innerHTML=ic("layers");
+    var play=el("button","play"); play.innerHTML=ic("play"); play.onclick=function(e){ e.stopPropagation(); startPlaylist(pl.id); };
     var menu=el("button","menu","⋯");
     var acts=el("div","acts");
-    var b1=el("button","","🔀 Putar acak"); b1.onclick=function(e){ e.stopPropagation(); startPlaylist(pl.id,null,true); };
-    var b2=el("button","","✎ Ganti nama"); b2.onclick=function(e){ e.stopPropagation(); renamePlaylist(pl.id); };
-    var b3=el("button","d","🗑 Hapus"); b3.onclick=function(e){ e.stopPropagation(); deletePlaylist(pl.id); };
-    var b4=el("button","","✕ Tutup"); b4.onclick=function(e){ e.stopPropagation(); acts.classList.remove("show"); };
+    var b1=el("button",""); b1.innerHTML=ic("shuffle")+"<span>Putar acak</span>"; b1.onclick=function(e){ e.stopPropagation(); startPlaylist(pl.id,null,true); };
+    var b2=el("button",""); b2.innerHTML=ic("edit")+"<span>Ganti nama</span>"; b2.onclick=function(e){ e.stopPropagation(); renamePlaylist(pl.id); };
+    var b3=el("button","d"); b3.innerHTML=ic("trash")+"<span>Hapus</span>"; b3.onclick=function(e){ e.stopPropagation(); deletePlaylist(pl.id); };
+    var b4=el("button",""); b4.innerHTML=ic("x")+"<span>Tutup</span>"; b4.onclick=function(e){ e.stopPropagation(); acts.classList.remove("show"); };
     [b1,b2,b3,b4].forEach(function(b){ acts.appendChild(b); });
     menu.onclick=function(e){
       e.stopPropagation();
@@ -3321,16 +2836,16 @@ function renderPlDetail(){
   var ids=p.postIds;
   if(!selMode){
     var r1=el("div","arow");
-    r1.appendChild(pill("▶ Putar","pri",function(){ startPlaylist(p.id); }));
-    r1.appendChild(pill("🔀 Acak","",function(){ startPlaylist(p.id,null,true); }));
-    if(ids.length&&p.last&&isIn(p,p.last)&&ids[0]!==p.last) r1.appendChild(pill("⏮ Dari awal","",function(){ startPlaylist(p.id,ids[0]); }));
+    r1.appendChild(ipill("play","Putar","pri",function(){ startPlaylist(p.id); }));
+    r1.appendChild(ipill("shuffle","Acak","",function(){ startPlaylist(p.id,null,true); }));
+    if(ids.length&&p.last&&isIn(p,p.last)&&ids[0]!==p.last) r1.appendChild(ipill("back","Dari awal","",function(){ startPlaylist(p.id,ids[0]); }));
     sheetBody.appendChild(r1);
     var r2=el("div","arow");
-    r2.appendChild(pill("☑ Pilih","",function(){ selMode=true; sel={}; renderSheet(); }));
-    r2.appendChild(pill(sortAsc?"↕ ID ↑":"↕ ID ↓","",function(){ ids.sort(function(a,b){ return sortAsc?a-b:b-a; }); sortAsc=!sortAsc; persist(); rerender(); }));
-    r2.appendChild(pill("🔀 Kocok","",function(){ shuffleArr(ids); persist(); rerender(); }));
-    r2.appendChild(pill("📦 ZIP","",function(){ zipPlaylist(p,ids); }));
-    r2.appendChild(pill("✎ Nama","",function(){ renamePlaylist(p.id); }));
+    r2.appendChild(ipill("check","Pilih","",function(){ selMode=true; sel={}; renderSheet(); }));
+    r2.appendChild(ipill(sortAsc?"arrowUp":"arrowDown","Urut ID","",function(){ ids.sort(function(a,b){ return sortAsc?a-b:b-a; }); sortAsc=!sortAsc; persist(); rerender(); }));
+    r2.appendChild(ipill("shuffle","Kocok","",function(){ shuffleArr(ids); persist(); rerender(); }));
+    r2.appendChild(ipill("download","ZIP","",function(){ zipPlaylist(p,ids); }));
+    r2.appendChild(ipill("edit","Nama","",function(){ renamePlaylist(p.id); }));
     sheetBody.appendChild(r2);
     sheetBody.appendChild(el("div","selinfo",p.name+"  ·  "+ids.length+" post"));
   } else {
@@ -3339,15 +2854,15 @@ function renderPlDetail(){
     var a1=el("div","arow");
     a1.appendChild(pill("Semua","",function(){ ids.forEach(function(i){ sel[i]=1; }); rerender(); }));
     a1.appendChild(pill("Kosongkan","",function(){ sel={}; rerender(); }));
-    a1.appendChild(pill("✕ Selesai","",function(){ resetSel(); renderSheet(); }));
+    a1.appendChild(ipill("x","Selesai","",function(){ resetSel(); renderSheet(); }));
     sheetBody.appendChild(a1);
     var a2=el("div","arow");
-    a2.appendChild(pill("⬆ Ke awal","",function(){ moveSel(p,true); }));
-    a2.appendChild(pill("⬇ Ke akhir","",function(){ moveSel(p,false); }));
-    a2.appendChild(pill("📋 Salin","",function(){ pickFor(p,false); }));
-    a2.appendChild(pill("➡ Pindah","",function(){ pickFor(p,true); }));
-    a2.appendChild(pill("📦 ZIP","",function(){ var s=needSel(p); if(s) zipPlaylist(p,s); }));
-    a2.appendChild(pill("🗑 Hapus","dng",function(){ deleteSel(p); }));
+    a2.appendChild(ipill("arrowUp","Ke awal","",function(){ moveSel(p,true); }));
+    a2.appendChild(ipill("arrowDown","Ke akhir","",function(){ moveSel(p,false); }));
+    a2.appendChild(ipill("copy","Salin","",function(){ pickFor(p,false); }));
+    a2.appendChild(ipill("arrowRight","Pindah","",function(){ pickFor(p,true); }));
+    a2.appendChild(ipill("download","ZIP","",function(){ var s=needSel(p); if(s) zipPlaylist(p,s); }));
+    a2.appendChild(ipill("trash","Hapus","dng",function(){ deleteSel(p); }));
     sheetBody.appendChild(a2);
   }
   var grid=el("div","grid"); sheetBody.appendChild(grid);
@@ -3403,7 +2918,7 @@ function deleteSel(p){
 }
 function renderHistory(){
   var row=el("div","arow");
-  row.appendChild(pill("🗑 Kosongkan riwayat","dng",function(){ hist=[]; jset("pe_hist",hist); renderSheet(); }));
+  row.appendChild(ipill("trash","Kosongkan riwayat","dng",function(){ hist=[]; jset("pe_hist",hist); renderSheet(); }));
   sheetBody.appendChild(row);
   var grid=el("div","grid"); sheetBody.appendChild(grid);
   if(!hist.length){ grid.appendChild(el("div","empty","Belum ada riwayat.")); return; }
@@ -3421,26 +2936,23 @@ function seg(opts,val,cb){
 }
 function renderSettings(){
   var b=sheetBody, onoff=[[true,"On"],[false,"Off"]];
-  b.appendChild(setRow("Auto-Next Video","Otomatis lanjut post berikutnya saat video selesai",seg(onoff,!!S.autoNextVid,function(v){ S.autoNextVid=v; saveS(); })));
-  b.appendChild(setRow("Filter Konten AI","Sembunyikan post buatan AI",seg(onoff,S.filterAi,function(v){ S.filterAi=v; saveS(); })));
+  b.appendChild(setRow("Auto-Next Video","Otomatis lanjut post berikutnya saat video selesai",seg(onoff,!!S.autoNextVid,function(v){ S.autoNextVid=v; saveS(); var vid=zoomLayer.querySelector("video"); if(vid) vid.loop=!(autoEnabled||S.autoNextVid); })));
   b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled&&!isVideo()) resetAutoTimer(); })));
   b.appendChild(setRow("Lewati post kosong","Loncat otomatis ID yang tidak ada",seg(onoff,S.skipMissing,function(v){ S.skipMissing=v; saveS(); })));
-  b.appendChild(setRow("Hemat data","Pakai gambar kecil dulu",seg(onoff,S.saver,function(v){ S.saver=v; saveS(); cache.clear(); })));
+  b.appendChild(setRow("Hemat data","Pakai gambar kecil dulu",seg(onoff,S.saver,function(v){ S.saver=v; saveS(); invalidateCache(); })));
   b.appendChild(setRow("Pertahankan zoom","Level zoom tetap saat pindah post",seg(onoff,S.keepZoom,function(v){ S.keepZoom=v; saveS(); })));
   b.appendChild(setRow("Tampilan","Muat utuh / penuhi layar",seg([["contain","Muat"],["cover","Penuh"]],S.fit,function(v){ S.fit=v; saveS(); applyFit(); })));
-  b.appendChild(setRow("Suara video","",seg([[true,"Mati"],[false,"Hidup"]],S.muted,function(v){ S.muted=v; saveS(); var vd=zoomLayer.querySelector("video"); if(vd) vd.muted=v; })));
-  b.appendChild(setRow("Kecepatan video","Double-tap kiri/kanan = ±10 detik",seg([[0.5,"0.5×"],[1,"1×"],[1.5,"1.5×"],[2,"2×"]],S.speed,function(v){ S.speed=v; saveS(); var vd=zoomLayer.querySelector("video"); if(vd){ vd.defaultPlaybackRate=v; vd.playbackRate=v; } })));
+  b.appendChild(setRow("Suara video","Default saat video dibuka",seg([[true,"Mati"],[false,"Hidup"]],S.muted,function(v){ S.muted=v; saveS(); var vd=zoomLayer.querySelector("video"); if(vd) vd.muted=v; })));
+  b.appendChild(setRow("Kecepatan video","Playback rate",seg([[0.5,"0.5×"],[1,"1×"],[1.5,"1.5×"],[2,"2×"]],S.speed,function(v){ S.speed=v; saveS(); var vd=zoomLayer.querySelector("video"); if(vd){ vd.defaultPlaybackRate=v; vd.playbackRate=v; } })));
   var row=el("div","arow"); row.style.marginTop="12px";
-  row.appendChild(pill("🔗 Salin URL","",copyURL));
-  row.appendChild(pill("↗ Bagikan","",shareURL));
-  row.appendChild(pill("🧹 Bersihkan cache","",function(){ cache.clear(); queue.length=0; toast("Cache dibersihkan","ok"); }));
+  row.appendChild(ipill("link","Salin URL","",copyURL));
+  row.appendChild(ipill("share","Bagikan","",shareURL));
   b.appendChild(row);
 
-  // Storage Manager Card
   var sBox = el("div", "storage-card");
-  var sTitle = el("div", "storage-title", "📦 Pengelola Penyimpanan & Cache");
+  var sTitle = el("div", "storage-title", "Pengelola Penyimpanan & Cache");
   sBox.appendChild(sTitle);
-  
+
   var lsBytes = 0;
   try {
     for (var k in localStorage) {
@@ -3452,9 +2964,9 @@ function renderSettings(){
   var lsKb = (lsBytes / 1024).toFixed(1);
 
   var sStats = el("div", "storage-stats");
-  sStats.innerHTML = "<div>💾 <b>Data Aplikasi (Playlists, Setelan):</b> <span>" + lsKb + " KB</span></div>" +
-                     "<div>🖼️ <b>Cache RAM:</b> <span>" + cache.size + " / " + MAX_CACHE + " post</span></div>" +
-                     "<div>🌐 <b>Cache Disk Browser:</b> <span id='storageQuotaVal'>Memeriksa...</span></div>";
+  sStats.innerHTML = "<div><b>Data Aplikasi (Playlists, Setelan):</b> <span>" + lsKb + " KB</span></div>" +
+                     "<div><b>Cache RAM:</b> <span>" + cache.size + " / " + MAX_CACHE + " post</span></div>" +
+                     "<div><b>Cache Disk Browser:</b> <span id='storageQuotaVal'>Memeriksa...</span></div>";
   sBox.appendChild(sStats);
 
   if (navigator.storage && navigator.storage.estimate) {
@@ -3469,13 +2981,13 @@ function renderSettings(){
 
   var sActs = el("div", "arow");
   sActs.style.marginTop = "6px";
-  sActs.appendChild(pill("🧹 Bersihkan Cache", "pri", function() {
-    cache.clear();
-    queue.length = 0;
+  sActs.appendChild(ipill("refresh", "Bersihkan Cache", "pri", function() {
+    invalidateCache();
+    clearQueued();
     toast("Cache RAM dibersihkan", "ok");
     renderSettings();
   }));
-  sActs.appendChild(pill("🗑️ Kosongkan Riwayat", "", function() {
+  sActs.appendChild(ipill("trash", "Kosongkan Riwayat", "", function() {
     hist = [];
     jset("pe_hist", hist);
     toast("Riwayat dikosongkan", "ok");
@@ -3485,10 +2997,10 @@ function renderSettings(){
   b.appendChild(sBox);
 
   var gRow=el("div","arow"); gRow.style.marginTop="8px";
-  gRow.appendChild(pill("📖 Buka Panduan Gestur & Fitur","pri",openGuide));
+  gRow.appendChild(ipill("book", "Buka Panduan","pri",openGuide));
   b.appendChild(gRow);
-  var tip=el("div","","Gestur: swipe ↑ = post berikutnya · swipe ↓ = post sebelumnya · swipe → = simpan ke playlist · swipe ← = hapus dari playlist (atau petunjuk jika belum ada) · pinch / double-tap = zoom (video: seek ±10 detik). Keyboard: ←↑ = sebelumnya · →↓ = berikutnya · Spasi = play/pause · A=auto · F=favorit · R=acak · P=playlist · B=kembali · Esc=tutup.");
-  tip.style.cssText="font-size:11px;color:var(--faint);line-height:1.6;margin-top:10px";
+  var tip=el("div","","Gestur: swipe ↑ = post berikutnya · swipe ↓ = post sebelumnya · swipe → = simpan ke playlist · swipe ← = hapus dari playlist · pinch = zoom gambar · double-tap = favorit (animasi heart). Keyboard: ←↑ = sebelumnya · →↓ = berikutnya · Spasi = play/pause · A=auto · F=favorit · R=acak · P=playlist · B=kembali · Esc=tutup. Filter AI & sembunyikan tag ada di menu Filter.");
+  tip.style.cssText="font-size:11px;color:var(--text-faint);line-height:1.6;margin-top:10px";
   b.appendChild(tip);
 }
 function newPlaylist(){
@@ -3526,10 +3038,11 @@ $("importFile").addEventListener("change",function(e){
       var added=0;
       arr.forEach(function(p){
         if(!p||typeof p.name!=="string"||!Array.isArray(p.postIds)) return;
-        var ids=uniq(p.postIds.filter(validId)), ex=null;
-        playlists.forEach(function(x){ if(x.name===p.name) ex=x; });
+        var cleanName=p.name.trim().slice(0,40); if(!cleanName) return;
+        var ids=uniq(p.postIds.map(function(v){ return typeof v==="string"&&/^\d+$/.test(v)?Number(v):v; }).filter(validId)), ex=null;
+        playlists.forEach(function(x){ if(String(x.name).toLowerCase()===cleanName.toLowerCase()) ex=x; });
         if(ex){ ids.forEach(function(i){ if(!isIn(ex,i)){ ex.postIds.push(i); added++; } }); }
-        else { playlists.push({id:genId(),name:p.name.slice(0,40),postIds:ids,last:null}); added+=ids.length; }
+        else { playlists.push({id:genId(),name:cleanName,postIds:ids,last:null}); added+=ids.length; }
       });
       persist(); renderSheet(); refreshBtns(); toast("Impor selesai: "+added+" post","ok");
     }catch(err){ toast("File tidak valid","bad"); }
@@ -3537,7 +3050,6 @@ $("importFile").addEventListener("change",function(e){
   fr.readAsText(f); e.target.value="";
 });
 
-/* ---------- ZIP (tanpa library, mode "store") ---------- */
 var crcT=null;
 function crc32(u8){
   if(!crcT){ crcT=new Uint32Array(256); for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); crcT[n]=c>>>0; } }
@@ -3572,7 +3084,7 @@ function zipPlaylist(p,ids){
   var list=ids.slice();
   function go(){
     zipBusy=true;
-    var files=[], i=0, fail=0;
+    var files=[], i=0, fail=0, totalBytes=0, MAX_ZIP_BYTES=80*1024*1024;
     function finish(){
       zipBusy=false;
       if(!files.length){ toast("Gagal: CDN mungkin blokir download langsung","bad"); return; }
@@ -3584,6 +3096,8 @@ function zipPlaylist(p,ids){
       var id=list[i++], u=urls(id);
       toast("Mengambil "+i+"/"+list.length+"…");
       tryFetch([[u.mp4,"mp4"],[u.full,"jpg"],[u.small,"jpg"]],0).then(function(r){
+        if(totalBytes+r.blob.size>MAX_ZIP_BYTES){ fail++; toast("ZIP dihentikan: batas aman 80 MB terlampaui","bad"); i=list.length; return; }
+        totalBytes+=r.blob.size;
         return r.blob.arrayBuffer().then(function(buf){
           files.push({name:"post_"+id+"."+r.ext,blob:r.blob,size:r.blob.size,crc:crc32(new Uint8Array(buf))});
         });
@@ -3591,11 +3105,9 @@ function zipPlaylist(p,ids){
     }
     next();
   }
-  if(list.length>60) dialog("Unduh <b>"+list.length+"</b> post sebagai ZIP? Bisa berat di HP.",{ok:"Lanjut"},go);
-  else go();
+  dialog("Unduh <b>"+list.length+"</b> post sebagai ZIP? Batas ukuran total 80 MB untuk menjaga RAM perangkat.",{ok:"Lanjut"},go);
 }
 
-/* ---------- download / share ---------- */
 function download(){
   if(!currentURL){ toast("Buka post dulu"); return; }
   var ext=currentType==="mp4"?"mp4":"jpg", url=currentURL, id=current;
@@ -3615,7 +3127,6 @@ function shareURL(){
   else copyURL();
 }
 
-/* ---------- input & keyboard ---------- */
 var deb=null;
 input.addEventListener("focus",function(){ try{ input.select(); }catch(e){} });
 input.addEventListener("keydown",function(e){ if(e.key==="Enter"){ clearTimeout(deb); input.blur(); exitPlaylist(); loadPost(); } });
@@ -3639,65 +3150,13 @@ function goToInput() {
   }
 }
 function openGuide() {
-  if (guideBackdrop) guideBackdrop.classList.add("open");
+  var gb = $("guideBackdrop");
+  if (gb) gb.classList.add("open");
 }
 function closeGuide(e) {
-  if (!e || e.target === guideBackdrop) {
-    if (guideBackdrop) guideBackdrop.classList.remove("open");
-  }
-}
-
-
-var sortPopover = $("sortPopover");
-var sortIco = $("sortIco");
-var soundBtn = $("soundBtn");
-
-function toggleSortMenu(e) {
-  if (e && e.stopPropagation) e.stopPropagation();
-  if (sortPopover) sortPopover.classList.toggle("open");
-}
-
-function updateSortUI() {
-  if (sortIco) {
-    sortIco.textContent = tagSortMode === "popular" ? "🔥" : tagSortMode === "oldest" ? "⏳" : "✨";
-  }
-  var nEl = $("spNewest"), pEl = $("spPopular"), oEl = $("spOldest");
-  if (nEl) nEl.classList.toggle("on", tagSortMode === "newest");
-  if (pEl) pEl.classList.toggle("on", tagSortMode === "popular");
-  if (oEl) oEl.classList.toggle("on", tagSortMode === "oldest");
-}
-
-async function setSort(mode) {
-  tagSortMode = mode;
-  updateSortUI();
-  if (sortPopover) sortPopover.classList.remove("open");
-  
-  var label = mode === "popular" ? "🔥 Terpopuler (Likes terbanyak)" : mode === "oldest" ? "⏳ Terlama (Mulai post #1)" : "✨ Terbaru";
-  toast(label, "ok");
-
-  // If in Tag mode:
-  if (activeTagsDetail && activeTagsDetail.length > 0) {
-    await loadTagDetail(activeTagsDetail, true);
-    if (tagPosts.length) startTag(activeTagsDetail, null, false);
-    return;
-  }
-
-  // If in normal browsing mode:
-  if (mode === "popular") {
-    toast("Memuat post terpopuler...", "ok");
-    await loadTagDetail([], true);
-    if (tagPosts.length) {
-      activeTag = "🔥 Terpopuler";
-      startTag([], null, false);
-    }
-  } else if (mode === "oldest") {
-    exitPlaylist();
-    loadPost(1, 0);
-  } else {
-    exitPlaylist();
-    var km = parseInt(lsGet("knownMaxId"), 10);
-    var target = (isFinite(km) && km > 1300000) ? km : 1352845;
-    loadPost(target, 0);
+  var gb = $("guideBackdrop");
+  if (!e || e.target === gb) {
+    if (gb) gb.classList.remove("open");
   }
 }
 
@@ -3706,29 +3165,11 @@ function toggleSound() {
   saveS();
   var vd = zoomLayer.querySelector("video");
   if (vd) vd.muted = S.muted;
-  if (soundBtn) soundBtn.textContent = S.muted ? "🔇" : "🔊";
+  if (soundBtn) soundBtn.innerHTML = ic(S.muted ? "mute" : "volume");
   toast(S.muted ? "Suara Video: Mati" : "Suara Video: Hidup", "ok");
 }
 
-document.addEventListener("click", function(e) {
-  if (sortPopover && sortPopover.classList.contains("open")) {
-    if (!e.target.closest || !e.target.closest("#sortBtn")) {
-      sortPopover.classList.remove("open");
-    }
-  }
-});
-
-
-/* ---------- Quick Filter Hub (Tag, Sort, Blacklist) ---------- */
-var filterHubBackdrop = $("filterHubBackdrop");
-var fhActiveTagChips = $("fhActiveTagChips");
-var fhBlockTagChips = $("fhBlockTagChips");
-var fhTagInput = $("fhTagInput");
-var fhBlockInput = $("fhBlockInput");
-var soundBtn = $("soundBtn");
-
-// Blacklist tags persisted in localStorage
-var blacklistTags = jget("pe_blacklist", []) || [];
+var blacklistTags = jget("pe_blacklist", []); if(!Array.isArray(blacklistTags)) blacklistTags=[];
 
 function saveBlacklist() { jset("pe_blacklist", blacklistTags); }
 
@@ -3755,141 +3196,90 @@ function closeFilterHub(e) {
 }
 
 function renderFilterHub() {
-  // 1. Sort state
-  var nBtn = $("fhSortNewest"), pBtn = $("fhSortPopular"), oBtn = $("fhSortOldest");
-  if (nBtn) nBtn.classList.toggle("on", tagSortMode === "newest");
-  if (pBtn) pBtn.classList.toggle("on", tagSortMode === "popular");
-  if (oBtn) oBtn.classList.toggle("on", tagSortMode === "oldest");
+  [["newest", "fhSortNewest"], ["popular", "fhSortPopular"], ["oldest", "fhSortOldest"]].forEach(function(p){
+    var x = $(p[1]); if (x) x.classList.toggle("on", tagSortMode === p[0]);
+  });
+  var tf = (tagTypeFilter === undefined) ? null : tagTypeFilter;
+  [[null, "fhTypeAll"], [1, "fhTypeVid"], [0, "fhTypeImg"]].forEach(function(p){
+    var x = $(p[1]); if (x) x.classList.toggle("on", tf === p[0]);
+  });
+  var ai = $("fhAiBtn"); if (ai) ai.classList.toggle("on", !!S.filterAi);
 
-  // 2. Active tags chips
   if (fhActiveTagChips) {
     fhActiveTagChips.innerHTML = "";
-    if (!selectedTags.length) {
-      var em = el("span", "", "Semua post (belum ada tag)");
-      em.style.cssText = "font-size:11px;color:var(--text-faint);font-style:italic;";
-      fhActiveTagChips.appendChild(em);
-    } else {
-      selectedTags.forEach(function(t, idx) {
-        var cp = el("span", "fh-chip", t);
-        var x = el("button", "", "✕");
-        x.onclick = function() { selectedTags.splice(idx, 1); renderFilterHub(); };
-        cp.appendChild(x);
-        fhActiveTagChips.appendChild(cp);
-      });
-    }
+    if (!selectedTags.length) fhActiveTagChips.appendChild(el("span", "fh-empty", "Belum ada tag aktif."));
+    else selectedTags.forEach(function(t){ fhActiveTagChips.appendChild(chipEl(t, "", function(){ toggleTagWant(t); })); });
   }
-
-  // 3. Blacklist chips
   if (fhBlockTagChips) {
     fhBlockTagChips.innerHTML = "";
-    if (!blacklistTags.length) {
-      var emB = el("span", "", "Tidak ada tag yang diblokir");
-      emB.style.cssText = "font-size:11px;color:var(--text-faint);font-style:italic;";
-      fhBlockTagChips.appendChild(emB);
-    } else {
-      blacklistTags.forEach(function(b, idx) {
-        var cp = el("span", "fh-chip block", "⛔ " + b);
-        var x = el("button", "", "✕");
-        x.onclick = function() { blacklistTags.splice(idx, 1); saveBlacklist(); renderFilterHub(); };
-        cp.appendChild(x);
-        fhBlockTagChips.appendChild(cp);
-      });
-    }
+    if (!blacklistTags.length) fhBlockTagChips.appendChild(el("span", "fh-empty", "Tidak ada tag yang disembunyikan."));
+    else blacklistTags.forEach(function(t){ fhBlockTagChips.appendChild(chipEl(t, "block", function(){ toggleTagBlock(t); })); });
   }
 }
 
-function setHubSort(mode) {
-  tagSortMode = mode;
-  renderFilterHub();
-}
+function setHubSort(mode) { tagSortMode = mode; renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
+function setHubType(v) { tagTypeFilter = v; renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
+function toggleHubAi() { S.filterAi = !S.filterAi; saveS(); renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
+function pickTags() { closeFilterHub(); openSheet("tags"); }
+function pickBlockTags() { closeFilterHub(); openSheet("tags", "block"); }
 
 function addHubTag() {
   if (!fhTagInput) return;
-  var val = fhTagInput.value.trim().toLowerCase().replace(/\s+/g, "_");
-  if (!val) return;
-  if (selectedTags.indexOf(val) === -1) {
-    selectedTags.push(val);
-  }
-  fhTagInput.value = "";
-  renderFilterHub();
+  var v = normTag(fhTagInput.value); if (!v) return;
+  if (selectedTags.indexOf(v) === -1) selectedTags.push(v);
+  var bi = blacklistTags.indexOf(v); if (bi !== -1) blacklistTags.splice(bi, 1);
+  fhTagInput.value = ""; syncTagUI();
+  if (fhActiveTagChips) renderFilterHub();
 }
-
-if (fhTagInput) {
-  fhTagInput.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") addHubTag();
-  });
-}
-
 function addHubBlockTag() {
   if (!fhBlockInput) return;
-  var val = fhBlockInput.value.trim().toLowerCase().replace(/\s+/g, "_");
-  if (!val) return;
-  if (blacklistTags.indexOf(val) === -1) {
-    blacklistTags.push(val);
-    saveBlacklist();
-  }
-  fhBlockInput.value = "";
-  renderFilterHub();
+  var v = normTag(fhBlockInput.value); if (!v) return;
+  if (blacklistTags.indexOf(v) === -1) blacklistTags.push(v);
+  var si = selectedTags.indexOf(v); if (si !== -1) selectedTags.splice(si, 1);
+  fhBlockInput.value = ""; saveBlacklist(); syncTagUI();
+  if (fhBlockTagChips) renderFilterHub();
 }
+if (fhTagInput) fhTagInput.addEventListener("keydown", function(e){ if (e.key === "Enter") addHubTag(); });
+if (fhBlockInput) fhBlockInput.addEventListener("keydown", function(e){ if (e.key === "Enter") addHubBlockTag(); });
 
-if (fhBlockInput) {
-  fhBlockInput.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") addHubBlockTag();
-  });
+function resetFilter() {
+  tagSortMode = "newest"; tagTypeFilter = null; selectedTags = []; blacklistTags = []; saveBlacklist();
+  S.filterAi = false; saveS();
+  syncTagUI(); renderFilterHub(); toast("Filter diatur ulang", "ok");
 }
 
 async function applyFilterHub() {
-  if (filterHubBackdrop) filterHubBackdrop.classList.remove("open");
-  var sortLabel = tagSortMode === "popular" ? "🔥 Terpopuler" : tagSortMode === "oldest" ? "⏳ Terlama" : "✨ Terbaru";
-  
-  if (selectedTags.length > 0) {
-    activeTagsDetail = selectedTags.slice();
-    toast("Mencari tag: " + selectedTags.join(", ") + " (" + sortLabel + ")", "ok");
-    await loadTagDetail(selectedTags, true);
-    if (tagPosts.length) {
-      startTag(selectedTags, null, false);
-    } else {
-      toast("Tidak ditemukan post dengan kombinasi tag ini", "bad");
-    }
+  closeFilterHub();
+  var inDetail = sheet.classList.contains("open") && sheetTab === "tags" && tagView === "detail";
+  var typed = (tagTypeFilter !== null && tagTypeFilter !== undefined);
+  var needSearch = selectedTags.length > 0 || tagSortMode === "popular" || typed || blacklistTags.length > 0 || !!S.filterAi;
+  if (needSearch) {
+    toast("Memuat post…");
+    await loadTagDetail(selectedTags.slice(), true);
+    if (inDetail) return;
+    if (tagPosts.length) startTag(selectedTags.slice(), null, false);
+    else toast("Tidak ada post yang cocok", "bad");
+    return;
+  }
+  exitPlaylist();
+  if (tagSortMode === "oldest") {
+    loadPost(1, 0); toast("Mulai dari post terlama (#1)", "ok");
   } else {
-    // No specific tags selected -> browse all posts with sortMode
-    if (tagSortMode === "popular") {
-      toast("Memuat post terpopuler...", "ok");
-      await loadTagDetail([], true);
-      if (tagPosts.length) {
-        activeTag = "🔥 Terpopuler";
-        startTag([], null, false);
-      }
-    } else if (tagSortMode === "oldest") {
-      exitPlaylist();
-      loadPost(1, 0);
-      toast("Lompat ke post terlama (#1)", "ok");
-    } else {
-      exitPlaylist();
-      var km = parseInt(lsGet("knownMaxId"), 10);
-      var target = (isFinite(km) && km > 1300000) ? km : 1352845;
-      loadPost(target, 0);
-      toast("Lompat ke post terbaru (#" + target + ")", "ok");
-    }
+    var km = parseInt(lsGet("knownMaxId"), 10);
+    var target = (isFinite(km) && km > 1300000) ? km : 1352845;
+    loadPost(target, 0); toast("Lompat ke post terbaru (#" + target + ")", "ok");
   }
 }
 
-function toggleSound() {
-  S.muted = !S.muted;
-  saveS();
-  var vd = zoomLayer.querySelector("video");
-  if (vd) vd.muted = S.muted;
-  if (soundBtn) soundBtn.textContent = S.muted ? "🔇" : "🔊";
-  toast(S.muted ? "Suara Video: Mati" : "Suara Video: Hidup", "ok");
-}
+function overlayOpen(){ return (filterHubBackdrop && filterHubBackdrop.classList.contains("open")) || sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open")||infoBackdrop.classList.contains("open")||($("guideBackdrop")&&$("guideBackdrop").classList.contains("open")); }
 
-function overlayOpen(){ return (filterHubBackdrop && filterHubBackdrop.classList.contains("open")) || sheet.classList.contains("open")||popupBackdrop.classList.contains("open")||dlgBackdrop.classList.contains("open")||infoBackdrop.classList.contains("open")||(guideBackdrop&&guideBackdrop.classList.contains("open")); }
 document.addEventListener("keydown",function(e){
   var ae=document.activeElement;
   if(ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA")) return;
   if(e.key==="Escape"){
     if(filterHubBackdrop && filterHubBackdrop.classList.contains("open")) { closeFilterHub(); return; }
-    if(guideBackdrop&&guideBackdrop.classList.contains("open")) closeGuide();
+    var gb = $("guideBackdrop");
+    if(gb && gb.classList.contains("open")) closeGuide();
     if(dlgBackdrop.classList.contains("open")) dlgNo();
     else if(popupBackdrop.classList.contains("open")) closePopup();
     else if(infoBackdrop.classList.contains("open")) closeInfo();
@@ -3900,8 +3290,8 @@ document.addEventListener("keydown",function(e){
   }
   if(overlayOpen()) return;
   var k=e.key;
-  if(k==="ArrowLeft"||k==="ArrowUp") change(-1);   /* ← / ↑ = post sebelumnya */
-  else if(k==="ArrowRight"||k==="ArrowDown") change(1); /* → / ↓ = post berikutnya */
+  if(k==="ArrowLeft"||k==="ArrowUp") change(-1);
+  else if(k==="ArrowRight"||k==="ArrowDown") change(1);
   else if(k===" "){ var v=zoomLayer.querySelector("video"); if(v){ e.preventDefault(); v.paused?v.play():v.pause(); } }
   else if(k==="a"||k==="A") toggleAuto();
   else if(k==="f"||k==="F") toggleFav();
@@ -3911,22 +3301,51 @@ document.addEventListener("keydown",function(e){
   else if(k==="i"||k==="I") openInfo();
   else if(k==="b"||k==="B") back();
 });
+
+document.addEventListener("keydown", function(e){
+  if (e.key !== "Tab") return;
+  var modal = document.querySelector(".modal.open, .filter-hub-backdrop.open, .sheet.open");
+  if (!modal) return;
+  var focusables = modal.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  if (!focusables.length) return;
+  var first = focusables[0], last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault(); last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault(); first.focus();
+  }
+});
+
 document.addEventListener("visibilitychange",function(){
-  if(document.hidden){ var v=zoomLayer.querySelector("video"); if(v){ try{ v.pause(); }catch(e){} } }
+  if(document.hidden){
+    var v=zoomLayer.querySelector("video");
+    if(v){ try{ v.pause(); }catch(e){} }
+    persist();
+  }
 });
 window.addEventListener("pagehide",function(){ persist(); });
 
-/* ---------- init ---------- */
+paintIcons();
 refreshBtns(); updateChip(); updateBack();
 loadPost(current,0);
+
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+restoreFromBackup();
+if(playlists.length) persist();
+if(!okLS) setTimeout(function(){ toast("Penyimpanan browser mati (mode private?). Playlist tidak akan tersimpan.","bad"); },1200);
+if(!lsGet("pe_onboarded")){ lsSet("pe_onboarded","1"); setTimeout(openGuide,600); }
 
 return {
   prev:function(){ change(-1); }, next:function(){ change(1); }, back:back,
   randomPost:randomPost, toggleAuto:toggleAuto, toggleFav:toggleFav,
   togglePopup:togglePopup, closePopup:closePopup, showNewRow:showNewRow, confirmNewPl:confirmNewPl,
   openSheet:openSheet, closeSheet:closeSheet, sheetBack:sheetBack,
-  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:function(t){ selectedTags=Array.isArray(t)?t.slice():[t]; tagView="detail"; openSheet("tags"); loadTagDetail(selectedTags,true); }, openInfo:openInfo, closeInfo:closeInfo, toggleTagWant:toggleTagWant, toggleTagBlock:toggleTagBlock, getSelectedTags:function(){return selectedTags;}, getBlacklistTags:function(){return blacklistTags;},
-  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide, toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, addHubTag:addHubTag, addHubBlockTag:addHubBlockTag, applyFilterHub:applyFilterHub, toggleSound:toggleSound, toggleSortMenu:toggleSortMenu, setSort:setSort, toggleSound:toggleSound
+  download:download, toggleFs:toggleFs, toggleFit:toggleFit, openTag:openTag, openInfo:openInfo, closeInfo:closeInfo, toggleTagWant:toggleTagWant, toggleTagBlock:toggleTagBlock,
+  getSelectedTags:function(){return selectedTags;}, getBlacklistTags:function(){return blacklistTags;},
+  dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide,
+  toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, applyFilterHub:applyFilterHub, setHubType:setHubType, pickTags:pickTags, pickBlockTags:pickBlockTags, resetFilter:resetFilter, toggleHubAi:toggleHubAi,
+  addHubTag:addHubTag, addHubBlockTag:addHubBlockTag,
+  toggleSound:toggleSound
 };
 })();
 </script>
