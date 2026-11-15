@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#090a0f">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/jpeg" href="https://r34xyz.b-cdn.net/posts/201/201450/201450.small.jpg">
+<link rel="apple-touch-icon" href="https://r34xyz.b-cdn.net/posts/201/201450/201450.small.jpg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Post Explorer">
@@ -2397,12 +2398,31 @@ function startTag(tags, startId, shuffle) {
     }
   }
   var ord = activeOrder(), target = startId || ord[0];
+  if (!activeTagsDetail.length && !activePlaylistId) { activeTag = tagSortMode === "popular" ? "🔥 Terpopuler" : "✨ Terbaru"; }
   closeSheet();
   loadPost(target, 0);
   toast((shuffleOn ? "Acak Tag: " : "Tag: ") + activeTag, "ok");
 }
 
 var tagRequestToken=0;
+async function fetchLatestPostId() {
+  try {
+    var data = await r34Fetch("/post/search/root", {
+      method: "POST",
+      body: { take: 1, sortOrder: 1 }
+    });
+    if (data && Array.isArray(data.items) && data.items.length && data.items[0].id) {
+      var latestId = Number(data.items[0].id);
+      lsSet("knownMaxId", String(latestId));
+      return latestId;
+    }
+  } catch (e) {
+    console.warn("Gagal mengambil post terbaru dari API:", e);
+  }
+  var km = parseInt(lsGet("knownMaxId"), 10);
+  return (isFinite(km) && km > 1300000) ? km : 1353567;
+}
+
 async function loadTagDetail(tags, reset) {
   if (Array.isArray(tags)) {
     activeTagsDetail = tags.slice();
@@ -2424,12 +2444,14 @@ async function loadTagDetail(tags, reset) {
   rerender();
   try {
     var payload = {
-      includeTags: activeTagsDetail,
       status: 2,
       filterAi: !!S.filterAi,
       take: 30,
       excludeTags: blacklistTags.length ? blacklistTags : undefined
     };
+    if (activeTagsDetail && activeTagsDetail.length) {
+      payload.includeTags = activeTagsDetail;
+    }
     if (tagSortMode === "popular") {
       payload.sortBy = 1;
       payload.sortOrder = 1;
@@ -3252,22 +3274,28 @@ async function applyFilterHub() {
   closeFilterHub();
   var inDetail = sheet.classList.contains("open") && sheetTab === "tags" && tagView === "detail";
   var typed = (tagTypeFilter !== null && tagTypeFilter !== undefined);
-  var needSearch = selectedTags.length > 0 || tagSortMode === "popular" || typed || blacklistTags.length > 0 || !!S.filterAi;
+  var needSearch = selectedTags.length > 0 || tagSortMode === "popular" || tagSortMode === "newest" || typed || blacklistTags.length > 0 || !!S.filterAi;
   if (needSearch) {
-    toast("Memuat post…");
+    var sortLabel = tagSortMode === "popular" ? "🔥 Terpopuler" : "✨ Terbaru";
+    var tagLabelStr = selectedTags.length ? selectedTags.join(", ") : "Semua";
+    toast("Memuat: " + tagLabelStr + " (" + sortLabel + ")…");
     await loadTagDetail(selectedTags.slice(), true);
     if (inDetail) return;
-    if (tagPosts.length) startTag(selectedTags.slice(), null, false);
-    else toast("Tidak ada post yang cocok", "bad");
+    if (tagPosts.length) {
+      startTag(selectedTags.slice(), null, false);
+      toast("Memutar post " + (tagSortMode === "popular" ? "terpopuler" : "terbaru") + (selectedTags.length ? ": " + selectedTags.join(", ") : ""));
+    } else {
+      toast("Tidak ada post yang cocok", "bad");
+    }
     return;
   }
   exitPlaylist();
   if (tagSortMode === "oldest") {
     loadPost(1, 0); toast("Mulai dari post terlama (#1)", "ok");
   } else {
-    var km = parseInt(lsGet("knownMaxId"), 10);
-    var target = (isFinite(km) && km > 1300000) ? km : 1352845;
-    loadPost(target, 0); toast("Lompat ke post terbaru (#" + target + ")", "ok");
+    toast("Mencari post paling baru…");
+    var latestId = await fetchLatestPostId();
+    loadPost(latestId, 0); toast("Lompat ke post terbaru (#" + latestId + ")", "ok");
   }
 }
 
@@ -3328,6 +3356,10 @@ window.addEventListener("pagehide",function(){ persist(); });
 paintIcons();
 refreshBtns(); updateChip(); updateBack();
 loadPost(current,0);
+fetchLatestPostId().then(function(id){
+  var numInp = $("numberInput");
+  if (numInp) numInp.placeholder = "Nomor Post (terbaru: #" + id + ")…";
+}).catch(function(){});
 
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 restoreFromBackup();

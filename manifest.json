@@ -9,11 +9,10 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "https://r34xyz.b-cdn.net/posts/201/201450/201450.small.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]
 }
-
