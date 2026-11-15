@@ -517,44 +517,88 @@ body.fs .stage { border-radius: 0; border: 0; }
 .seg button.on { background: var(--surface4); color: #fff; }
 
 
-.tag-cat-bar { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 6px; padding-bottom: 2px; scrollbar-width: none; }
-.tag-cat-bar::-webkit-scrollbar { display: none; }
-.tag-cat-btn { flex: 0 0 auto; padding: 4px 9px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+.tag-mode-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.tag-mode-btn {
+  height: 36px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tag-mode-btn.on { background: var(--surface4); color: #fff; border-color: var(--text-muted); }
+.tag-mode-btn.want.on { background: rgba(59, 130, 246, 0.18); color: #93c5fd; border-color: var(--blue); }
+.tag-mode-btn.block.on { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border-color: var(--red); }
+.tag-mode-btn .ic { width: 14px; height: 14px; }
+
+.tag-cat-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.tag-cat-btn {
+  height: 28px;
+  border-radius: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
 .tag-cat-btn.on { background: var(--surface4); color: #fff; border-color: var(--text-muted); }
 .tag-cat-btn.artist.on { background: rgba(196,181,253,.2); color: #c4b5fd; border-color: #a78bfa; }
 .tag-cat-btn.char.on { background: rgba(110,231,183,.2); color: #6ee7b7; border-color: #34d399; }
 .tag-cat-btn.copy.on { background: rgba(253,230,138,.2); color: #fde68a; border-color: #fbbf24; }
+
 .tag-alpha-pad {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3.5px;
-  justify-content: center;
-  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 6px 4px;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
 }
 .tag-alpha-btn {
-  flex: 0 0 auto;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 4px;
-  border-radius: 6px;
+  height: 32px;
+  border-radius: 7px;
   background: var(--surface3);
   border: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  padding: 0;
   transition: all 0.12s;
 }
-.tag-alpha-btn:hover { background: var(--surface4); color: #fff; }
-.tag-alpha-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
-.tag-alpha-btn.wide { padding: 0 8px; font-size: 10px; }
+.tag-alpha-btn:hover { background: var(--surface4); color: #fff; border-color: var(--text-muted); }
+.tag-alpha-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); font-weight: 800; }
+.tag-alpha-btn .ic { width: 13px; height: 13px; }
 
 .tagsearchbox {
   display: flex;
@@ -2474,56 +2518,98 @@ async function fetchLatestPostId() {
 
 
 async function fetchAlphaTags(key) {
-  if (alphaTagCache[key] && alphaTagCache[key].length) return alphaTagCache[key];
+  if (alphaTagCache[key] && alphaTagCache[key].length) {
+    tagFetching = false;
+    renderTagList();
+    return alphaTagCache[key];
+  }
+
   var tagMap = new Map();
+  alphaTagCache[key] = [];
+
+  function processTagList(list) {
+    if (!Array.isArray(list)) return false;
+    var added = 0;
+    list.forEach(function(t) {
+      if (t && t.value) {
+        var v = t.value.toLowerCase().replace(/_/g, " ");
+        var rawV = t.value.toLowerCase();
+        var matches = false;
+        if (key === "0-9") {
+          matches = /^[0-9]/.test(rawV);
+        } else {
+          matches = rawV.indexOf(key.toLowerCase()) === 0 || v.indexOf(key.toLowerCase()) === 0;
+        }
+        if (matches) {
+          tagMap.set(t.value, t);
+          added++;
+        }
+      }
+    });
+
+    if (added > 0) {
+      // Sort by post count descending (n terbanyak ke terkecil)
+      var sorted = Array.from(tagMap.values()).sort(function(a, b) {
+        var cA = Number(a.count) || 0;
+        var cB = Number(b.count) || 0;
+        if (cB !== cA) return cB - cA;
+        return a.value.localeCompare(b.value);
+      });
+      alphaTagCache[key] = sorted;
+      if (tagAlphaActive === key) {
+        renderTagList();
+      }
+    }
+    return added > 0;
+  }
+
+  // Tahap 1: Prioritas Instan (Base queries - muncul dalam <150ms)
+  var lower = key.toLowerCase();
+  var priorityQueries = key === "0-9" ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] : [lower, lower + "_"];
+
+  tagFetching = true;
+  if (tagAlphaActive === key) renderTagList();
+
+  // Jalankan query prioritas pertama kali
+  await Promise.all(priorityQueries.map(function(q) {
+    return r34Fetch("/tag/search/" + encodeURIComponent(q))
+      .then(function(res) { processTagList(res); })
+      .catch(function() {});
+  }));
+
+  if (tagAlphaActive !== key) return alphaTagCache[key];
+
+  // Tahap 2: Streaming Paralel Bertahap (Tarik sub-kombinasi secara bertahap & perbarui tampilan live)
   var subQueries = [];
-  
   if (key === "0-9") {
-    // Queries for number-starting tags
-    var digits = "0123456789".split("");
-    subQueries = digits.concat(["1g", "2g", "3d", "4k", "69"]);
+    subQueries = ["1g", "2g", "3d", "4k", "69"];
   } else {
-    // 26 prefix fanouts: a -> aa, ab, ac ... az
-    var lower = key.toLowerCase();
-    subQueries = [lower];
     "abcdefghijklmnopqrstuvwxyz".split("").forEach(function(ch) {
       subQueries.push(lower + ch);
     });
   }
 
-  var promises = subQueries.map(function(q) {
-    return r34Fetch("/tag/search/" + encodeURIComponent(q)).catch(function(){ return []; });
-  });
-
-  try {
-    var allRes = await Promise.all(promises);
-    allRes.forEach(function(list) {
-      if (Array.isArray(list)) {
-        list.forEach(function(t) {
-          if (t && t.value) {
-            var v = t.value.toLowerCase();
-            var matches = false;
-            if (key === "0-9") {
-              matches = /^[0-9]/.test(v);
-            } else {
-              matches = v.indexOf(key.toLowerCase()) === 0;
-            }
-            if (matches) {
-              tagMap.set(t.value, t);
-            }
-          }
-        });
-      }
-    });
-  } catch(e) {
-    console.warn("Alpha tag fetch error:", e);
+  // Bagi subQueries menjadi batch kecil (6 query per batch) agar request mengalir halus
+  var batchSize = 6;
+  var batches = [];
+  for (var i = 0; i < subQueries.length; i += batchSize) {
+    batches.push(subQueries.slice(i, i + batchSize));
   }
 
-  var sorted = Array.from(tagMap.values()).sort(function(a, b) {
-    return a.value.localeCompare(b.value);
-  });
-  alphaTagCache[key] = sorted;
-  return sorted;
+  for (var b = 0; b < batches.length; b++) {
+    if (tagAlphaActive !== key) break; // Pengguna sudah pindah huruf
+    await Promise.all(batches[b].map(function(q) {
+      return r34Fetch("/tag/search/" + encodeURIComponent(q))
+        .then(function(res) { processTagList(res); })
+        .catch(function() {});
+    }));
+  }
+
+  tagFetching = false;
+  if (tagAlphaActive === key) {
+    renderTagList();
+  }
+  return alphaTagCache[key];
 }
 
 async function loadTagDetail(tags, reset) {
@@ -2748,7 +2834,11 @@ function renderTagList(){
   
   if (tagAlphaActive) {
     rawSrc = alphaTagCache[tagAlphaActive] || [];
-    listTitle = "Semua Tag Berawalan '" + tagAlphaActive + "'";
+    if (tagFetching) {
+      listTitle = "Memuat tag '" + tagAlphaActive + "'... (" + (rawSrc.length ? rawSrc.length + " termuat" : "mengambil data") + ")";
+    } else {
+      listTitle = "Semua Tag Berawalan '" + tagAlphaActive + "'";
+    }
   } else if (tagSearchTerm) {
     rawSrc = searchedTags;
     listTitle = "Hasil Pencarian";
@@ -2834,20 +2924,24 @@ function renderTagsView(){
   sb.appendChild(si); sb.appendChild(inp); sb.appendChild(clr);
   b.appendChild(sb);
 
-  // Mode Switcher: Pilih Tag vs Sembunyikan langsung di Tab Tag
-  var segRow = el("div", "seg");
-  segRow.style.marginBottom = "8px";
-  var btnWant = el("button", tagPickMode === "want" ? "on" : ""); btnWant.innerHTML = ic("tag") + "<span>Pilih (" + selectedTags.length + ")</span>";
+  // 1. Mode Switcher Simetris (50% : 50%)
+  var segRow = el("div", "tag-mode-seg");
+  var btnWant = el("button", "tag-mode-btn want" + (tagPickMode === "want" ? " on" : ""));
+  btnWant.innerHTML = ic("tag") + "<span>Pilih (" + selectedTags.length + ")</span>";
   btnWant.onclick = function(){ tagPickMode = "want"; renderTagsView(); };
-  var btnBlock = el("button", tagPickMode === "block" ? "on" : ""); btnBlock.innerHTML = ic("ban") + "<span>Sembunyikan (" + blacklistTags.length + ")</span>";
+
+  var btnBlock = el("button", "tag-mode-btn block" + (tagPickMode === "block" ? " on" : ""));
+  btnBlock.innerHTML = ic("ban") + "<span>Sembunyikan (" + blacklistTags.length + ")</span>";
   btnBlock.onclick = function(){ tagPickMode = "block"; renderTagsView(); };
-  segRow.appendChild(btnWant); segRow.appendChild(btnBlock);
+
+  segRow.appendChild(btnWant);
+  segRow.appendChild(btnBlock);
   b.appendChild(segRow);
 
-  // Kategori Tag Filter (Semua, Artist, Karakter, Seri, General)
+  // 2. Kategori Tag Simetris (5 Kolom Rata: 20% x 5)
   var catBar = el("div", "tag-cat-bar");
   var cats = [
-    [null, "Semua Tag", ""],
+    [null, "Semua", ""],
     [8, "Artist", "artist"],
     [4, "Karakter", "char"],
     [2, "Seri", "copy"],
@@ -2863,11 +2957,13 @@ function renderTagsView(){
   });
   b.appendChild(catBar);
 
-  // Keypad Abjad & Angka (0-9, A-Z) Tidak Terpotong
+  // 3. Keypad Abjad 7 x 4 = 28 Tombol Simetris Presisi (Zero Celah)
   var alphaPad = el("div", "tag-alpha-pad");
   
-  // Tombol Populer
-  var popBtn = el("button", "tag-alpha-btn wide" + (!tagAlphaActive ? " on" : ""), "★ Populer");
+  // Cell 1: Populer
+  var popBtn = el("button", "tag-alpha-btn" + (!tagAlphaActive ? " on" : ""));
+  popBtn.innerHTML = ic("star");
+  popBtn.title = "Tag Populer";
   popBtn.onclick = function() {
     tagAlphaActive = null;
     tagSearchTerm = "";
@@ -2876,37 +2972,31 @@ function renderTagsView(){
   };
   alphaPad.appendChild(popBtn);
 
-  // Tombol Angka 0-9
-  var numBtn = el("button", "tag-alpha-btn wide" + (tagAlphaActive === "0-9" ? " on" : ""), "0-9");
-  numBtn.onclick = async function() {
-    tagAlphaActive = "0-9";
-    tagSearchTerm = "";
-    inp.value = "";
-    renderTagsView();
-    tagFetching = true;
-    renderTagList();
-    await fetchAlphaTags("0-9");
-    tagFetching = false;
-    renderTagList();
-  };
-  alphaPad.appendChild(numBtn);
-
-  // Tombol Huruf A-Z
+  // Cell 2 - 27: Huruf A sampai Z
   "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function(ch) {
     var ab = el("button", "tag-alpha-btn" + (tagAlphaActive === ch ? " on" : ""), ch);
-    ab.onclick = async function() {
+    ab.onclick = function() {
       tagAlphaActive = ch;
       tagSearchTerm = "";
       inp.value = "";
       renderTagsView();
-      tagFetching = true;
-      renderTagList();
-      await fetchAlphaTags(ch);
-      tagFetching = false;
-      renderTagList();
+      fetchAlphaTags(ch);
     };
     alphaPad.appendChild(ab);
   });
+
+  // Cell 28: Angka 0-9 (#)
+  var numBtn = el("button", "tag-alpha-btn" + (tagAlphaActive === "0-9" ? " on" : ""), "#");
+  numBtn.title = "Tag berawalan angka (0-9)";
+  numBtn.onclick = function() {
+    tagAlphaActive = "0-9";
+    tagSearchTerm = "";
+    inp.value = "";
+    renderTagsView();
+    fetchAlphaTags("0-9");
+  };
+  alphaPad.appendChild(numBtn);
+
   b.appendChild(alphaPad);
 
   if (tagPickMode === "block") {
