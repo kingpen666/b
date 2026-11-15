@@ -516,6 +516,19 @@ body.fs .stage { border-radius: 0; border: 0; }
 .seg button { flex: 1; background: transparent; color: var(--text-muted); padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .seg button.on { background: var(--surface4); color: #fff; }
 
+
+.tag-cat-bar { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 6px; padding-bottom: 2px; scrollbar-width: none; }
+.tag-cat-bar::-webkit-scrollbar { display: none; }
+.tag-cat-btn { flex: 0 0 auto; padding: 4px 9px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+.tag-cat-btn.on { background: var(--surface4); color: #fff; border-color: var(--text-muted); }
+.tag-cat-btn.artist.on { background: rgba(196,181,253,.2); color: #c4b5fd; border-color: #a78bfa; }
+.tag-cat-btn.char.on { background: rgba(110,231,183,.2); color: #6ee7b7; border-color: #34d399; }
+.tag-cat-btn.copy.on { background: rgba(253,230,138,.2); color: #fde68a; border-color: #fbbf24; }
+.tag-alpha-bar { display: flex; gap: 3px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 2px; scrollbar-width: none; }
+.tag-alpha-bar::-webkit-scrollbar { display: none; }
+.tag-alpha-btn { flex: 0 0 auto; width: 23px; height: 23px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.tag-alpha-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
 .tagsearchbox {
   display: flex;
   gap: 8px;
@@ -1175,6 +1188,7 @@ body.fs .toast { bottom: 20px; }
       <button class="sbtn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span data-ic="mute"></span></button>
       <button class="sbtn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span data-ic="fit"></span></button>
       <button class="sbtn" id="dlBtn" onclick="PE.download()" title="Unduh"><span data-ic="download"></span></button>
+      <button class="sbtn" id="gridBtn" onclick="PE.toggleGrid()" title="Tampilan Galeri Grid"><span data-ic="grid"></span></button>
       <button class="sbtn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span data-ic="expand"></span></button>
     </div>
 
@@ -1299,9 +1313,11 @@ body.fs .toast { bottom: 20px; }
     <div class="fh-sec">
       <label>Urutan</label>
       <div class="fh-sort-seg">
-        <button id="fhSortNewest" onclick="PE.setHubSort('newest')">Terbaru</button>
-        <button id="fhSortPopular" onclick="PE.setHubSort('popular')">Terpopuler</button>
-        <button id="fhSortOldest" onclick="PE.setHubSort('oldest')">Terlama</button>
+        <button id="fhSortNewest" onclick="PE.setHubSort('newest')" title="Terbaru (Latest)"><span data-ic="sparkle"></span><span>Terbaru</span></button>
+        <button id="fhSortHot" onclick="PE.setHubSort('hot')" title="Trending / Hangat (Hot)"><span data-ic="flame"></span><span>Hot</span></button>
+        <button id="fhSortPopular" onclick="PE.setHubSort('popular')" title="Rating Tertinggi (Top Rated)"><span data-ic="star"></span><span>Top</span></button>
+        <button id="fhSortViews" onclick="PE.setHubSort('views')" title="Paling Banyak Dilihat (Most Viewed)"><span data-ic="eye"></span><span>Views</span></button>
+        <button id="fhSortOldest" onclick="PE.setHubSort('oldest')" title="Terlama (Oldest)"><span data-ic="clock"></span><span>Terlama</span></button>
       </div>
     </div>
 
@@ -1360,6 +1376,12 @@ function validId(n){ return typeof n==="number" && Number.isInteger(n) && n>=1 &
 function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){ s[x]=1; o.push(x); } }); return o; }
 
 var ICONS = {
+  sparkle: '<path d="M12 3l1.8 5.4L19.2 10.2 13.8 12l-1.8 5.4L10.2 12 4.8 10.2 10.2 8.4zM19 17l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>',
+  flame: '<path d="M8.5 14.5A3.5 3.5 0 0 0 12 18a3.5 3.5 0 0 0 3.5-3.5C15.5 10 12 7 12 7s-3.5 3-3.5 7.5z"/><path d="M12 2c5 4 8 8.5 8 13a8 8 0 1 1-16 0c0-4.5 3-9 8-13z"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
   play: '<path d="M8 5.5v13l11-6.5z"/>',
   pause: '<path d="M8.5 5v14M15.5 5v14"/>',
   heart: '<path d="M12 20.5C7 17 3 13.6 3 9.4 3 6.9 4.9 5 7.2 5c1.9 0 3.7 1 4.8 2.8C13.1 6 14.9 5 16.8 5 19.1 5 21 6.9 21 9.4c0 4.2-4 7.6-9 11.1z"/>',
@@ -2398,7 +2420,7 @@ function startTag(tags, startId, shuffle) {
     }
   }
   var ord = activeOrder(), target = startId || ord[0];
-  if (!activeTagsDetail.length && !activePlaylistId) { activeTag = tagSortMode === "popular" ? "🔥 Terpopuler" : "✨ Terbaru"; }
+  if (!activeTagsDetail.length && !activePlaylistId) { activeTag = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" ? "Top Rated" : (tagSortMode === "views" ? "Most Viewed" : "Terbaru")); }
   closeSheet();
   loadPost(target, 0);
   toast((shuffleOn ? "Acak Tag: " : "Tag: ") + activeTag, "ok");
@@ -2452,12 +2474,21 @@ async function loadTagDetail(tags, reset) {
     if (activeTagsDetail && activeTagsDetail.length) {
       payload.includeTags = activeTagsDetail;
     }
-    if (tagSortMode === "popular") {
+    if (tagSortMode === "hot") {
+      payload.sortBy = 3;
+      payload.sortOrder = 1;
+    } else if (tagSortMode === "popular" || tagSortMode === "top") {
       payload.sortBy = 1;
       payload.sortOrder = 1;
+    } else if (tagSortMode === "views") {
+      payload.sortBy = 2;
+      payload.sortOrder = 1;
     } else if (tagSortMode === "oldest") {
+      payload.sortBy = 0;
       payload.sortOrder = 2;
     } else {
+      // Latest (newest)
+      payload.sortBy = 0;
       payload.sortOrder = 1;
     }
     if (tagTypeFilter !== null && tagTypeFilter !== undefined) {
@@ -2529,7 +2560,7 @@ function saveTagAsPlaylist(tagTitle) {
 
 var tagDebounceT = null;
 
-var tagListErr = false, tagFetching = false, tagSearching = false, tagPickMode = "want";
+var tagListErr = false, tagFetching = false, tagSearching = false, tagPickMode = "want", tagCatFilter = null, tagAlphaActive = null;
 function normTag(v){ return String(v || "").trim().toLowerCase().replace(/\s+/g, "_"); }
 function tagLabel(arr){ return arr && arr.length ? arr.join(" + ") : (tagSortMode === "popular" ? "Terpopuler" : "Semua post"); }
 function fmtN(n){ n = Number(n) || 0; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M"; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k"; return String(n); }
@@ -2631,7 +2662,8 @@ function renderTagBar(){
 function renderTagList(){
   var box = $("tagListContainer"); if (!box) return;
   box.innerHTML = "";
-  var src = tagSearchTerm ? searchedTags : popularTagsCache;
+  var rawSrc = tagSearchTerm ? searchedTags : popularTagsCache;
+  var src = tagCatFilter !== null ? rawSrc.filter(function(t){ return t.type === tagCatFilter; }) : rawSrc;
   if (!src.length) {
     if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : "Tag tidak ditemukan")); return; }
     if (tagListErr) {
@@ -2711,12 +2743,58 @@ function renderTagsView(){
   // Mode Switcher: Pilih Tag vs Sembunyikan langsung di Tab Tag
   var segRow = el("div", "seg");
   segRow.style.marginBottom = "8px";
-  var btnWant = el("button", tagPickMode === "want" ? "on" : "", "🏷️ Pilih (" + selectedTags.length + ")");
+  var btnWant = el("button", tagPickMode === "want" ? "on" : ""); btnWant.innerHTML = ic("tag") + "<span>Pilih (" + selectedTags.length + ")</span>";
   btnWant.onclick = function(){ tagPickMode = "want"; renderTagsView(); };
-  var btnBlock = el("button", tagPickMode === "block" ? "on" : "", "⛔ Sembunyikan (" + blacklistTags.length + ")");
+  var btnBlock = el("button", tagPickMode === "block" ? "on" : ""); btnBlock.innerHTML = ic("ban") + "<span>Sembunyikan (" + blacklistTags.length + ")</span>";
   btnBlock.onclick = function(){ tagPickMode = "block"; renderTagsView(); };
   segRow.appendChild(btnWant); segRow.appendChild(btnBlock);
   b.appendChild(segRow);
+
+  // Kategori Tag Filter (Semua, Artist, Karakter, Seri, General)
+  var catBar = el("div", "tag-cat-bar");
+  var cats = [
+    [null, "Semua Tag", ""],
+    [8, "Artist", "artist"],
+    [4, "Karakter", "char"],
+    [2, "Seri", "copy"],
+    [1, "General", ""]
+  ];
+  cats.forEach(function(c) {
+    var cb = el("button", "tag-cat-btn" + (c[2] ? " " + c[2] : "") + (tagCatFilter === c[0] ? " on" : ""), c[1]);
+    cb.onclick = function() {
+      tagCatFilter = c[0];
+      renderTagsView();
+    };
+    catBar.appendChild(cb);
+  });
+  b.appendChild(catBar);
+
+  // A-Z Quick Jump Bar (Jelajah Semua Tag Berdasarkan Abjad)
+  var alphaBar = el("div", "tag-alpha-bar");
+  var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  var allLetterBtn = el("button", "tag-alpha-btn" + (!tagAlphaActive ? " on" : ""), "★");
+  allLetterBtn.title = "Tag populer";
+  allLetterBtn.onclick = function() {
+    tagAlphaActive = null;
+    tagSearchTerm = "";
+    inp.value = "";
+    renderTagsView();
+  };
+  alphaBar.appendChild(allLetterBtn);
+
+  letters.forEach(function(ch) {
+    var ab = el("button", "tag-alpha-btn" + (tagAlphaActive === ch ? " on" : ""), ch);
+    ab.onclick = function() {
+      tagAlphaActive = ch;
+      tagSearchTerm = ch.toLowerCase();
+      inp.value = ch;
+      clr.style.display = "flex";
+      onTagSearchInput(ch.toLowerCase());
+      renderTagsView();
+    };
+    alphaBar.appendChild(ab);
+  });
+  b.appendChild(alphaBar);
 
   if (tagPickMode === "block") {
     var blkNotice = el("div", "fsum");
@@ -2958,6 +3036,7 @@ function seg(opts,val,cb){
 }
 function renderSettings(){
   var b=sheetBody, onoff=[[true,"On"],[false,"Off"]];
+  b.innerHTML = "";
   b.appendChild(setRow("Auto-Next Video","Otomatis lanjut post berikutnya saat video selesai",seg(onoff,!!S.autoNextVid,function(v){ S.autoNextVid=v; saveS(); var vid=zoomLayer.querySelector("video"); if(vid) vid.loop=!(autoEnabled||S.autoNextVid); })));
   b.appendChild(setRow("Interval Auto","Jeda antar post",seg([[2,"2s"],[3,"3s"],[5,"5s"],[8,"8s"],[12,"12s"],[20,"20s"]],S.interval,function(v){ S.interval=v; saveS(); if(autoEnabled&&!isVideo()) resetAutoTimer(); })));
   b.appendChild(setRow("Lewati post kosong","Loncat otomatis ID yang tidak ada",seg(onoff,S.skipMissing,function(v){ S.skipMissing=v; saveS(); })));
@@ -2970,6 +3049,22 @@ function renderSettings(){
   row.appendChild(ipill("link","Salin URL","",copyURL));
   row.appendChild(ipill("share","Bagikan","",shareURL));
   b.appendChild(row);
+
+  var allTagBox = el("div", "storage-card");
+  allTagBox.appendChild(el("div", "storage-title", "Direktori & Semua Tag"));
+  var atStats = el("div", "storage-stats");
+  atStats.innerHTML = "<div>Jelajahi seluruh koleksi tag r-34 berdasarkan abjad (A–Z) dan kategori (Artist, Karakter, Seri).</div>";
+  allTagBox.appendChild(atStats);
+  var atActs = el("div", "arow");
+  atActs.style.marginTop = "6px";
+  atActs.appendChild(ipill("tag", "Buka Semua Tag", "pri", function() {
+    tagView = "list";
+    tagCatFilter = null;
+    tagAlphaActive = null;
+    openSheet("tags");
+  }));
+  allTagBox.appendChild(atActs);
+  b.appendChild(allTagBox);
 
   var sBox = el("div", "storage-card");
   var sTitle = el("div", "storage-title", "Pengelola Penyimpanan & Cache");
@@ -3195,6 +3290,29 @@ var blacklistTags = jget("pe_blacklist", []); if(!Array.isArray(blacklistTags)) 
 
 function saveBlacklist() { jset("pe_blacklist", blacklistTags); }
 
+
+function toggleGrid() {
+  if (sheet.classList.contains("open") && sheetTab === "tags" && tagView === "detail") {
+    closeSheet();
+    return;
+  }
+  // Buka grid post yang sedang aktif (tag / playlist / feed)
+  if (activeTagsDetail && activeTagsDetail.length) {
+    tagView = "detail";
+    openSheet("tags");
+    return;
+  }
+  if (activePlaylistId) {
+    plView = "detail";
+    openSheet("playlist");
+    return;
+  }
+  // Jika sedang browsing biasa, buka feed post terbaru di grid
+  tagView = "detail";
+  openSheet("tags");
+  loadTagDetail([], true);
+}
+
 function toggleFilterHub(e) {
   if (e && e.stopPropagation) e.stopPropagation();
   if (filterHubBackdrop) {
@@ -3276,7 +3394,7 @@ async function applyFilterHub() {
   var typed = (tagTypeFilter !== null && tagTypeFilter !== undefined);
   var needSearch = selectedTags.length > 0 || tagSortMode === "popular" || tagSortMode === "newest" || typed || blacklistTags.length > 0 || !!S.filterAi;
   if (needSearch) {
-    var sortLabel = tagSortMode === "popular" ? "🔥 Terpopuler" : "✨ Terbaru";
+    var sortLabel = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" ? "Top Rated" : (tagSortMode === "views" ? "Most Viewed" : "Terbaru"));
     var tagLabelStr = selectedTags.length ? selectedTags.join(", ") : "Semua";
     toast("Memuat: " + tagLabelStr + " (" + sortLabel + ")…");
     await loadTagDetail(selectedTags.slice(), true);
@@ -3377,7 +3495,7 @@ return {
   dlgYes:dlgYes, dlgNo:dlgNo, leavePlaylist:leavePlaylist, goToInput:goToInput, openGuide:openGuide, closeGuide:closeGuide,
   toggleFilterHub:toggleFilterHub, closeFilterHub:closeFilterHub, setHubSort:setHubSort, applyFilterHub:applyFilterHub, setHubType:setHubType, pickTags:pickTags, pickBlockTags:pickBlockTags, resetFilter:resetFilter, toggleHubAi:toggleHubAi,
   addHubTag:addHubTag, addHubBlockTag:addHubBlockTag,
-  toggleSound:toggleSound
+  toggleSound:toggleSound, toggleGrid:toggleGrid
 };
 })();
 </script>
