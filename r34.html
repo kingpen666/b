@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#090a0f">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/jpeg" href="https://r34xyz.b-cdn.net/posts/201/201450/201450.small.jpg">
-<link rel="apple-touch-icon" href="https://r34xyz.b-cdn.net/posts/201/201450/201450.small.jpg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Post Explorer">
@@ -565,7 +567,7 @@ body.fs .stage { border-radius: 0; border: 0; }
   white-space: nowrap;
   transition: all 0.15s;
 }
-.tag-cat-btn.on { background: var(--surface4); color: #fff; border-color: var(--text-muted); }
+.tag-cat-btn.on { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.45); }
 .tag-cat-btn.artist.on { background: rgba(196,181,253,.2); color: #c4b5fd; border-color: #a78bfa; }
 .tag-cat-btn.char.on { background: rgba(110,231,183,.2); color: #6ee7b7; border-color: #34d399; }
 .tag-cat-btn.copy.on { background: rgba(253,230,138,.2); color: #fde68a; border-color: #fbbf24; }
@@ -1004,7 +1006,7 @@ body.fs .toast { bottom: 20px; }
   border-radius: 6px;
   white-space: nowrap;
 }
-.fh-sort-seg button.on { background: var(--surface4); color: #fff; }
+.fh-sort-seg button.on { background: rgba(59, 130, 246, 0.22); color: #93c5fd; border-color: rgba(59, 130, 246, 0.45); box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25) inset; }
 .fh-input-row { display: flex; gap: 6px; }
 .fh-input-row input {
   flex: 1;
@@ -2517,38 +2519,62 @@ async function fetchLatestPostId() {
 }
 
 
+var alphaFetchTokens = {};
+var alphaRenderDebounce = null;
+
 async function fetchAlphaTags(key) {
-  if (alphaTagCache[key] && alphaTagCache[key].length) {
-    tagFetching = false;
+  var token = (alphaFetchTokens[key] || 0) + 1;
+  alphaFetchTokens[key] = token;
+
+  if (alphaTagCache[key] && alphaTagCache[key].length && !tagFetching) {
     renderTagList();
     return alphaTagCache[key];
   }
 
   var tagMap = new Map();
-  alphaTagCache[key] = [];
+  if (alphaTagCache[key] && alphaTagCache[key].length) {
+    alphaTagCache[key].forEach(function(t) {
+      if (t && t.value) tagMap.set(normTag(t.value), t);
+    });
+  }
+
+  function scheduleLiveRender() {
+    if (tagAlphaActive !== key) return;
+    if (alphaRenderDebounce) return;
+    alphaRenderDebounce = setTimeout(function() {
+      alphaRenderDebounce = null;
+      if (tagAlphaActive === key) renderTagList();
+    }, 70);
+  }
 
   function processTagList(list) {
-    if (!Array.isArray(list)) return false;
+    if (!Array.isArray(list)) return 0;
     var added = 0;
     list.forEach(function(t) {
       if (t && t.value) {
-        var v = t.value.toLowerCase().replace(/_/g, " ");
-        var rawV = t.value.toLowerCase();
+        var nVal = normTag(t.value);
         var matches = false;
         if (key === "0-9") {
-          matches = /^[0-9]/.test(rawV);
+          matches = /^[0-9]/.test(nVal);
         } else {
-          matches = rawV.indexOf(key.toLowerCase()) === 0 || v.indexOf(key.toLowerCase()) === 0;
+          var lk = key.toLowerCase();
+          matches = nVal.startsWith(lk) || t.value.toLowerCase().startsWith(lk);
         }
         if (matches) {
-          tagMap.set(t.value, t);
-          added++;
+          if (!tagMap.has(nVal)) {
+            tagMap.set(nVal, t);
+            added++;
+          } else {
+            var prev = tagMap.get(nVal);
+            if ((Number(t.count) || 0) > (Number(prev.count) || 0)) {
+              tagMap.set(nVal, t);
+            }
+          }
         }
       }
     });
 
-    if (added > 0) {
-      // Sort by post count descending (n terbanyak ke terkecil)
+    if (added > 0 || !alphaTagCache[key] || !alphaTagCache[key].length) {
       var sorted = Array.from(tagMap.values()).sort(function(a, b) {
         var cA = Number(a.count) || 0;
         var cB = Number(b.count) || 0;
@@ -2556,58 +2582,86 @@ async function fetchAlphaTags(key) {
         return a.value.localeCompare(b.value);
       });
       alphaTagCache[key] = sorted;
-      if (tagAlphaActive === key) {
-        renderTagList();
-      }
+      scheduleLiveRender();
     }
-    return added > 0;
+    return added;
   }
-
-  // Tahap 1: Prioritas Instan (Base queries - muncul dalam <150ms)
-  var lower = key.toLowerCase();
-  var priorityQueries = key === "0-9" ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] : [lower, lower + "_"];
 
   tagFetching = true;
   if (tagAlphaActive === key) renderTagList();
 
-  // Jalankan query prioritas pertama kali
-  await Promise.all(priorityQueries.map(function(q) {
-    return r34Fetch("/tag/search/" + encodeURIComponent(q))
-      .then(function(res) { processTagList(res); })
-      .catch(function() {});
-  }));
+  var lower = key.toLowerCase();
 
-  if (tagAlphaActive !== key) return alphaTagCache[key];
+  var stemMap = {
+    "a": ["anal_", "ass_", "asian_", "anime_", "ahegao_"],
+    "b": ["big_", "blowjob_", "bondage_", "boobs_", "breasts_", "butt_", "bunny_", "black_"],
+    "c": ["cum_", "cock_", "creampie_", "cosplay_", "clit_", "crying_", "cat_", "close_"],
+    "d": ["dick_", "doggy_", "dildo_", "dark_", "dress_", "deepthroat_"],
+    "e": ["elf_", "erotic_", "eyes_"],
+    "f": ["female_", "fingering_", "foot_", "footjob_", "futanari_", "facial_", "femdom_", "fox_"],
+    "g": ["girl_", "group_", "gangbang_", "garter_", "glasses_", "giantess_"],
+    "h": ["huge_", "handjob_", "hentai_", "harem_", "hair_", "horny_"],
+    "i": ["implied_", "interracial_"],
+    "j": ["japanese_", "jeans_"],
+    "k": ["kiss_", "kneeling_", "kimono_"],
+    "l": ["legs_", "lingerie_", "lactation_", "leash_", "latex_"],
+    "m": ["male_", "milf_", "masturbation_", "monster_", "maid_", "mouth_"],
+    "n": ["nipples_", "naked_", "netorare_", "nurse_"],
+    "o": ["oral_", "orgasm_", "oil_", "outdoor_", "one_"],
+    "p": ["pussy_", "panties_", "penetration_", "pov_", "public_", "pregnant_", "petplay_"],
+    "q": ["queen_"],
+    "r": ["rape_", "red_", "rope_", "rimjob_"],
+    "s": ["sex_", "solo_", "stockings_", "skirt_", "swimsuit_", "spanking_", "squirt_", "strapon_", "sucking_"],
+    "t": ["tentacles_", "thighs_", "tits_", "tied_", "twins_", "trans_"],
+    "u": ["underwear_", "uniform_", "uncensored_"],
+    "v": ["vaginal_", "video_", "vibrator_", "voyeur_"],
+    "w": ["white_", "wet_", "wings_", "wolf_"],
+    "x": ["x-ray_"],
+    "y": ["yuri_", "yaoi_"],
+    "z": ["zombie_"]
+  };
 
-  // Tahap 2: Streaming Paralel Bertahap (Tarik sub-kombinasi secara bertahap & perbarui tampilan live)
-  var subQueries = [];
+  var queryQueue = [];
   if (key === "0-9") {
-    subQueries = ["1g", "2g", "3d", "4k", "69"];
+    queryQueue = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "1g", "2g", "3d", "4k", "69"];
   } else {
+    queryQueue.push(lower, lower + "_");
+    if (stemMap[lower]) {
+      stemMap[lower].forEach(function(st) { queryQueue.push(st); });
+    }
     "abcdefghijklmnopqrstuvwxyz".split("").forEach(function(ch) {
-      subQueries.push(lower + ch);
+      var pair = lower + ch;
+      if (queryQueue.indexOf(pair) === -1) queryQueue.push(pair);
     });
   }
 
-  // Bagi subQueries menjadi batch kecil (6 query per batch) agar request mengalir halus
-  var batchSize = 6;
-  var batches = [];
-  for (var i = 0; i < subQueries.length; i += batchSize) {
-    batches.push(subQueries.slice(i, i + batchSize));
+  var concurrency = 4;
+  var cursor = 0;
+
+  async function worker() {
+    while (cursor < queryQueue.length) {
+      if (alphaFetchTokens[key] !== token || tagAlphaActive !== key) break;
+      var q = queryQueue[cursor++];
+      try {
+        var res = await r34Fetch("/tag/search/" + encodeURIComponent(q));
+        if (alphaFetchTokens[key] !== token) break;
+        processTagList(res);
+      } catch (err) {}
+    }
   }
 
-  for (var b = 0; b < batches.length; b++) {
-    if (tagAlphaActive !== key) break; // Pengguna sudah pindah huruf
-    await Promise.all(batches[b].map(function(q) {
-      return r34Fetch("/tag/search/" + encodeURIComponent(q))
-        .then(function(res) { processTagList(res); })
-        .catch(function() {});
-    }));
+  var workers = [];
+  for (var w = 0; w < concurrency; w++) {
+    workers.push(worker());
   }
 
-  tagFetching = false;
-  if (tagAlphaActive === key) {
-    renderTagList();
+  await Promise.all(workers);
+
+  if (alphaFetchTokens[key] === token) {
+    tagFetching = false;
+    if (tagAlphaActive === key) {
+      renderTagList();
+    }
   }
   return alphaTagCache[key];
 }
@@ -2857,8 +2911,8 @@ function renderTagList(){
       box.appendChild(rb);
       return;
     }
-    box.appendChild(el("div", "empty", "Memuat tag…"));
-    if (!tagFetching) {
+    box.appendChild(el("div", "empty", tagFetching ? "Memuat tag bertahap…" : "Memuat tag…"));
+    if (!tagFetching && !tagAlphaActive) {
       tagFetching = true;
       r34Fetch("/tag").then(function(tags){
         popularTagsCache = Array.isArray(tags) ? tags : [];
@@ -2870,10 +2924,14 @@ function renderTagList(){
   box.appendChild(el("div", "tlabel", listTitle + " (" + src.length + " tag)"));
   src.forEach(function(t){
     var val = t.value;
+    var normVal = normTag(val);
     var blockMode = tagPickMode === "block";
-    var isSel = !blockMode && selectedTags.indexOf(val) !== -1, isBlk = blacklistTags.indexOf(val) !== -1;
+    var isSel = !blockMode && selectedTags.indexOf(normVal) !== -1;
+    var isBlk = blacklistTags.indexOf(normVal) !== -1;
     var row = el("div", "trow" + (isSel ? " sel" : "") + (isBlk ? " blk" : ""));
-    var ck = el("span", "tck"); if (isSel) ck.innerHTML = ic("check"); else if (blockMode && isBlk) ck.innerHTML = ic("ban");
+    var ck = el("span", "tck");
+    if (isSel) ck.innerHTML = ic("check");
+    else if (blockMode && isBlk) ck.innerHTML = ic("ban");
     row.appendChild(ck);
     row.appendChild(el("span", "tnm", val));
     var kind = t.type === 8 ? ["artist", "Artist"] : t.type === 4 ? ["character", "Karakter"] : t.type === 2 ? ["copyright", "Seri"] : null;
@@ -2881,9 +2939,18 @@ function renderTagList(){
     else if (kind) row.appendChild(el("span", "tkind " + kind[0], kind[1]));
     if (t.count) row.appendChild(el("span", "tcnt", fmtN(t.count)));
     var go = el("button", "tgo"); go.innerHTML = ic("play"); go.title = "Lihat post";
-    go.onclick = function(e){ e.stopPropagation(); selectedTags = [val]; tagView = "detail"; refreshBadges(); loadTagDetail([val], true); };
+    go.onclick = function(e){
+      e.stopPropagation();
+      selectedTags = [normVal];
+      tagView = "detail";
+      refreshBadges();
+      loadTagDetail([normVal], true);
+    };
     if (!blockMode) row.appendChild(go);
-    row.onclick = function(){ if (blockMode) toggleTagBlock(val); else toggleTagWant(val); };
+    row.onclick = function(){
+      if (blockMode) toggleTagBlock(normVal);
+      else toggleTagWant(normVal);
+    };
     box.appendChild(row);
   });
 }
@@ -2891,19 +2958,37 @@ function onTagSearchInput(val){
   tagSearchTerm = val.trim();
   var clr = $("tagSearchClear"); if (clr) clr.style.display = tagSearchTerm ? "flex" : "none";
   clearTimeout(tagDebounceT);
-  if (!tagSearchTerm) { searchedTags = []; tagSearching = false; renderTagList(); return; }
-  tagSearching = true; renderTagList();
+  if (!tagSearchTerm) {
+    searchedTags = [];
+    tagSearching = false;
+    renderTagList();
+    return;
+  }
+  tagAlphaActive = null;
+  var actAlphaBtn = document.querySelector(".tag-alpha-btn.on");
+  if (actAlphaBtn) actAlphaBtn.classList.remove("on");
+
+  tagSearching = true;
+  renderTagList();
   var term = tagSearchTerm;
   tagDebounceT = setTimeout(async function(){
     try {
-      var res = await r34Fetch("/tag/search/" + encodeURIComponent(term));
+      var queryTerm = term.replace(/\s+/g, "_");
+      var res = await r34Fetch("/tag/search/" + encodeURIComponent(queryTerm));
       if (term !== tagSearchTerm) return;
       searchedTags = Array.isArray(res) ? res : [];
+      if (!searchedTags.length && queryTerm !== term) {
+        var alt = await r34Fetch("/tag/search/" + encodeURIComponent(term));
+        if (term === tagSearchTerm && Array.isArray(alt) && alt.length) {
+          searchedTags = alt;
+        }
+      }
     } catch (e) {
       if (term !== tagSearchTerm) return;
       searchedTags = [];
     }
-    tagSearching = false; renderTagList();
+    tagSearching = false;
+    renderTagList();
   }, 250);
 }
 function renderTagsView(){
@@ -3539,8 +3624,18 @@ function closeFilterHub(e) {
 }
 
 function renderFilterHub() {
-  [["newest", "fhSortNewest"], ["popular", "fhSortPopular"], ["oldest", "fhSortOldest"]].forEach(function(p){
-    var x = $(p[1]); if (x) x.classList.toggle("on", tagSortMode === p[0]);
+  [
+    ["newest", "fhSortNewest"],
+    ["hot", "fhSortHot"],
+    ["popular", "fhSortPopular"],
+    ["views", "fhSortViews"],
+    ["oldest", "fhSortOldest"]
+  ].forEach(function(p){
+    var x = $(p[1]);
+    if (x) {
+      var active = (tagSortMode === p[0]) || (p[0] === "popular" && tagSortMode === "top");
+      x.classList.toggle("on", active);
+    }
   });
   var tf = (tagTypeFilter === undefined) ? null : tagTypeFilter;
   [[null, "fhTypeAll"], [1, "fhTypeVid"], [0, "fhTypeImg"]].forEach(function(p){
@@ -3687,6 +3782,16 @@ restoreFromBackup();
 if(playlists.length) persist();
 if(!okLS) setTimeout(function(){ toast("Penyimpanan browser mati (mode private?). Playlist tidak akan tersimpan.","bad"); },1200);
 if(!lsGet("pe_onboarded")){ lsSet("pe_onboarded","1"); setTimeout(openGuide,600); }
+
+try {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js').catch(function(err) {
+        console.warn('SW register error:', err);
+      });
+    });
+  }
+} catch(e) {}
 
 return {
   prev:function(){ change(-1); }, next:function(){ change(1); }, back:back,
