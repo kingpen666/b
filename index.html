@@ -2424,21 +2424,54 @@ body.fs .stage-wrapper {
         } else offs.forEach(function (o) { out.push(id + o); });
         return out;
       }
-      function clearQueued() {
+      function clearQueued(keepNearId) {
+        if (!keepNearId) {
+          while (queue.length) {
+            var id = queue.shift(), resolveQueued = queuedResolvers.get(id), queuedPromise = queuedPromises.get(id);
+            queuedResolvers.delete(id); queuedPromises.delete(id);
+            if (pending.get(id) === queuedPromise) pending.delete(id);
+            if (resolveQueued) resolveQueued({ type: null, miss: true, cancelled: true });
+          }
+          return;
+        }
+        var ord = activeOrder();
+        var toKeep = [];
         while (queue.length) {
-          var id = queue.shift(), resolveQueued = queuedResolvers.get(id), queuedPromise = queuedPromises.get(id);
-          queuedResolvers.delete(id); queuedPromises.delete(id);
-          if (pending.get(id) === queuedPromise) pending.delete(id);
-          if (resolveQueued) resolveQueued({ type: null, miss: true, cancelled: true });
+          var qid = queue.shift(), rq = queuedResolvers.get(qid), qp = queuedPromises.get(qid);
+          var isNear = false;
+          if (ord) {
+            var curIdx = ord.indexOf(keepNearId), qIdx = ord.indexOf(qid);
+            isNear = (curIdx >= 0 && qIdx >= 0 && Math.abs(curIdx - qIdx) <= 5);
+          } else {
+            isNear = Math.abs(qid - keepNearId) <= 8;
+          }
+          if (isNear) {
+            toKeep.push({ id: qid, res: rq, prom: qp });
+          } else {
+            queuedResolvers.delete(qid); queuedPromises.delete(qid);
+            if (pending.get(qid) === qp) pending.delete(qid);
+            if (rq) rq({ type: null, miss: true, cancelled: true });
+          }
+        }
+        for (var i = 0; i < toKeep.length; i++) {
+          queue.push(toKeep[i].id);
+          if (toKeep[i].res) queuedResolvers.set(toKeep[i].id, toKeep[i].res);
+          if (toKeep[i].prom) queuedPromises.set(toKeep[i].id, toKeep[i].prom);
         }
       }
       var preloadTimer = null;
       function preloadAround(id) {
+        clearQueued(id);
+        var ord = activeOrder();
+        if (ord) {
+          // Dalam mode Tag / Playlist: ID sudah ada di memori! Preload langsung jalan 0ms tanpa debounce!
+          neighbors(id).forEach(schedule);
+          return;
+        }
         clearTimeout(preloadTimer);
-        clearQueued();
         preloadTimer = setTimeout(function () {
           _doPreloadAround(id);
-        }, 220);
+        }, 120);
       }
       function _doPreloadAround(id) {
         var ord = activeOrder();
@@ -2446,10 +2479,11 @@ body.fs .stage-wrapper {
           neighbors(id).forEach(schedule);
           return;
         }
+        // Mode Stream: ambil 8 post ke depan sekaligus dalam 1 request cepat
         rule34ApiFetch({
           page: "dapi", s: "post", q: "index",
           tags: "id:>" + id + " sort:id:asc",
-          limit: 4
+          limit: 8
         }).then(function (nextPosts) {
           if (Array.isArray(nextPosts)) {
             nextPosts.forEach(function (p) {
@@ -2464,7 +2498,7 @@ body.fs .stage-wrapper {
           rule34ApiFetch({
             page: "dapi", s: "post", q: "index",
             tags: "id:<" + id + " sort:id:desc",
-            limit: 2
+            limit: 3
           }).then(function (prevPosts) {
             if (Array.isArray(prevPosts)) {
               prevPosts.forEach(function (p) {
@@ -2768,24 +2802,29 @@ body.fs .stage-wrapper {
         commit(id);
         var tok = ++token;
         currentURL = ""; currentType = "";
-        setLoading(true); clearAutoTimer(); autoBarIdle();
+        clearAutoTimer(); autoBarIdle();
         clearTimeout(phTimer);
+
+        // Jika sudah di RAM cache, tampilkan INSTAN tanpa memunculkan spinner!
         var c = cache.get(id);
         if (c) { present(c, tok, dir, tries); return; }
 
-        // Tampilkan thumbnail instan dari postMetaCache jika sudah ada (0ms delay)
+        // Hanya nyalakan spinner jika post belum ada di cache
+        setLoading(true);
+
+        // Tampilkan thumbnail seketika (0ms delay) jika metadata sudah tersedia
         var meta = postMetaCache.get(id);
         if (meta && meta.preview_url) {
           var th = new Image();
           th.onload = function () { if (tok === token && finalTok !== tok) setMedia(th, "ph"); };
           th.src = meta.preview_url;
         } else {
-          phTimer = setTimeout(function () {
-            if (tok !== token || finalTok === tok) return;
+          var tu = thumbURL(id);
+          if (tu) {
             var th2 = new Image();
             th2.onload = function () { if (tok === token && finalTok !== tok) setMedia(th2, "ph"); };
-            th2.src = thumbURL(id);
-          }, 150);
+            th2.src = tu;
+          }
         }
         get(id).then(function (r) { if (tok !== token) return; present(r, tok, dir, tries); });
       }
