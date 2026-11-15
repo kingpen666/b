@@ -2690,29 +2690,47 @@ async function fetchAlphaTags(key) {
     });
   }
 
-  var concurrency = 4;
-  var cursor = 0;
-  var MAX_REQ = 700, MAX_DEPTH = 6, capSeen = 0;
+  var concurrency = 5;
+  var cursor = 0, nFail = 0, capSeen = 0;
+  var MAX_REQ = 1100, MAX_DEPTH = 8;
   var queued = {};
-  queryQueue.forEach(function(q) { queued[q] = 1; });
-  var expandChars = key === "0-9" ? "0123456789".split("") : "abcdefghijklmnopqrstuvwxyz_".split("");
+  var expandChars = key === "0-9" ? "0123456789".split("") : "abcdefghijklmnopqrstuvwxyz".split("");
+  // Antrean berprioritas: awalan yang menghasilkan tag ramai dijelajah lebih dulu.
+  var pq = queryQueue.map(function(q) { queued[q] = 1; return { q: q, pri: 1e12 }; });
+  function popQ() {
+    var bi = 0;
+    for (var i = 1; i < pq.length; i++) if (pq[i].pri > pq[bi].pri) bi = i;
+    return pq.splice(bi, 1)[0];
+  }
 
   async function worker() {
-    while (cursor < queryQueue.length && cursor < MAX_REQ) {
+    while (pq.length && cursor < MAX_REQ) {
       if (alphaFetchTokens[key] !== token || tagAlphaActive !== key) break;
-      var q = queryQueue[cursor++];
+      var item = popQ(); cursor++;
+      var q = item.q;
       try {
-        var res = await r34Fetch("/tag/search/" + encodeURIComponent(q));
+        var res = null;
+        for (var attempt = 0; attempt < 3 && res === null; attempt++) {
+          try { res = await r34Fetch("/tag/search/" + encodeURIComponent(q)); }
+          catch (e1) { await new Promise(function(r){ setTimeout(r, 400 * (attempt + 1)); }); }
+        }
         if (alphaFetchTokens[key] !== token) break;
+        if (res === null) { nFail++; continue; }
         processTagList(res);
-        // Hasil API dibatasi per pencarian: jika penuh, persempit dengan awalan lebih panjang
-        if (Array.isArray(res)) {
-          if (res.length > capSeen) capSeen = res.length;
-          var core = q.replace(/_$/, "");
-          if (res.length >= 8 && res.length >= capSeen && core.length < MAX_DEPTH) {
-            expandChars.forEach(function(ch) {
+        if (!Array.isArray(res)) continue;
+        if (res.length > capSeen) capSeen = res.length;
+        // Pencarian API bersifat "mengandung" dan hasilnya dibatasi (~20). Jika penuh,
+        // persempit dengan awalan lebih panjang, tetapi hanya jika ada tag yang benar-benar berawalan itu.
+        var core = q.replace(/_$/, "");
+        if (res.length >= capSeen && res.length >= 3 && core.length < MAX_DEPTH) {
+          var best = -1;
+          res.forEach(function(t) {
+            if (t && t.value && normTag(t.value).indexOf(core) === 0) best = Math.max(best, Number(t.count) || 0);
+          });
+          if (best >= 0) {
+            expandChars.concat(["_"]).forEach(function(ch) {
               var nq = core + ch;
-              if (!queued[nq]) { queued[nq] = 1; queryQueue.push(nq); }
+              if (!queued[nq]) { queued[nq] = 1; pq.push({ q: nq, pri: best }); }
             });
           }
         }
@@ -2729,6 +2747,7 @@ async function fetchAlphaTags(key) {
 
   if (alphaFetchTokens[key] === token) {
     tagFetching = false;
+    toast("Tag " + key + ": " + (alphaTagCache[key] || []).length + " tag, " + cursor + " request, " + nFail + " gagal, batas hasil " + capSeen, nFail ? "bad" : "ok");
     if (tagAlphaActive === key) {
       renderTagList();
     }
