@@ -2805,6 +2805,7 @@ body.fs .stage-wrapper {
           var ap = getPL(activePlaylistId);
           if (ap && ap.last !== id && isIn(ap, id)) { ap.last = id; persistSoon(); }
         }
+        if (activeTag && !activePlaylistId && !shuffleOn) saveTagProg(id);
       }
       function autoBarIdle() {
         if (autoEnabled) { autoFill.style.width = "0%"; lastLbl = S.interval.toFixed(1) + "s"; autoLbl.textContent = lastLbl; }
@@ -3430,6 +3431,45 @@ body.fs .stage-wrapper {
           }
         } catch (e2) { }
         return [];
+      }
+
+      // ===== Progress tag (termasuk kombinasi multi-tag) =====
+      function tagProgKey(tags) {
+        var t = (tags || []).map(normTag).filter(Boolean).sort().join("+") || "__all__";
+        return t + "|" + tagSortMode + "|" + tagTypeFilter;
+      }
+      function getTagProg(tags) {
+        var all = jget("pe_tagprog", {}), r = all[tagProgKey(tags)];
+        return r && validId(r.id) ? r : null;
+      }
+      function saveTagProg(id) {
+        if (!validId(id)) return;
+        var all = jget("pe_tagprog", {});
+        all[tagProgKey(activeTagsDetail)] = { id: id, t: Date.now() };
+        var keys = Object.keys(all);
+        if (keys.length > 100) {
+          keys.sort(function (x, y) { return all[x].t - all[y].t; });
+          keys.slice(0, keys.length - 100).forEach(function (k) { delete all[k]; });
+        }
+        jset("pe_tagprog", all);
+      }
+      function clearTagProg(tags) {
+        var all = jget("pe_tagprog", {}); delete all[tagProgKey(tags)]; jset("pe_tagprog", all);
+      }
+      var tagResuming = false;
+      async function resumeTag(tags) {
+        var pr = getTagProg(tags); if (!pr || tagResuming) return;
+        tagResuming = true;
+        try {
+          var guard = 0;
+          toast("Mencari posisi terakhir #" + pr.id + "…");
+          while (tagPosts.indexOf(pr.id) === -1 && tagHasMore && guard++ < 60) {
+            if (tagLoading) { await new Promise(function (r) { setTimeout(r, 150); }); continue; }
+            await loadTagDetail(tags, false);
+          }
+          if (tagPosts.indexOf(pr.id) !== -1) startTag(tags, pr.id, false);
+          else { toast("Posisi tidak ditemukan, mulai dari awal", "bad"); startTag(tags, null, false); }
+        } finally { tagResuming = false; }
       }
 
       function startTag(tags, startId, shuffle) {
@@ -4203,7 +4243,9 @@ body.fs .stage-wrapper {
         b.appendChild(head);
 
         var row = el("div", "arow");
-        row.appendChild(ipill("play", "Putar semua", "pri", function () { startTag(activeTagsDetail, null, false); }));
+        var tprog = getTagProg(activeTagsDetail), tagsNow = activeTagsDetail.slice();
+        if (tprog) row.appendChild(ipill("play", "Lanjut #" + tprog.id, "pri", function () { resumeTag(tagsNow); }));
+        row.appendChild(ipill(tprog ? "back" : "play", tprog ? "Dari awal" : "Putar semua", tprog ? "" : "pri", function () { startTag(activeTagsDetail, null, false); }));
         row.appendChild(ipill("shuffle", "Acak", "", function () { startTag(activeTagsDetail, null, true); }));
         row.appendChild(ipill("filter", "Filter", "", function () { openFilterHub(); }));
         row.appendChild(ipill("plus", "Ke playlist", "", function () { saveTagAsPlaylist(titleStr); }));
@@ -4618,6 +4660,20 @@ body.fs .stage-wrapper {
           return r.blob().then(function (b) { return { blob: b, ext: list[i][1] }; });
         }).catch(function () { return tryFetch(list, i + 1); });
       }
+      // Ubah URL CDN rule34 jadi /media/<sub>/<path> (same-origin via Vercel rewrite) agar lolos CORS
+      function mediaProxyUrl(u) {
+        try {
+          if (location.protocol !== "http:" && location.protocol !== "https:") return null;
+          var x = new URL(u), m = x.hostname.match(/^([a-z0-9-]+)\.rule34\.xxx$/);
+          if (!m) return null;
+          return "/media/" + m[1] + x.pathname + x.search;
+        } catch (e) { return null; }
+      }
+      function fetchMedia(u) {
+        var pu = mediaProxyUrl(u);
+        if (!pu) return fetch(u);
+        return fetch(pu).then(function (res) { return res.ok ? res : fetch(u); }, function () { return fetch(u); });
+      }
       var zipBusy = false;
       function zipPlaylist(p, ids) {
         if (zipBusy) { toast("ZIP sedang diproses"); return; }
@@ -4639,7 +4695,7 @@ body.fs .stage-wrapper {
             get(id).then(function (r) {
               if (!r || r.miss || !r.url) throw 0;
               var ext = r.type === "mp4" ? "mp4" : "jpg";
-              return fetch(r.url).then(function (res) {
+              return fetchMedia(r.url).then(function (res) {
                 if (!res.ok) throw 0;
                 return res.blob().then(function (b) { return { blob: b, ext: ext }; });
               });

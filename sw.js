@@ -33,7 +33,7 @@ self.addEventListener('fetch', (event) => {
   // KRUSIAL: HANYA layani file static lokal dari origin sendiri.
   // JANGAN PERNAH intercept API calls, video range requests, atau gambar CDN eksternal (Rule34 dll).
   // Membiarkan CDN media lewat jalur native browser menghilangkan lag & buffer video.
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/media/')) {
     return;
   }
 
