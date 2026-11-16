@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0b0c0e">
+  <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -2761,7 +2762,7 @@ body.fs .stage-wrapper {
           v.playbackRate = S.speed;
         });
         v.addEventListener("waiting", function () { if (id === current) setLoading(true); });
-        v.addEventListener("canplay", function () { if (id === current) setLoading(false); });
+        v.addEventListener("canplay", function () { if (id === current) { setLoading(false); preloadAround(id); } });
         v.addEventListener("playing", function () { if (id === current) setLoading(false); });
         v.addEventListener("ended", function () {
           if ((autoEnabled || S.autoNextVid) && v.parentNode && id === current) {
@@ -2881,7 +2882,7 @@ body.fs .stage-wrapper {
           if (autoEnabled) resetAutoTimer();
         }
         addHist(current);
-        preloadAround(current);
+        if (r.type !== "mp4") preloadAround(current);
       }
 
       var changeBusy = false;
