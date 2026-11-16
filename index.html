@@ -2337,6 +2337,18 @@ body.fs .stage-wrapper {
           v.preload = "metadata"; v.muted = true; v.src = url;
         });
       }
+      // API mengembalikan host api-cdn-mp4 (lambat); website asli memakai {nama}mp4.rule34.xxx
+      function fastVideoUrl(u, pid) {
+        try {
+          var x = new URL(u);
+          if (x.hostname === "api-cdn-mp4.rule34.xxx") {
+            x.hostname = "ahrimp4.rule34.xxx";
+            if (!x.search) x.search = "?" + pid;
+            return x.toString();
+          }
+        } catch (e) { }
+        return u;
+      }
       function buildResultFromMeta(post) {
         if (!post || !post.file_url) return Promise.resolve({ type: null, miss: true });
         var url = post.file_url;
@@ -2345,7 +2357,7 @@ body.fs .stage-wrapper {
         if (isVid) {
           var posterUrl = (post.sample_url && post.sample) ? post.sample_url : (post.preview_url || "");
           if (posterUrl) { var img = new Image(); img.src = posterUrl; }
-          return Promise.resolve({ type: "mp4", url: url, meta: post, poster: posterUrl, postId: pid });
+          return Promise.resolve({ type: "mp4", url: fastVideoUrl(url, pid), altUrl: url, meta: post, poster: posterUrl, postId: pid });
         }
         // Gunakan sample_url (versi kompresi web yang tajam & ringan, ~300KB), fallback ke file_url
         var targetUrl = (post.sample_url && post.sample) ? post.sample_url : url;
@@ -2749,7 +2761,7 @@ body.fs .stage-wrapper {
         if (soundBtn) soundBtn.style.display = "none";
         resetZoom(); settleEnter();
       }
-      function makeVideo(id, url, posterUrl) {
+      function makeVideo(id, url, posterUrl, altUrl) {
         var v = document.createElement("video");
         v._pid = id;
         v.controls = true; v.playsInline = true; v.setAttribute("playsinline", "");
@@ -2770,6 +2782,7 @@ body.fs .stage-wrapper {
           }
         });
         v.addEventListener("error", function () {
+          if (altUrl && v.src !== altUrl) { var a = altUrl; altUrl = null; v.src = a; v.load(); try { v.play(); } catch (e) { } return; }
           if (id === current) {
             setLoading(false);
             console.warn("Video load error for post #" + id);
@@ -2868,7 +2881,7 @@ body.fs .stage-wrapper {
         shownId = current;
         if (r.type === "mp4") {
           var poster = r.poster || (r.meta && (r.meta.sample_url || r.meta.preview_url)) || "";
-          var el = makeVideo(current, r.url, poster); setMedia(el);
+          var el = makeVideo(current, r.url, poster, r.altUrl); setMedia(el);
           clearAutoTimer();
           if (autoEnabled) { lastLbl = "VIDEO"; autoLbl.textContent = "VIDEO"; autoFill.style.width = "100%"; }
           var pr = el.play();
