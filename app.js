@@ -157,7 +157,7 @@
       var postMetaCache = new Map();
       function metaCacheSet(id, post) {
         postMetaCache.delete(id);
-        metaCacheSet(id, post);
+        postMetaCache.set(id, post);
         while (postMetaCache.size > 500) {
           postMetaCache.delete(postMetaCache.keys().next().value);
         }
@@ -3133,6 +3133,8 @@ function parseApiResponse(raw) {
 
       function goToSidebarInput() { var v = Number($("numberInputSidebar").value); if (validId(v)) loadPost(v, 0); else toast("ID tidak valid", "bad"); }
       return {
+        loadPost: loadPost,
+        getCurrent: function () { return current; },
         goToSidebarInput: goToSidebarInput,
         prev: function () { change(-1); }, next: function () { change(1); }, back: back,
         randomPost: randomPost, toggleAuto: toggleAuto, toggleFav: toggleFav,
