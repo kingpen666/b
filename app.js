@@ -198,6 +198,37 @@
       var R34_API_KEY = "bebe222a50299520c4a08f2b0ad0d5e0194222fe80fe4d6e1b47efe8425470d9679a6ce79ccd3af2b9a983bfa0d7c194fad1d4b6bfb42ee5884f6d47611bf0c5";
       var R34_USER_ID = "7058579";
 
+function parseApiResponse(raw) {
+        if (!raw || !raw.trim()) return [];
+        var trimmed = raw.trim();
+        if (trimmed.startsWith("<")) {
+          try {
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(trimmed, "text/xml");
+            var postNodes = xmlDoc.getElementsByTagName("post");
+            var posts = [];
+            for (var i = 0; i < postNodes.length; i++) {
+              var node = postNodes[i];
+              var p = {};
+              for (var a = 0; a < node.attributes.length; a++) {
+                p[node.attributes[a].name] = node.attributes[a].value;
+              }
+              if (p.id) p.id = Number(p.id);
+              posts.push(p);
+            }
+            return posts;
+          } catch (e) {
+            return [];
+          }
+        }
+        try {
+          var parsed = JSON.parse(trimmed);
+          return parsed;
+        } catch (e) {
+          return [];
+        }
+      }
+
       async function rule34ApiFetch(params) {
         params = params || {};
         params.api_key = R34_API_KEY;
@@ -209,10 +240,14 @@
 
         var directUrl = "https://api.rule34.xxx/index.php?" + qs;
 
-        // 1. Direct fetch (CORS terbuka, keep-alive HTTP/2, paling cepat tanpa delay proxy)
+        // 1. Direct fetch (CORS terbuka, keep-alive HTTP/2)
         try {
           var res = await fetch(directUrl);
-          if (res.ok) return await res.json();
+          if (res.ok) {
+            var txt = await res.text();
+            var parsed = parseApiResponse(txt);
+            if (parsed) return parsed;
+          }
         } catch (e) {
           console.warn("Direct fetch Rule34 gagal, mencoba proxy Vercel...", e);
         }
@@ -222,14 +257,22 @@
           try {
             var proxyUrl = "/api/dapi?" + qs;
             var res2 = await fetch(proxyUrl);
-            if (res2.ok) return await res2.json();
+            if (res2.ok) {
+              var txt2 = await res2.text();
+              var parsed2 = parseApiResponse(txt2);
+              if (parsed2) return parsed2;
+            }
           } catch (e2) { }
         }
 
         // 3. Fallback allorigins
         try {
           var res3 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl));
-          if (res3.ok) return await res3.json();
+          if (res3.ok) {
+            var txt3 = await res3.text();
+            var parsed3 = parseApiResponse(txt3);
+            if (parsed3) return parsed3;
+          }
         } catch (e3) { }
 
         throw new Error("Gagal mengambil data dari Rule34 API");
@@ -3044,11 +3087,33 @@
       updateBack();
       syncNavActive();
 
-      loadPost(current, 0);
-      fetchLatestPostId().then(function (id) {
-        var numInp = $("numberInput");
-        if (numInp) numInp.placeholder = "Nomor Post (#" + id + ")…"; var sbInp = $("numberInputSidebar"); if (sbInp) sbInp.placeholder = "#" + id + "…";
-      }).catch(function () { });
+      if (!isFinite(sp) || sp < 1) {
+        // Pengunjung baru pertama kali: ambil post terbaru agar tidak membuka post #1 yang sudah dihapus
+        fetchLatestPostId().then(function (latestId) {
+          var numInp = $("numberInput");
+          if (numInp) numInp.placeholder = "Nomor Post (#" + latestId + ")…";
+          var sbInp = $("numberInputSidebar");
+          if (sbInp) sbInp.placeholder = "#" + latestId + "…";
+          if (validId(latestId) && latestId > 1000) {
+            current = latestId;
+            input.value = latestId;
+            if (sbInp) sbInp.value = latestId;
+            loadPost(latestId, 0);
+          } else {
+            loadPost(10500000, 0);
+          }
+        }).catch(function () {
+          loadPost(10500000, 0);
+        });
+      } else {
+        loadPost(current, 0);
+        fetchLatestPostId().then(function (id) {
+          var numInp = $("numberInput");
+          if (numInp) numInp.placeholder = "Nomor Post (#" + id + ")…";
+          var sbInp = $("numberInputSidebar");
+          if (sbInp) sbInp.placeholder = "#" + id + "…";
+        }).catch(function () { });
+      }
 
       try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
       restoreFromBackup();
