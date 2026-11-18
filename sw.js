@@ -1,7 +1,9 @@
-const CACHE_NAME = 'pe-cache-v2';
+const CACHE_NAME = 'pe-cache-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './style.css',
+  './app.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
