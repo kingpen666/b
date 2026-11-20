@@ -90,7 +90,7 @@
       function jset(k, v) { try { lsSet(k, JSON.stringify(v)); } catch (e) { } }
 
       var S = (function () {
-        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false };
+        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false };
         var s = jget("pe_settings", {});
         if (!s || typeof s !== "object" || Array.isArray(s)) s = {};
         for (var k in d) if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k];
@@ -106,6 +106,9 @@
         if (typeof d.safeMode !== "boolean") d.safeMode = false;
         if (typeof d.autoPanic !== "boolean") d.autoPanic = false;
         if (typeof d.autoOffline !== "boolean") d.autoOffline = false;
+        if (typeof d.hswipe !== "boolean") d.hswipe = false;
+        if (typeof d.dblFav !== "boolean") d.dblFav = false;
+        if (typeof d.wheelNav !== "boolean") d.wheelNav = false;
         if (!isFinite(Number(d.speed)) || Number(d.speed) < 0.25 || Number(d.speed) > 4) d.speed = 1; else d.speed = Number(d.speed);
         return d;
       })();
@@ -1012,7 +1015,8 @@ function parseApiResponse(raw) {
           if (ap && ap.last !== id && isIn(ap, id)) { ap.last = id; persistSoon(); }
         }
         if (activeTag && !activePlaylistId) {
-          scheduleCheckpoint(id);
+          cpSteps++;
+          if (cpSteps >= 6) scheduleCheckpoint(id); // salah ketuk / intip sebentar tidak menimpa posisi tersimpan
         }
         clearTimeout(saveSessionDebounce);
         saveSessionDebounce = setTimeout(saveSession, 500);
@@ -1376,6 +1380,7 @@ function parseApiResponse(raw) {
         var dxs = sw.cx - sw.sx, dys = sw.cy - sw.sy, adx = Math.abs(dxs), ady = Math.abs(dys);
         if (sw.axis === null && (adx > 8 || ady > 8)) sw.axis = adx >= ady ? "h" : "v";
         if (sw.axis === "h") {
+          if (!S.hswipe) return;
           hint(hintU, 0, 0); hint(hintD, 0, 0);
           var f = dxs; if (f > 120) f = 120 + (f - 120) * .35; if (f < -120) f = -120 + (f + 120) * .35;
           swipeLayer.style.transform = "translateX(" + f + "px)";
@@ -1420,7 +1425,8 @@ function parseApiResponse(raw) {
         var dx = sw.cx - sw.sx, dy = sw.cy - sw.sy, dt = now() - sw.t, adx = Math.abs(dx), ady = Math.abs(dy);
         if (adx < 10 && ady < 10 && dt < 300) {
           clearSwipeStyles(); clearHints();
-          if (sw.dbl) {
+          if (sw.dbl && !S.dblFav) { g.lastTap = 0; }
+          else if (sw.dbl) {
             g.lastTap = 0;
             lastHeart = now();
             showHeartPop(sw.sx, sw.sy);
@@ -1431,7 +1437,7 @@ function parseApiResponse(raw) {
         var valid = false;
         if (axis === "h") valid = adx >= SW_MIN && adx >= ady * DOM && dt <= SW_MS;
         else if (axis === "v") valid = ady >= SW_MIN && ady >= adx * DOM && dt <= SW_MS;
-        if (valid && now() - sw.last >= SW_CD) {
+        if (valid && !(axis === "h" && !S.hswipe) && now() - sw.last >= SW_CD) {
           sw.last = now(); vibe(8);
           if (axis === "h") { snapBack(); if (dx > 0) openPopup(current); else swipeDelete(); }
           else snapToNew(dy < 0 ? "up" : "down", dy < 0 ? 1 : -1);
@@ -1447,6 +1453,7 @@ function parseApiResponse(raw) {
       stage.addEventListener("touchcancel", onTouchCancel, { passive: true });
       var lastWheel = 0, lastWheelEv = 0;
       stage.addEventListener("wheel", function (e) {
+        if (!S.wheelNav) return;
         if (zoom.scale > 1.02) return;
         e.preventDefault();
         var t = now(), gap = t - lastWheelEv; lastWheelEv = t;
@@ -1455,6 +1462,7 @@ function parseApiResponse(raw) {
         change(e.deltaY > 0 ? 1 : -1);
       }, { passive: false });
       stage.addEventListener("dblclick", function (e) {
+        if (!S.dblFav) return;
         if (e.target && e.target.closest && e.target.closest("button")) return;
         if (isVideo()) return;
         if (now() - lastHeart < 600) return;
@@ -1618,8 +1626,12 @@ function parseApiResponse(raw) {
               bb.onclick = function (e) {
                 e.stopPropagation();
                 var wasOn = blacklistTags.indexOf(normTag(tVal)) !== -1;
-                toggleTagBlock(tVal); paintBlk();
-                toast(wasOn ? "Tag ditampilkan lagi: " + tVal : "Disembunyikan: " + tVal, wasOn ? "ok" : "bad");
+                function doBlk() {
+                  toggleTagBlock(tVal); paintBlk();
+                  toast(wasOn ? "Tag ditampilkan lagi: " + tVal : "Disembunyikan: " + tVal, wasOn ? "ok" : "bad");
+                }
+                if (wasOn) doBlk();
+                else dialog("Sembunyikan semua post bertag <b>" + esc(tVal) + "</b>?", { ok: "Sembunyikan", danger: true }, doBlk);
               };
               paintBlk();
               wrap.appendChild(chip); wrap.appendChild(bb);
@@ -1664,6 +1676,15 @@ function parseApiResponse(raw) {
           ob.innerHTML = ic(isOffline(id) ? "check" : "download") + "<span>" + (isOffline(id) ? "Tersimpan offline (hapus)" : "Simpan offline") + "</span>";
           ob.onclick = function () { toggleOffline(id, ob); };
           oRow.appendChild(ob);
+          if (activePlaylistId) {
+            var apl = getPL(activePlaylistId);
+            if (apl && isIn(apl, id)) {
+              var delb = el("button", "pill dng");
+              delb.innerHTML = ic("trash") + "<span>Hapus dari playlist</span>";
+              delb.onclick = function () { closeInfo(); swipeDelete(); };
+              oRow.appendChild(delb);
+            }
+          }
           infoTagsEl.appendChild(oRow);
         }).catch(function (err) {
           if (infoToken === infoRequestToken && infoBackdrop.classList.contains("open")) infoMetaEl.textContent = "Detail post tidak tersedia";
@@ -1846,7 +1867,7 @@ function parseApiResponse(raw) {
         if (pr && validId(pr.id)) return { id: pr.id, index: -1 };
         return null;
       }
-      var cpTimer = null, cpPendingId = null;
+      var cpTimer = null, cpPendingId = null, cpSteps = 0, cpTrust = false;
       function scheduleCheckpoint(id) { cpPendingId = id; clearTimeout(cpTimer); cpTimer = setTimeout(flushCheckpoint, 400); }
       function flushCheckpoint() {
         clearTimeout(cpTimer);
@@ -1866,7 +1887,7 @@ function parseApiResponse(raw) {
             if (bLoading) { await sleep(150); continue; }
             await loadTagDetail(tags, false);
           }
-          if (bSet.has(cp.id)) startTag(tags, cp.id, false);
+          if (bSet.has(cp.id)) { cpTrust = true; startTag(tags, cp.id, false); }
           else { toast("Posisi tidak ditemukan, mulai dari awal", "bad"); startTag(tags, null, false); }
         } finally { tagResuming = false; }
       }
@@ -1885,6 +1906,7 @@ function parseApiResponse(raw) {
         ++tagRequestToken;
         tagPosts = bPosts.slice(); tagSet = new Set(bSet); tagCursor = bCursor; tagHasMore = bHasMore; tagLoading = false;
         playCfg = currentCfg();
+        cpSteps = cpTrust ? 99 : 0; cpTrust = false;
         activePlaylistId = null;
         shuffleOn = !!shuffle;
         if (shuffleOn) {
@@ -2254,7 +2276,7 @@ function parseApiResponse(raw) {
       function fmtN(n) { n = Number(n) || 0; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M"; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k"; return String(n); }
       function openTag(t) {
         selectedTags = Array.isArray(t) ? t.slice() : [t];
-        tagView = "detail"; refreshBadges();
+        tagView = "detail"; tdPick = null; refreshBadges();
         openSheet("tags", "detail"); loadTagDetail(selectedTags.slice(), true);
       }
       function filterSummary() {
@@ -2486,6 +2508,8 @@ function parseApiResponse(raw) {
           renderTagList();
         }, 250);
       }
+      var tagAlphaOpen = false, alphaDebT = null;
+      function fetchAlphaSoon(k) { clearTimeout(alphaDebT); alphaDebT = setTimeout(function () { fetchAlphaTags(k); }, 400); }
       function renderTagsView() {
         var b = sheetBody;
         if (tagView === "detail") { renderTagDetailView(); return; }
@@ -2560,7 +2584,7 @@ function parseApiResponse(raw) {
             tagSearchTerm = "";
             inp.value = "";
             renderTagsView();
-            fetchAlphaTags(ch);
+            fetchAlphaSoon(ch);
           };
           alphaPad.appendChild(ab);
         });
@@ -2573,11 +2597,15 @@ function parseApiResponse(raw) {
           tagSearchTerm = "";
           inp.value = "";
           renderTagsView();
-          fetchAlphaTags("0-9");
+          fetchAlphaSoon("0-9");
         };
         alphaPad.appendChild(numBtn);
 
-        b.appendChild(alphaPad);
+        var alphaTog = el("button", "tag-cat-btn", tagAlphaOpen ? "Tutup abjad A–Z" : "Abjad A–Z ▾");
+        alphaTog.style.cssText = "width:100%;margin:6px 0";
+        alphaTog.onclick = function () { tagAlphaOpen = !tagAlphaOpen; renderTagsView(); };
+        b.appendChild(alphaTog);
+        if (tagAlphaOpen) b.appendChild(alphaPad);
 
         if (tagPickMode === "block") {
           var blkNotice = el("div", "fsum");
@@ -2606,6 +2634,7 @@ function parseApiResponse(raw) {
         b.innerHTML = ic(icon) + "<span>" + esc(txt) + "</span>";
         b.onclick = fn; return b;
       }
+      var tdPick = null;
       function renderTagDetailView() {
         var b = sheetBody;
         var titleStr = bTags.length ? bTags.join(" + ") : "Semua post";
@@ -2621,25 +2650,45 @@ function parseApiResponse(raw) {
         if (cp) {
           var posLabel = cp.index >= 0 ? " (post #" + (cp.index + 1) + ")" : "";
           row.appendChild(ipill("play", "Lanjut #" + cp.id + posLabel, "pri", function () { resumeTag(tagsNow); }));
-          row.appendChild(ipill("refresh", "Mulai dari #1", "", function () {
-            clearTagCheckpoint(tagsNow);
-            clearTagProg(tagsNow);
-            startTag(tagsNow, null, false);
-            toast("Checkpoint direset, mulai dari awal", "ok");
+          row.appendChild(ipill("refresh", "Mulai dari #1", "dng", function () {
+            dialog("Hapus checkpoint <b>#" + cp.id + "</b> dan mulai dari awal?", { ok: "Hapus & mulai", danger: true }, function () {
+              clearTagCheckpoint(tagsNow);
+              clearTagProg(tagsNow);
+              startTag(tagsNow, null, false);
+              toast("Checkpoint direset, mulai dari awal", "ok");
+            });
           }));
         } else {
           row.appendChild(ipill("play", "Putar semua", "pri", function () { startTag(tagsNow, null, false); }));
         }
         row.appendChild(ipill("shuffle", "Acak", "", function () { startTag(tagsNow, null, true); }));
         row.appendChild(ipill("filter", "Filter", "", function () { openFilterHub(); }));
-        row.appendChild(ipill("plus", "Ke playlist", "", function () { saveTagAsPlaylist(titleStr); }));
+        row.appendChild(ipill("plus", "Ke playlist", "", function () {
+          dialog("Simpan <b>" + bPosts.length + "</b> post yang dimuat ke playlist?", { ok: "Simpan" }, function () { saveTagAsPlaylist(titleStr); });
+        }));
         b.appendChild(row);
 
         var grid = el("div", "grid");
         b.appendChild(grid);
         if (!bPosts.length && !bLoading) grid.appendChild(el("div", "empty", "Tidak ada post yang cocok. Coba ubah Filter atau tag."));
+        var tdThumbs = {};
+        var pb = el("div", "pickbar"); pb.style.display = "none";
+        function showPick(id) {
+          tdPick = id;
+          for (var k in tdThumbs) tdThumbs[k].classList.toggle("pick", Number(k) === id);
+          if (id == null) { pb.style.display = "none"; return; }
+          pb.style.display = "flex"; pb.innerHTML = "";
+          pb.appendChild(el("span", "pk-id", "#" + id));
+          var go = el("button", "pill pri", "Putar dari sini");
+          go.onclick = function () { var t = tdPick; tdPick = null; startTag(bTags, t, false); };
+          var cn = el("button", "pill", "Batal");
+          cn.onclick = function () { showPick(null); };
+          pb.appendChild(go); pb.appendChild(cn);
+        }
         bPosts.forEach(function (id) {
-          grid.appendChild(thumb(id, function () { startTag(bTags, id, false); }));
+          var th = thumb(id, function () { showPick(tdPick === id ? null : id); });
+          tdThumbs[id] = th;
+          grid.appendChild(th);
         });
         if (bLoading) grid.appendChild(el("div", "empty", "Memuat post…"));
         else if (bHasMore && bPosts.length > 0) {
@@ -2647,6 +2696,8 @@ function parseApiResponse(raw) {
           grid.appendChild(mb);
           autoMore(mb);
         }
+        b.appendChild(pb);
+        if (tdPick && bSet.has(tdPick)) showPick(tdPick); else tdPick = null;
       }
       function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = lead(txt); return e; }
       function pill(txt, cls, fn) { var b = el("button", "pill " + (cls || ""), txt); b.onclick = fn; return b; }
@@ -2668,11 +2719,11 @@ function parseApiResponse(raw) {
       function openSheet(tab, mode) {
         if (tab) sheetTab = tab;
         if (tab === "playlist") { plView = "list"; plDetailId = null; resetSel(); }
-        if (tab === "tags") { tagView = mode === "detail" ? "detail" : "list"; tagPickMode = mode === "block" ? "block" : "want"; }
+        if (tab === "tags") { tagView = (mode === "detail" || (!mode && tagView === "detail" && bPosts.length)) ? "detail" : "list"; tagPickMode = mode === "block" ? "block" : "want"; }
         renderSheet(); sheet.classList.add("open"); sheetBackdrop.classList.add("open");
         syncNavActive();
       }
-      function closeSheet() { sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); syncNavActive(); }
+      function closeSheet() { sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); if (tagPickMode === "block") tagPickMode = "want"; syncNavActive(); }
       function sheetBack() {
         if (sheetTab === "playlist" && plView === "detail") { plView = "list"; plDetailId = null; resetSel(); renderSheet(); }
         else if (sheetTab === "tags" && tagView === "detail") { tagView = "list"; renderSheet(); }
@@ -2933,6 +2984,9 @@ function parseApiResponse(raw) {
         b.appendChild(setRow("Hemat data", "Pakai gambar kecil dulu", seg(onoff, S.saver, function (v) { S.saver = v; saveS(); invalidateCache(); })));
         b.appendChild(setRow("Pertahankan zoom", "Level zoom tetap saat pindah post", seg(onoff, S.keepZoom, function (v) { S.keepZoom = v; saveS(); })));
         b.appendChild(setRow("Tampilan", "Muat utuh / penuhi layar", seg([["contain", "Muat"], ["cover", "Penuh"]], S.fit, function (v) { S.fit = v; saveS(); applyFit(); })));
+        b.appendChild(setRow("Swipe samping", "Kanan: simpan ke playlist · Kiri: hapus dari playlist (rawan salah)", seg(onoff, !!S.hswipe, function (v) { S.hswipe = v; saveS(); })));
+        b.appendChild(setRow("Double-tap = Favorit", "Ketuk 2x / klik ganda menyimpan ke Favorit", seg(onoff, !!S.dblFav, function (v) { S.dblFav = v; saveS(); })));
+        b.appendChild(setRow("Scroll roda = pindah post", "Roda mouse / trackpad di layar post (desktop)", seg(onoff, !!S.wheelNav, function (v) { S.wheelNav = v; saveS(); })));
         b.appendChild(setRow("Tandai sudah dilihat", "Redupkan & beri centang di grid", seg(onoff, S.markSeen !== false, function (v) { S.markSeen = v; saveS(); })));
         b.appendChild(setRow("Mode aman", "Sembunyikan post non-aman (berdasar rating)", seg(onoff, !!S.safeMode, function (v) { S.safeMode = v; saveS(); streamAhead = []; streamBehind = []; refreshBadges(); toast(v ? "Mode aman aktif" : "Mode aman mati", "ok"); })));
         b.appendChild(setRow("Sembunyikan otomatis", "Tutup layar saat tab ditinggalkan", seg(onoff, !!S.autoPanic, function (v) { S.autoPanic = v; saveS(); })));
@@ -3651,6 +3705,13 @@ function parseApiResponse(raw) {
         document.body.classList.remove("panic");
         panicEl.classList.remove("on"); panicEl.setAttribute("aria-hidden", "true");
         try { document.title = origTitle; } catch (e) { }
+      }
+      var pBtn = $("panicBtn");
+      if (pBtn) {
+        var pT = null, pFired = false;
+        pBtn.addEventListener("pointerdown", function () { pFired = false; clearTimeout(pT); pT = setTimeout(function () { pFired = true; panicOn(); }, 600); });
+        ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { pBtn.addEventListener(ev, function () { clearTimeout(pT); }); });
+        pBtn.addEventListener("click", function () { if (!pFired) toast("Tahan tombol mata untuk menyembunyikan layar"); });
       }
       if (panicEl) {
         panicEl.addEventListener("click", function () {

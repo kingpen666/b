@@ -71,10 +71,10 @@
         </div>
 
         <div class="topbar-right">
+          <button class="icon-tool-btn panic-hold" id="panicBtn" title="Tahan untuk menyembunyikan layar"><span data-ic="eyeOff"></span></button>
           <button class="icon-tool-btn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span data-ic="mute"></span></button>
           <button class="icon-tool-btn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span data-ic="fit"></span></button>
           <button class="icon-tool-btn" id="gridBtn" onclick="PE.toggleGrid()" title="Tampilan Grid Galeri"><span data-ic="grid"></span></button>
-          <button class="icon-tool-btn" id="panicBtn" onclick="PE.panic()" title="Sembunyikan layar (`)"><span data-ic="eyeOff"></span></button>
           <button class="icon-tool-btn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span data-ic="expand"></span></button>
           <button class="icon-tool-btn help-mobile-btn" onclick="PE.openGuide()" title="Panduan"><span data-ic="help"></span></button>
         </div>
@@ -157,7 +157,7 @@
   </div>
 
   <!-- BOTTOM SHEET (TAGS / PLAYLIST / RIWAYAT / SETELAN) -->
-  <div class="backdrop" id="sheetBackdrop" onclick="PE.closeSheet()"></div>
+  <div class="backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Panel">
     <div class="grab"></div>
     <div class="shead">
@@ -201,9 +201,9 @@
       </div>
       <div class="guide-content" style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-secondary)">
         <div><b>Swipe Atas / Bawah:</b> Navigasi ke post berikutnya / sebelumnya.</div>
-        <div><b>Swipe Kanan:</b> Buka menu simpan ke playlist. <b>Swipe Kiri:</b> Hapus dari playlist aktif.</div>
-        <div><b>Pinch:</b> Zoom gambar. <b>Double Tap / Klik ganda:</b> Simpan ke Favorit.</div>
-        <div><b>Tombol ` atau ikon mata:</b> Tutup layar seketika (PIN opsional di Setelan).</div>
+        <div><b>Swipe samping &amp; double-tap:</b> mati secara default (rawan salah ketuk), bisa dinyalakan di Setelan.</div>
+        <div><b>Pinch:</b> Zoom gambar. Simpan ke Favorit lewat tombol Suka.</div>
+        <div><b>Tahan ikon mata (atau tombol `):</b> Tutup layar seketika (PIN opsional di Setelan).</div>
         <div><b>Keyboard (PC):</b> <b>↓ / →</b>: Berikutnya · <b>↑ / ←</b>: Sebelumnya · <b>Space</b>: Play/Pause Video · <b>F</b>: Favorit · <b>I</b>: Info · <b>R</b>: Acak</div>
       </div>
       <button class="bwide b-pri" style="margin-top:12px" onclick="PE.closeGuide()">Mengerti</button>
