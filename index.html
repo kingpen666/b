@@ -74,6 +74,7 @@
           <button class="icon-tool-btn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span data-ic="mute"></span></button>
           <button class="icon-tool-btn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span data-ic="fit"></span></button>
           <button class="icon-tool-btn" id="gridBtn" onclick="PE.toggleGrid()" title="Tampilan Grid Galeri"><span data-ic="grid"></span></button>
+          <button class="icon-tool-btn" id="panicBtn" onclick="PE.panic()" title="Sembunyikan layar (`)"><span data-ic="eyeOff"></span></button>
           <button class="icon-tool-btn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span data-ic="expand"></span></button>
           <button class="icon-tool-btn help-mobile-btn" onclick="PE.openGuide()" title="Panduan"><span data-ic="help"></span></button>
         </div>
@@ -200,8 +201,9 @@
       </div>
       <div class="guide-content" style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-secondary)">
         <div><b>Swipe Atas / Bawah:</b> Navigasi ke post berikutnya / sebelumnya.</div>
-        <div><b>Swipe Kanan:</b> Simpan post ke playlist Favorit.</div>
-        <div><b>Pinch / Double Tap:</b> Zoom gambar / Simpan ke Favorit.</div>
+        <div><b>Swipe Kanan:</b> Buka menu simpan ke playlist. <b>Swipe Kiri:</b> Hapus dari playlist aktif.</div>
+        <div><b>Pinch:</b> Zoom gambar. <b>Double Tap / Klik ganda:</b> Simpan ke Favorit.</div>
+        <div><b>Tombol ` atau ikon mata:</b> Tutup layar seketika (PIN opsional di Setelan).</div>
         <div><b>Keyboard (PC):</b> <b>↓ / →</b>: Berikutnya · <b>↑ / ←</b>: Sebelumnya · <b>Space</b>: Play/Pause Video · <b>F</b>: Favorit · <b>I</b>: Info · <b>R</b>: Acak</div>
       </div>
       <button class="bwide b-pri" style="margin-top:12px" onclick="PE.closeGuide()">Mengerti</button>
@@ -300,6 +302,15 @@
     </div>
   </div>
 
+  <button class="fs-exit" id="fsExit" onclick="PE.toggleFs()" aria-label="Keluar layar penuh">&#10005;</button>
+  <div class="panic-cover" id="panicCover" aria-hidden="true">
+    <div class="panic-note">Catatan</div>
+    <form id="panicForm" autocomplete="off" style="display:none">
+      <input id="panicPin" type="password" inputmode="numeric" maxlength="12" placeholder="PIN" aria-label="PIN">
+      <button type="submit">Buka</button>
+      <div id="panicMsg"></div>
+    </form>
+  </div>
   <div class="toast" id="toast"></div>
 
   <script src="app.js" defer></script>

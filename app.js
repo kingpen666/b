@@ -52,7 +52,8 @@
         link: '<path d="M10 14a4 4 0 0 1 0-6l2-2a4 4 0 0 1 6 6l-2 2"/><path d="M14 10a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6l2-2"/>',
         share: '<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/>',
         book: '<path d="M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z"/>',
-        refresh: '<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 4v3h-3M6 20v-3h3"/>'
+        refresh: '<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 4v3h-3M6 20v-3h3"/>',
+        eyeOff: '<path d="M3 3l18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c7 0 11 6 11 6a17.6 17.6 0 0 1-3.2 3.7M6.7 6.7C3.7 8.4 1 12 1 12s4 6 11 6c1.5 0 2.9-.3 4.1-.8M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'
       };
       function ic(n) {
         var p = ICONS[n === "heartfill" ? "heart" : n] || "";
@@ -89,7 +90,7 @@
       function jset(k, v) { try { lsSet(k, JSON.stringify(v)); } catch (e) { } }
 
       var S = (function () {
-        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false };
+        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false };
         var s = jget("pe_settings", {});
         if (!s || typeof s !== "object" || Array.isArray(s)) s = {};
         for (var k in d) if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k];
@@ -101,6 +102,10 @@
         if (typeof d.keepZoom !== "boolean") d.keepZoom = false;
         if (typeof d.filterAi !== "boolean") d.filterAi = false;
         if (typeof d.autoNextVid !== "boolean") d.autoNextVid = false;
+        if (typeof d.markSeen !== "boolean") d.markSeen = true;
+        if (typeof d.safeMode !== "boolean") d.safeMode = false;
+        if (typeof d.autoPanic !== "boolean") d.autoPanic = false;
+        if (typeof d.autoOffline !== "boolean") d.autoOffline = false;
         if (!isFinite(Number(d.speed)) || Number(d.speed) < 0.25 || Number(d.speed) > 4) d.speed = 1; else d.speed = Number(d.speed);
         return d;
       })();
@@ -153,9 +158,14 @@
       var playlists = [], activePlaylistId = null, shuffleOn = false, playOrder = [], returnId = null;
       var activeTag = null, tagPosts = [], tagCursor = null, tagLoading = false, tagHasMore = true;
       var selectedTags = [], activeTagsDetail = [];
+      var tagSet = new Set(), playCfg = null;
+      var bPosts = [], bSet = new Set(), bTags = [], bCursor = 0, bHasMore = true, bLoading = false, bToken = 0;
+      var PAGE = 40, HOT_WINDOW = 150000, QLIMIT = 4;
+      var streamAhead = [], streamBehind = [];
       var tagSortMode = "newest";
       var postMetaCache = new Map();
       function metaCacheSet(id, post) {
+        tmSet(id, post);
         postMetaCache.delete(id);
         postMetaCache.set(id, post);
         while (postMetaCache.size > 500) {
@@ -168,17 +178,44 @@
       var popupPostId = null, popupMode = "add", pickCb = null, pickExclude = null;
       var hist = (jget("pe_hist", []) || []).filter(validId).slice(0, 60);
       var vpos = new Map();
+      var locked = false, lastHeart = 0;
+      var seenSet = new Set((jget("pe_seen", []) || []).filter(validId));
+      var seenT = null;
+      function saveSeen() { clearTimeout(seenT); jset("pe_seen", Array.from(seenSet)); }
+      function markSeen(id) {
+        if (S.markSeen === false || seenSet.has(id)) return;
+        seenSet.add(id);
+        if (seenSet.size > 10000) seenSet.delete(seenSet.values().next().value);
+        clearTimeout(seenT); seenT = setTimeout(saveSeen, 1500);
+      }
 
       var toastT = null;
-      function toast(msg, type) {
-        toastEl.textContent = lead(msg); toastEl.className = "toast show" + (type ? " " + type : "");
-        clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove("show"); }, 1800);
+      function toast(msg, type, action) {
+        toastEl.textContent = lead(msg);
+        toastEl.className = "toast show" + (type ? " " + type : "") + (action ? " act" : "");
+        if (action) {
+          var ab = document.createElement("button");
+          ab.className = "toast-act"; ab.textContent = action.label;
+          ab.onclick = function (e) {
+            e.stopPropagation(); clearTimeout(toastT); toastEl.classList.remove("show");
+            try { action.fn(); } catch (er) { }
+          };
+          toastEl.appendChild(ab);
+        }
+        clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove("show"); }, action ? 5500 : 1800);
       }
+      function snapPlaylists() { try { return JSON.stringify(playlists); } catch (e) { return null; } }
+      function restorePlaylists(snap) {
+        if (!snap) return;
+        try { playlists = loadPlaylists(JSON.parse(snap)); persist(); refreshBtns(); updateChip(); rerender(); toast("Dibatalkan", "ok"); } catch (e) { }
+      }
+      function undoable(msg, snap) { toast(msg, "bad", { label: "Batalkan", fn: function () { restorePlaylists(snap); } }); }
       var dlgCb = null;
       function dialog(msg, opts, cb) {
         opts = opts || {};
         dlgMsg.innerHTML = msg;
         dlgInput.style.display = opts.input ? "block" : "none";
+        dlgInput.type = opts.password ? "password" : "text";
         dlgInput.value = opts.value || "";
         dlgOk.textContent = opts.ok || "OK";
         dlgOk.className = "d-ok" + (opts.danger ? " danger" : "");
@@ -201,34 +238,52 @@
 function parseApiResponse(raw) {
         if (!raw || !raw.trim()) return [];
         var trimmed = raw.trim();
-        if (trimmed.startsWith("<")) {
+        if (trimmed.charAt(0) === "<") {
           try {
             var parser = new DOMParser();
             var xmlDoc = parser.parseFromString(trimmed, "text/xml");
+            if (xmlDoc.getElementsByTagName("parsererror").length) return null;
+            var root = xmlDoc.documentElement;
+            if (root && root.getAttribute && root.getAttribute("success") === "false") return null;
             var postNodes = xmlDoc.getElementsByTagName("post");
             var posts = [];
             for (var i = 0; i < postNodes.length; i++) {
               var node = postNodes[i];
-              var p = {};
+              var po = {};
               for (var a = 0; a < node.attributes.length; a++) {
-                p[node.attributes[a].name] = node.attributes[a].value;
+                po[node.attributes[a].name] = node.attributes[a].value;
               }
-              if (p.id) p.id = Number(p.id);
-              posts.push(p);
+              if (po.id) po.id = Number(po.id);
+              posts.push(po);
             }
             return posts;
           } catch (e) {
-            return [];
+            return null;
           }
         }
         try {
           var parsed = JSON.parse(trimmed);
-          return parsed;
+          if (Array.isArray(parsed)) return parsed;
+          if (parsed && typeof parsed === "object") {
+            if (parsed.success === false || parsed.error) return null;
+            if (Array.isArray(parsed.post)) return parsed.post;
+            return [];
+          }
+          return null;
         } catch (e) {
-          return [];
+          return null;
         }
       }
 
+      function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      function fetchT(url, ms) {
+        if (typeof AbortController === "undefined") return fetch(url);
+        var ac = new AbortController(), t = setTimeout(function () { ac.abort(); }, ms || 12000);
+        return fetch(url, { signal: ac.signal }).then(function (r) { clearTimeout(t); return r; }, function (e) { clearTimeout(t); throw e; });
+      }
+
+      // Mengembalikan array post. Melempar error HANYA jika semua jalur gagal (jaringan / respons rusak).
+      // Array kosong berarti benar-benar tidak ada hasil.
       async function rule34ApiFetch(params) {
         params = params || {};
         params.api_key = R34_API_KEY;
@@ -239,42 +294,21 @@ function parseApiResponse(raw) {
         }).join("&");
 
         var directUrl = "https://api.rule34.xxx/index.php?" + qs;
+        var tiers = [[directUrl, 8000]];
+        if (window.location.protocol === "http:" || window.location.protocol === "https:") tiers.push(["/api/dapi?" + qs, 10000]);
+        tiers.push(["https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl), 10000]);
 
-        // 1. Direct fetch (CORS terbuka, keep-alive HTTP/2)
-        try {
-          var res = await fetch(directUrl);
-          if (res.ok) {
-            var txt = await res.text();
-            var parsed = parseApiResponse(txt);
-            if (parsed) return parsed;
+        for (var attempt = 0; attempt < 2; attempt++) {
+          for (var i = 0; i < tiers.length; i++) {
+            try {
+              var res = await fetchT(tiers[i][0], tiers[i][1]);
+              if (!res.ok) continue;
+              var parsed = parseApiResponse(await res.text());
+              if (parsed) return parsed;
+            } catch (e) { }
           }
-        } catch (e) {
-          console.warn("Direct fetch Rule34 gagal, mencoba proxy Vercel...", e);
+          if (attempt === 0) await sleep(500);
         }
-
-        // 2. Fallback rewrite proxy Vercel
-        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-          try {
-            var proxyUrl = "/api/dapi?" + qs;
-            var res2 = await fetch(proxyUrl);
-            if (res2.ok) {
-              var txt2 = await res2.text();
-              var parsed2 = parseApiResponse(txt2);
-              if (parsed2) return parsed2;
-            }
-          } catch (e2) { }
-        }
-
-        // 3. Fallback allorigins
-        try {
-          var res3 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl));
-          if (res3.ok) {
-            var txt3 = await res3.text();
-            var parsed3 = parseApiResponse(txt3);
-            if (parsed3) return parsed3;
-          }
-        } catch (e3) { }
-
         throw new Error("Gagal mengambil data dari Rule34 API");
       }
 
@@ -283,9 +317,10 @@ function parseApiResponse(raw) {
         return (meta && meta.preview_url) ? meta.preview_url : "";
       }
 
-      var cache = new Map(), pending = new Map(), queue = [], queuedResolvers = new Map(), queuedPromises = new Map(), running = 0, MAX_PAR = 4, MAX_CACHE = 40, cacheGeneration = 0;
-      function invalidateCache() { cacheGeneration++; cache.clear(); }
-      function cacheSet(id, r) { cache.delete(id); cache.set(id, r); while (cache.size > MAX_CACHE) cache.delete(cache.keys().next().value); }
+      var cache = new Map(), pending = new Map(), queue = [], queuedResolvers = new Map(), queuedPromises = new Map(), running = 0, MAX_PAR = 4, MAX_CACHE = 12, cacheGeneration = 0;
+      function invalidateCache() { cacheGeneration++; cache.forEach(releaseWarm); cache.clear(); }
+      function cacheSet(id, r) { cache.delete(id); cache.set(id, r); while (cache.size > MAX_CACHE) { var ek = cache.keys().next().value; releaseWarm(cache.get(ek)); cache.delete(ek); } }
+      function saverOn() { try { return !!(S.saver || (navigator.connection && navigator.connection.saveData)); } catch (e) { return !!S.saver; } }
       function loadImg(url, ms) {
         return new Promise(function (res) {
           var im = new Image(); im.decoding = "async";
@@ -318,9 +353,9 @@ function parseApiResponse(raw) {
           if (posterUrl) { var img = new Image(); img.src = posterUrl; }
           return Promise.resolve({ type: "mp4", url: fastVideoUrl(url, pid), altUrl: url, meta: post, poster: posterUrl, postId: pid });
         }
-        // Gunakan sample_url (versi kompresi web yang tajam & ringan, ~300KB), fallback ke file_url
+        // Gunakan sample_url (versi kompresi web yang tajam & ringan), fallback ke file_url
         var isGif = !!(url.match(/\.gif(\?|$)/i) || (post.image && post.image.match(/\.gif$/i)));
-        var targetUrl = (isGif || !post.sample || !post.sample_url) ? url : (S.saver ? (post.sample_url || post.preview_url || url) : post.sample_url);
+        var targetUrl = (isGif || !post.sample || !post.sample_url) ? url : (saverOn() ? (post.sample_url || post.preview_url || url) : post.sample_url);
         var mediaType = isGif ? "gif" : "jpg";
         return loadImg(targetUrl).then(function (im) {
           if (im) return { type: mediaType, url: targetUrl, el: im, meta: post, fullUrl: url, postId: pid };
@@ -328,20 +363,26 @@ function parseApiResponse(raw) {
           if (fallbackUrl && fallbackUrl !== targetUrl) {
             return loadImg(fallbackUrl).then(function (im2) {
               if (im2) return { type: mediaType, url: fallbackUrl, el: im2, meta: post, fullUrl: url, postId: pid };
-              return { type: null, miss: true };
+              return { type: null, miss: true, error: true };
             });
           }
-          return { type: null, miss: true };
+          return { type: null, miss: true, error: true };
         });
+      }
+      function warmVideo(id, r) {
+        if (!r || r.type !== "mp4" || id === current || r.warm) return;
+        try { var w = document.createElement("video"); w.preload = "metadata"; w.muted = true; w.src = r.url; r.warm = w; } catch (e) { }
+      }
+      function releaseWarm(r) {
+        if (r && r.warm) { try { r.warm.removeAttribute("src"); r.warm.load(); } catch (e) { } r.warm = null; }
       }
       function startResolve(id) {
         running++;
         var generation = cacheGeneration;
         var p;
-        if (postMetaCache.has(id)) {
-          p = buildResultFromMeta(postMetaCache.get(id));
-        } else {
-          p = rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id, tags: "id:" + id, limit: 1 })
+        function apiPath() {
+          if (postMetaCache.has(id)) return buildResultFromMeta(postMetaCache.get(id));
+          return rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id, tags: "id:" + id, limit: 1 })
             .then(function (data) {
               if (!Array.isArray(data) || !data.length) return { type: null, miss: true };
               var post = null;
@@ -353,15 +394,23 @@ function parseApiResponse(raw) {
               return buildResultFromMeta(post);
             })
             .catch(function () {
-              return { type: null, miss: true };
+              return { type: null, miss: true, error: true };
             });
+        }
+        if (isOffline(id) && navigator.onLine === false) {
+          p = offlineResolve(id).then(function (r) { return r || apiPath(); });
+        } else {
+          p = apiPath().then(function (r) {
+            if (r && r.error && isOffline(id)) return offlineResolve(id).then(function (o) { return o || r; });
+            return r;
+          });
         }
         function done() { running--; pending.delete(id); pump(); }
         p.then(done, done);
         pending.set(id, p);
         if (generation === cacheGeneration) {
           p.then(function (r) {
-            if (r && !r.miss) cacheSet(id, r);
+            if (r && !r.miss) { cacheSet(id, r); warmVideo(id, r); }
           });
         }
         return p;
@@ -370,8 +419,10 @@ function parseApiResponse(raw) {
         if (id < 1 || id > MAXID) return Promise.resolve({ type: null, miss: true });
         if (cache.has(id)) { var r = cache.get(id); cacheSet(id, r); return Promise.resolve(r); }
         if (pending.has(id)) return pending.get(id);
+        // Post yang diminta user diprioritaskan di depan antrean preload
         var qi = queue.indexOf(id);
-        if (qi < 0) queue.push(id);
+        if (qi >= 0) queue.splice(qi, 1);
+        queue.unshift(id);
         var promise = new Promise(function (resolve) { queuedResolvers.set(id, resolve); });
         queuedPromises.set(id, promise);
         pending.set(id, promise);
@@ -453,34 +504,45 @@ function parseApiResponse(raw) {
           neighbors(id).forEach(schedule);
           return;
         }
-        // Mode Stream: ambil 8 post ke depan sekaligus dalam 1 request cepat
+        streamAhead = streamAhead.filter(function (k) { return k > id; });
+        streamBehind = streamBehind.filter(function (k) { return k < id; });
+        if (streamAhead.length >= 4 && (id <= 1 || streamBehind.length >= 1)) {
+          streamAhead.slice(0, 5).forEach(schedule);
+          streamBehind.slice(0, 2).forEach(schedule);
+          return;
+        }
+        var cfg = currentCfg(), exs = streamExtra(cfg, 2), exStr = exs.length ? " " + exs.join(" ") : "";
         rule34ApiFetch({
           page: "dapi", s: "post", q: "index",
-          tags: "id:>" + id + " sort:id:asc",
+          tags: "id:>" + id + " sort:id:asc" + exStr,
           limit: 8
         }).then(function (nextPosts) {
-          if (Array.isArray(nextPosts)) {
-            nextPosts.forEach(function (p) {
-              var pid = Number(p.id);
-              metaCacheSet(pid, p);
-              schedule(pid);
-            });
-          }
+          if (!Array.isArray(nextPosts)) return;
+          nextPosts.sort(function (a, b) { return Number(a.id) - Number(b.id); });
+          var ids = [];
+          nextPosts.forEach(function (po) {
+            var pid = Number(po.id);
+            metaCacheSet(pid, po);
+            if (!isBlockedPost(po, cfg)) ids.push(pid);
+          });
+          if (id === current) { streamAhead = ids; ids.slice(0, 5).forEach(schedule); }
         }).catch(function () {});
 
-        if (id > 1) {
+        if (id > 1 && !streamBehind.length) {
           rule34ApiFetch({
             page: "dapi", s: "post", q: "index",
-            tags: "id:<" + id + " sort:id:desc",
+            tags: "id:<" + id + " sort:id:desc" + exStr,
             limit: 3
           }).then(function (prevPosts) {
-            if (Array.isArray(prevPosts)) {
-              prevPosts.forEach(function (p) {
-                var pid = Number(p.id);
-                metaCacheSet(pid, p);
-                schedule(pid);
-              });
-            }
+            if (!Array.isArray(prevPosts)) return;
+            prevPosts.sort(function (a, b) { return Number(b.id) - Number(a.id); });
+            var ids = [];
+            prevPosts.forEach(function (po) {
+              var pid = Number(po.id);
+              metaCacheSet(pid, po);
+              if (!isBlockedPost(po, cfg)) ids.push(pid);
+            });
+            if (id === current) { streamBehind = ids; ids.slice(0, 2).forEach(schedule); }
           }).catch(function () {});
         }
       }
@@ -514,6 +576,160 @@ function parseApiResponse(raw) {
           });
         });
       }
+      // ===== Metadata ringan untuk grid (preview_url + tipe) - bertahan setelah reload =====
+      var thumbMeta = new Map(), thumbDirty = false, thumbSaveT = null;
+      var thumbReady = idbGet("thumbmeta_v1").then(function (raw) {
+        try {
+          if (raw) JSON.parse(raw).forEach(function (e) { if (e && validId(e[0]) && !thumbMeta.has(e[0])) thumbMeta.set(e[0], [e[1], e[2]]); });
+        } catch (e) { }
+      });
+      function tmSet(id, post) {
+        if (!post || !post.preview_url) return;
+        var cur = thumbMeta.get(id), vid = postIsVideo(post) ? 1 : 0;
+        if (cur && cur[0] === post.preview_url && cur[1] === vid) return;
+        thumbMeta.delete(id); thumbMeta.set(id, [post.preview_url, vid]);
+        if (thumbMeta.size > 15000) thumbMeta.delete(thumbMeta.keys().next().value);
+        thumbDirty = true;
+        if (!thumbSaveT) thumbSaveT = setTimeout(tmFlush, 5000);
+      }
+      function tmFlush() {
+        thumbSaveT = null;
+        if (!thumbDirty) return;
+        thumbDirty = false;
+        try {
+          var arr = [];
+          thumbMeta.forEach(function (v, k) { arr.push([k, v[0], v[1]]); });
+          idbSet("thumbmeta_v1", JSON.stringify(arr));
+        } catch (e) { }
+      }
+      // Ambil metadata post TANPA memuat gambar penuh (maks 4 paralel)
+      var metaFetchQ = [], metaFetchRun = 0;
+      function fetchThumbMeta(id) {
+        var m = postMetaCache.get(id);
+        if (m) return Promise.resolve(m);
+        return new Promise(function (resolve) { metaFetchQ.push([id, resolve]); pumpMeta(); });
+      }
+      function pumpMeta() {
+        while (metaFetchRun < 4 && metaFetchQ.length) {
+          var it = metaFetchQ.shift(); metaFetchRun++;
+          (function (id, resolve) {
+            rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id, tags: "id:" + id, limit: 1 })
+              .then(function (data) {
+                var po = null;
+                if (Array.isArray(data)) for (var i = 0; i < data.length; i++) { if (Number(data[i].id) === id) { po = data[i]; break; } }
+                if (po) metaCacheSet(id, po);
+                resolve(po);
+              })
+              .catch(function () { resolve(null); })
+              .then(function () { metaFetchRun--; pumpMeta(); });
+          })(it[0], it[1]);
+        }
+      }
+
+      // ===== Penyimpanan offline (Cache Storage + IndexedDB untuk metadata) =====
+      var OFF_CACHE = "pe-offline-v1", OFF_MAX_FILE = 60 * 1024 * 1024;
+      var offIds = new Set((jget("pe_offline_ids", []) || []).filter(validId));
+      var offThumbCache = new Map(), offBusy = false;
+      function isOffline(id) { return offIds.has(id); }
+      function saveOffIds() { jset("pe_offline_ids", Array.from(offIds)); }
+      function offKey(id, suffix) { return "/__offline/" + id + (suffix || ""); }
+      function hasCaches() { try { return typeof caches !== "undefined" && !!caches.open && (location.protocol === "http:" || location.protocol === "https:"); } catch (e) { return false; } }
+      function slimPost(po) {
+        var o = {};
+        ["id", "file_url", "sample_url", "sample", "preview_url", "tags", "rating", "score", "width", "height", "image", "duration"].forEach(function (k) { if (po[k] !== undefined) o[k] = po[k]; });
+        return o;
+      }
+      async function offlineResolve(id) {
+        try {
+          if (!hasCaches()) return null;
+          var c = await caches.open(OFF_CACHE);
+          var res = await c.match(offKey(id));
+          if (!res) return null;
+          var raw = await idbGet("off_" + id), po = { id: id };
+          try { if (raw) po = JSON.parse(raw); } catch (e) { }
+          if (po && po.file_url) metaCacheSet(id, po);
+          var blob = await res.blob();
+          var u = URL.createObjectURL(blob);
+          if (postIsVideo(po) || /^video\//.test(blob.type)) return { type: "mp4", url: u, altUrl: u, meta: po, poster: "", postId: id, offline: true };
+          var im = await loadImg(u, 15000);
+          if (!im) return null;
+          return { type: /gif/.test(blob.type) ? "gif" : "jpg", url: u, el: im, meta: po, fullUrl: po.file_url || u, postId: id, offline: true };
+        } catch (e) { return null; }
+      }
+      async function offlineThumbURL(id) {
+        if (offThumbCache.has(id)) return offThumbCache.get(id);
+        try {
+          if (!hasCaches()) return null;
+          var c = await caches.open(OFF_CACHE);
+          var res = await c.match(offKey(id, "_p"));
+          if (!res) return null;
+          var u = URL.createObjectURL(await res.blob());
+          offThumbCache.set(id, u);
+          return u;
+        } catch (e) { return null; }
+      }
+      async function saveOffline(id) {
+        if (!hasCaches()) throw new Error("Cache Storage tidak tersedia");
+        var po = await fetchThumbMeta(id);
+        if (!po || !po.file_url) throw new Error("metadata tidak ada");
+        var vid = postIsVideo(po), isGif = /\.gif(\?|$)/i.test(po.file_url);
+        var src = vid ? po.file_url : ((isGif || !po.sample || !po.sample_url) ? po.file_url : po.sample_url);
+        var res = await fetchMedia(src);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var blob = await res.blob();
+        if (blob.size > OFF_MAX_FILE) throw new Error("file terlalu besar");
+        var c = await caches.open(OFF_CACHE);
+        await c.put(offKey(id), new Response(blob, { headers: { "Content-Type": blob.type || (vid ? "video/mp4" : "image/jpeg") } }));
+        if (po.preview_url) {
+          try { var pr = await fetchMedia(po.preview_url); if (pr.ok) await c.put(offKey(id, "_p"), pr); } catch (e) { }
+        }
+        idbSet("off_" + id, JSON.stringify(slimPost(po)));
+        offIds.add(id); saveOffIds();
+      }
+      async function removeOffline(id) {
+        try {
+          if (hasCaches()) { var c = await caches.open(OFF_CACHE); await c.delete(offKey(id)); await c.delete(offKey(id, "_p")); }
+        } catch (e) { }
+        idbSet("off_" + id, null);
+        offIds.delete(id); offThumbCache.delete(id); saveOffIds();
+      }
+      async function clearOffline() {
+        var ids = Array.from(offIds);
+        try { if (hasCaches()) await caches.delete(OFF_CACHE); } catch (e) { }
+        ids.forEach(function (i) { idbSet("off_" + i, null); });
+        offIds.clear(); offThumbCache.clear(); saveOffIds();
+      }
+      async function saveOfflineMany(ids) {
+        if (offBusy) { toast("Penyimpanan offline sedang berjalan"); return; }
+        var todo = ids.filter(function (i) { return !offIds.has(i); });
+        if (!todo.length) { toast("Semua sudah tersimpan offline", "ok"); return; }
+        offBusy = true;
+        var ok = 0, fail = 0;
+        try {
+          for (var i = 0; i < todo.length; i++) {
+            toast("Offline " + (i + 1) + "/" + todo.length + "…");
+            try {
+              if (navigator.storage && navigator.storage.estimate) {
+                var est = await navigator.storage.estimate();
+                if (est.quota && est.usage && est.quota - est.usage < 60 * 1024 * 1024) { toast("Ruang penyimpanan hampir penuh, dihentikan", "bad"); break; }
+              }
+              await saveOffline(todo[i]); ok++;
+            } catch (e) { fail++; }
+          }
+        } finally { offBusy = false; }
+        toast("Offline: " + ok + " tersimpan" + (fail ? ", " + fail + " gagal" : ""), fail ? "bad" : "ok");
+        rerender();
+      }
+      async function toggleOffline(id, btn) {
+        if (isOffline(id)) { await removeOffline(id); toast("Salinan offline dihapus"); }
+        else {
+          toast("Menyimpan offline…");
+          try { await saveOffline(id); toast("Tersimpan offline", "ok"); } catch (e) { toast("Gagal menyimpan offline: " + (e.message || "error"), "bad"); }
+        }
+        if (btn) btn.innerHTML = ic(isOffline(id) ? "check" : "download") + "<span>" + (isOffline(id) ? "Tersimpan offline (hapus)" : "Simpan offline") + "</span>";
+      }
+      function autoOff(id) { if (S.autoOffline && !isOffline(id)) saveOffline(id).catch(function () { }); }
+
       function loadPlaylists(src) {
         var arr = src || jget("playlists_v1", []); if (!Array.isArray(arr)) return [];
         var out = [];
@@ -534,22 +750,26 @@ function parseApiResponse(raw) {
       // Session state persistence: save active tag/playlist/sort mode/checkpoint across page reloads
       function saveSession() {
         try {
+          var idx = activeTag ? tagPosts.indexOf(current) : -1;
+          var keepTag = !!activeTag && idx < 2000 && tagPosts.length > 0;
+          var tp = keepTag ? tagPosts.slice(0, 2000) : [];
+          var truncated = keepTag && tp.length < tagPosts.length;
           jset('pe_session', {
             current: current,
-            activeTag: activeTag,
-            activeTagsDetail: activeTagsDetail || [],
-            tagPosts: (tagPosts && tagPosts.length) ? tagPosts.slice(0, 200) : [],
-            tagCursor: tagCursor,
-            tagHasMore: tagHasMore,
+            activeTag: keepTag ? activeTag : null,
+            activeTagsDetail: keepTag ? (activeTagsDetail || []) : [],
+            tagPosts: tp,
+            tagCursor: truncated ? Math.floor(tp.length / PAGE) : tagCursor,
+            tagHasMore: truncated ? true : tagHasMore,
+            playCfg: keepTag ? playCfg : null,
             activePlaylistId: activePlaylistId,
             selectedTags: selectedTags || [],
             tagSortMode: tagSortMode,
             tagTypeFilter: tagTypeFilter,
             shuffleOn: shuffleOn,
-            playOrder: (playOrder && playOrder.length) ? playOrder.slice(0, 200) : [],
-            tagView: tagView
+            playOrder: (playOrder && playOrder.length && playOrder.length <= 2000) ? playOrder : []
           });
-        } catch(e) {}
+        } catch (e) { }
       }
       playlists = loadPlaylists();
       function restoreFromBackup() {
@@ -672,15 +892,15 @@ function parseApiResponse(raw) {
       function toggleFav() {
         var p = getPL("pl_fav");
         if (!p) { p = { id: "pl_fav", name: "Favorit", postIds: [], last: null }; playlists.unshift(p); }
-        if (isIn(p, current)) { removeFrom("pl_fav", current); toast("Dihapus dari Favorit", "bad"); }
-        else { addTo("pl_fav", current); toast("Masuk Favorit", "ok"); vibe(12); }
+        if (isIn(p, current)) { var sn = snapPlaylists(); removeFrom("pl_fav", current); undoable("Dihapus dari Favorit", sn); }
+        else { addTo("pl_fav", current); toast("Masuk Favorit", "ok"); vibe(12); autoOff(current); }
         refreshBtns(); updateChip();
         if (sheet.classList.contains("open")) rerender();
       }
       function addFav(id) {
         var p = getPL("pl_fav");
         if (!p) { p = { id: "pl_fav", name: "Favorit", postIds: [], last: null }; playlists.unshift(p); }
-        if (!isIn(p, id)) { addTo("pl_fav", id); toast("Masuk Favorit", "ok"); vibe(12); refreshBtns(); if (sheet.classList.contains("open")) rerender(); }
+        if (!isIn(p, id)) { addTo("pl_fav", id); toast("Masuk Favorit", "ok"); vibe(12); autoOff(id); refreshBtns(); if (sheet.classList.contains("open")) rerender(); }
       }
 
       var pendingEnter = null, enterTimer = null;
@@ -726,6 +946,19 @@ function parseApiResponse(raw) {
       function showStatus(msg) {
         emptyStage();
         var s = document.createElement("span"); s.id = "status"; s.textContent = msg; zoomLayer.appendChild(s);
+        stage.classList.remove("isvid");
+        if (soundBtn) soundBtn.style.display = "none";
+        resetZoom(); settleEnter();
+      }
+      function showLoadError(id) {
+        emptyStage();
+        var wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:10px";
+        var s = document.createElement("span"); s.id = "status"; s.textContent = "Gagal memuat #" + id + " (jaringan)";
+        var b = document.createElement("button"); b.className = "pill pri"; b.textContent = "Coba lagi";
+        b.onclick = function () { cache.delete(id); loadPost(id, 0); };
+        wrap.appendChild(s); wrap.appendChild(b);
+        zoomLayer.appendChild(wrap);
         stage.classList.remove("isvid");
         if (soundBtn) soundBtn.style.display = "none";
         resetZoom(); settleEnter();
@@ -779,8 +1012,7 @@ function parseApiResponse(raw) {
           if (ap && ap.last !== id && isIn(ap, id)) { ap.last = id; persistSoon(); }
         }
         if (activeTag && !activePlaylistId) {
-          if (!shuffleOn) saveTagProg(id);
-          saveTagCheckpoint(activeTagsDetail, id, tagPosts.indexOf(id));
+          scheduleCheckpoint(id);
         }
         clearTimeout(saveSessionDebounce);
         saveSessionDebounce = setTimeout(saveSession, 500);
@@ -792,6 +1024,7 @@ function parseApiResponse(raw) {
         if (id === undefined || id === null) id = Number(input.value);
         if (!validId(id)) { toast("ID harus 1 – 100000000", "bad"); input.value = current; return; }
         tries = tries || 0;
+        if (!dir) { streamAhead = []; streamBehind = []; }
         commit(id);
         var tok = ++token;
         currentURL = ""; currentType = "";
@@ -825,6 +1058,7 @@ function parseApiResponse(raw) {
         if (!r || r.cancelled) return;
         finalTok = tok; setLoading(false); clearTimeout(phTimer);
         if (r.postId && Number(r.postId) !== Number(current)) return;
+        if (r.error) { showLoadError(current); if (autoEnabled) resetAutoTimer(); return; }
         if (r.miss || !r.type) {
           var ord = activeOrder();
           if (ord && ord.length) {
@@ -865,10 +1099,11 @@ function parseApiResponse(raw) {
         }
         if (r.type === "mp4") {
           var poster = r.poster || (r.meta && (r.meta.sample_url || r.meta.preview_url)) || "";
+          releaseWarm(r);
           var el = makeVideo(current, r.url, poster, r.altUrl); setMedia(el);
           clearAutoTimer();
           if (autoEnabled) { lastLbl = "VIDEO"; autoLbl.textContent = "VIDEO"; autoFill.style.width = "100%"; }
-          var pr = el.play();
+          var pr = locked ? null : el.play();
           if (pr && pr.catch) pr.catch(function () {
             el.muted = true;
             var p2 = el.play();
@@ -878,7 +1113,7 @@ function parseApiResponse(raw) {
           setMedia(r.el);
           if (autoEnabled) resetAutoTimer();
         }
-        addHist(current);
+        addHist(current); markSeen(current);
         if (r.type !== "mp4") preloadAround(current);
       }
 
@@ -889,8 +1124,16 @@ function parseApiResponse(raw) {
           if (!ord.length) { exitPlaylist(); return false; }
           var idx = ord.indexOf(current); if (idx < 0) idx = 0;
           var ni = idx + step;
+          if (activeTag) {
+            var cfgB = currentCfg(), skipped = 0;
+            while (ni >= 0 && ni < ord.length && skipped < 30 && isBlockedPost(postMetaCache.get(ord[ni]), cfgB)) { ni += step; skipped++; }
+          }
           if (activeTag && ni >= ord.length - 3 && tagHasMore && !tagLoading) {
-            loadMoreTagPosts(activeTag);
+            loadMoreTagPosts();
+          }
+          if (activeTag && step > 0 && ni >= ord.length && (tagHasMore || tagLoading)) {
+            toast("Memuat post berikutnya…");
+            return false;
           }
           if (ni >= ord.length && autoEnabled) ni = 0;
           if (ni < 0 || ni >= ord.length) { toast(step > 0 ? "Playlist selesai" : "Awal playlist"); return false; }
@@ -900,42 +1143,14 @@ function parseApiResponse(raw) {
         if (changeBusy) return false;
         changeBusy = true;
         try {
-          var nextTargetId = null;
-          if (step > 0) {
-            var cands = [];
-            postMetaCache.forEach(function (meta, k) { if (k > current && k <= current + 5) cands.push(k); });
-            cands.sort(function (a, b) { return a - b; });
-            if (cands.length > 0) nextTargetId = cands[0];
-          } else {
-            var cands2 = [];
-            postMetaCache.forEach(function (meta, k) { if (k < current && k >= current - 5) cands2.push(k); });
-            cands2.sort(function (a, b) { return b - a; });
-            if (cands2.length > 0) nextTargetId = cands2[0];
-          }
-
-          if (!nextTargetId) {
-            var tagQuery = step > 0 ? ("id:>" + current + " sort:id:asc") : ("id:<" + current + " sort:id:desc");
-            var posts = await rule34ApiFetch({
-              page: "dapi", s: "post", q: "index",
-              tags: tagQuery,
-              limit: 4
-            });
-            if (Array.isArray(posts) && posts.length) {
-              posts.forEach(function (p) {
-                var pid = Number(p.id);
-                metaCacheSet(pid, p);
-              });
-              nextTargetId = Number(posts[0].id);
-            }
-          }
-
+          var nextTargetId = await nextStreamId(step);
           if (nextTargetId && nextTargetId >= 1 && nextTargetId <= MAXID) {
+            if (step > 0) streamBehind.unshift(current); else streamAhead.unshift(current);
             loadPost(nextTargetId, step);
             return true;
-          } else {
-            toast(step > 0 ? "Sudah mencapai post terakhir" : "Sudah mencapai post pertama");
-            return false;
           }
+          toast(step > 0 ? "Sudah mencapai post terakhir" : "Sudah mencapai post pertama");
+          return false;
         } catch (e) {
           var fallbackId = current + step;
           if (fallbackId >= 1 && fallbackId <= MAXID) {
@@ -948,6 +1163,34 @@ function parseApiResponse(raw) {
         }
       }
 
+      // Cari post berikutnya/sebelumnya di mode stream; post yang kena blacklist/AI/mode aman dilewati.
+      async function nextStreamId(step) {
+        var cfg = currentCfg();
+        var arr = step > 0 ? streamAhead : streamBehind;
+        for (var i = 0; i < arr.length; i++) {
+          var m = postMetaCache.get(arr[i]);
+          if (!m || !isBlockedPost(m, cfg)) return arr[i];
+        }
+        var from = current;
+        for (var guard = 0; guard < 6; guard++) {
+          var q = step > 0 ? ("id:>" + from + " sort:id:asc") : ("id:<" + from + " sort:id:desc");
+          var ex = streamExtra(cfg, 2);
+          if (ex.length) q += " " + ex.join(" ");
+          var posts = await rule34ApiFetch({ page: "dapi", s: "post", q: "index", tags: q, limit: 10 });
+          if (!Array.isArray(posts) || !posts.length) return null;
+          posts.sort(function (a, b) { return step > 0 ? Number(a.id) - Number(b.id) : Number(b.id) - Number(a.id); });
+          posts.forEach(function (po) { metaCacheSet(Number(po.id), po); });
+          var ok = posts.filter(function (po) { return !isBlockedPost(po, cfg); });
+          if (ok.length) {
+            var rest = ok.slice(1).map(function (po) { return Number(po.id); });
+            if (step > 0) streamAhead = rest; else streamBehind = rest;
+            return Number(ok[0].id);
+          }
+          from = Number(posts[posts.length - 1].id);
+        }
+        return null;
+      }
+
       var randTries = 0;
       async function randomPost() {
         randTries = 0;
@@ -955,15 +1198,21 @@ function parseApiResponse(raw) {
         if (ord && ord.length) { loadPost(ord[Math.floor(Math.random() * ord.length)], 0); return; }
         setLoading(true);
         try {
-          var posts = await rule34ApiFetch({ page: "dapi", s: "post", q: "index", tags: "sort:random", limit: 1 });
-          if (Array.isArray(posts) && posts.length) {
-            var rp = posts[0];
-            var rpid = Number(rp.id);
-            metaCacheSet(rpid, rp);
-            loadPost(rpid, 0);
-            return;
+          var cfg = currentCfg();
+          for (var k = 0; k < 4; k++) {
+            var ex = streamExtra(cfg, 3);
+            var posts = await rule34ApiFetch({ page: "dapi", s: "post", q: "index", tags: "sort:random" + (ex.length ? " " + ex.join(" ") : ""), limit: 6 });
+            if (Array.isArray(posts)) {
+              var ok = posts.filter(function (po) { return po && po.id && !isBlockedPost(po, cfg); });
+              if (ok.length) {
+                var rpid = Number(ok[0].id);
+                metaCacheSet(rpid, ok[0]);
+                loadPost(rpid, 0);
+                return;
+              }
+            }
           }
-        } catch(e) {}
+        } catch (e) { }
         tryRandom();
       }
       function tryRandom() {
@@ -1018,7 +1267,7 @@ function parseApiResponse(raw) {
           autoTimer = null;
           if (zoom.scale > 1.02 || overlayOpen() || document.hidden) { resetAutoTimer(); return; }
           change(1).then(function (ok) {
-            if (!ok && current >= MAXID) stopAuto();
+            if (!ok) { if (current >= MAXID) stopAuto(); else if (autoEnabled && !autoTimer) resetAutoTimer(); }
           });
         }, iv);
         tickBar(iv);
@@ -1173,6 +1422,7 @@ function parseApiResponse(raw) {
           clearSwipeStyles(); clearHints();
           if (sw.dbl) {
             g.lastTap = 0;
+            lastHeart = now();
             showHeartPop(sw.sx, sw.sy);
             addFav(current);
           } else { g.lastTap = now(); g.lx = sw.sx; g.ly = sw.sy; }
@@ -1195,28 +1445,39 @@ function parseApiResponse(raw) {
       stage.addEventListener("touchmove", onTouchMove, { passive: true });
       stage.addEventListener("touchend", onTouchEnd, { passive: true });
       stage.addEventListener("touchcancel", onTouchCancel, { passive: true });
-      var lastWheel = 0;
+      var lastWheel = 0, lastWheelEv = 0;
       stage.addEventListener("wheel", function (e) {
         if (zoom.scale > 1.02) return;
         e.preventDefault();
-        if (now() - lastWheel < 300) return; lastWheel = now();
+        var t = now(), gap = t - lastWheelEv; lastWheelEv = t;
+        if (gap < 140) return; // lanjutan gesture / inertia trackpad: abaikan
+        if (t - lastWheel < 300) return; lastWheel = t;
         change(e.deltaY > 0 ? 1 : -1);
       }, { passive: false });
+      stage.addEventListener("dblclick", function (e) {
+        if (e.target && e.target.closest && e.target.closest("button")) return;
+        if (isVideo()) return;
+        if (now() - lastHeart < 600) return;
+        lastHeart = now();
+        showHeartPop(e.clientX, e.clientY);
+        addFav(current);
+      });
 
       function swipeDelete() {
         if (activePlaylistId) {
           var p = getPL(activePlaylistId); if (!p) return;
           if (!isIn(p, current)) { toast("Post ini tidak ada di " + p.name); return; }
           dialog("Hapus post <b>" + current + "</b> dari playlist <b>" + esc(p.name) + "</b>?", { ok: "Hapus", danger: true }, function () {
-            removeFrom(p.id, current); toast("Dihapus dari " + p.name, "bad"); refreshBtns(); updateChip();
+            var snap = snapPlaylists(); removeFrom(p.id, current); undoable("Dihapus dari " + p.name, snap); refreshBtns(); updateChip();
             if (!p.postIds.length) exitPlaylist();
           });
         } else {
           var cont = playlists.filter(function (p) { return isIn(p, current); });
           if (!cont.length) { toast("Post #" + current + " belum di playlist mana pun. Swipe kanan untuk simpan.", "bad"); return; }
           dialog("Hapus post <b>" + current + "</b> dari <b>" + cont.length + " playlist</b>?", { ok: "Hapus", danger: true }, function () {
+            var snap2 = snapPlaylists();
             cont.forEach(function (p) { removeFrom(p.id, current); });
-            toast("Dihapus dari semua playlist", "bad"); refreshBtns();
+            undoable("Dihapus dari semua playlist", snap2); refreshBtns();
           });
         }
       }
@@ -1340,12 +1601,29 @@ function parseApiResponse(raw) {
             sec.appendChild(el("div", "infotag-title", "Tags (" + tagTokens.length + ")"));
             var chips = el("div", "infotag-chips");
             tagTokens.forEach(function (tVal) {
+              var wrap = el("span", "tagchip-wrap");
               var chip = el("button", "tagchip", tVal);
               chip.onclick = function () {
                 closeInfo();
                 openTag(tVal);
               };
-              chips.appendChild(chip);
+              var bb = el("button", "tagchip blkb");
+              bb.innerHTML = ic("ban");
+              bb.setAttribute("aria-label", "Sembunyikan tag " + tVal);
+              function paintBlk() {
+                var on = blacklistTags.indexOf(normTag(tVal)) !== -1;
+                wrap.classList.toggle("blocked", on);
+                bb.title = on ? "Tampilkan lagi tag ini" : "Sembunyikan tag ini";
+              }
+              bb.onclick = function (e) {
+                e.stopPropagation();
+                var wasOn = blacklistTags.indexOf(normTag(tVal)) !== -1;
+                toggleTagBlock(tVal); paintBlk();
+                toast(wasOn ? "Tag ditampilkan lagi: " + tVal : "Disembunyikan: " + tVal, wasOn ? "ok" : "bad");
+              };
+              paintBlk();
+              wrap.appendChild(chip); wrap.appendChild(bb);
+              chips.appendChild(wrap);
             });
             sec.appendChild(chips);
             infoTagsEl.appendChild(sec);
@@ -1365,7 +1643,7 @@ function parseApiResponse(raw) {
                 if (!Array.isArray(suggs) || !suggs.length) return;
                 var filtered = suggs.filter(function (item) { return Number(item.id) !== id; }).slice(0, 8);
                 if (!filtered.length) return;
-                infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">Post serupa (' + chosenTag + ')</div>';
+                infoSuggEl.innerHTML = '<div class="infotag-title" style="margin-bottom:6px">Post serupa (' + esc(chosenTag) + ')</div>';
                 var grid = el("div", "sugg-grid");
                 filtered.forEach(function (item) {
                   var sid = Number(item.id);
@@ -1380,6 +1658,13 @@ function parseApiResponse(raw) {
               }).catch(function () { });
             }
           }
+          // aksi cepat: simpan offline
+          var oRow = el("div", "arow"); oRow.style.marginTop = "6px";
+          var ob = el("button", "pill");
+          ob.innerHTML = ic(isOffline(id) ? "check" : "download") + "<span>" + (isOffline(id) ? "Tersimpan offline (hapus)" : "Simpan offline") + "</span>";
+          ob.onclick = function () { toggleOffline(id, ob); };
+          oRow.appendChild(ob);
+          infoTagsEl.appendChild(oRow);
         }).catch(function (err) {
           if (infoToken === infoRequestToken && infoBackdrop.classList.contains("open")) infoMetaEl.textContent = "Detail post tidak tersedia";
         });
@@ -1433,45 +1718,109 @@ function parseApiResponse(raw) {
       }
 
       // ===== Progress tag (termasuk kombinasi multi-tag) =====
-      function tagProgKey(tags) {
-        var t = (tags || []).map(normTag).filter(Boolean).sort().join("+") || "__all__";
-        return t + "|" + tagSortMode + "|" + tagTypeFilter;
+      function knownMax() { var km = parseInt(lsGet("knownMaxId"), 10); return (isFinite(km) && km > 1000) ? km : 0; }
+      function currentCfg() {
+        return {
+          sort: tagSortMode === "views" ? "popular" : tagSortMode,
+          type: (tagTypeFilter === undefined ? null : tagTypeFilter),
+          ai: !!S.filterAi,
+          block: blacklistTags.slice(),
+          safe: !!S.safeMode
+        };
       }
-      function getTagProg(tags) {
-        var all = jget("pe_tagprog", {}), r = all[tagProgKey(tags)];
+      function postIsVideo(po) {
+        var u = (po && po.file_url) || "";
+        return !!(u.match(/\.(mp4|webm|mov)(\?|$)/i) || (po && po.image && String(po.image).match(/\.(mp4|webm|mov)$/i)));
+      }
+      // Blacklist, filter AI, dan mode aman diterapkan di sisi klien (juga untuk tag di luar batas query server)
+      function isBlockedPost(po, cfg) {
+        if (!po) return false;
+        cfg = cfg || currentCfg();
+        var tg = " " + (po.tags || "") + " ";
+        var bl = cfg.block || [];
+        for (var i = 0; i < bl.length; i++) { if (bl[i] && tg.indexOf(" " + bl[i] + " ") !== -1) return true; }
+        if (cfg.ai && (tg.indexOf(" ai_generated ") !== -1 || tg.indexOf(" ai-generated ") !== -1 || tg.indexOf(" ai_assisted ") !== -1)) return true;
+        if (cfg.safe && po.rating && po.rating !== "safe" && po.rating !== "general") return true;
+        return false;
+      }
+      function streamExtra(cfg, maxN) {
+        var out = [];
+        if (cfg.safe) out.push("rating:safe");
+        if (cfg.ai) out.push("-ai_generated");
+        (cfg.block || []).forEach(function (b) { if (b) out.push("-" + b); });
+        return out.slice(0, maxN);
+      }
+      // Batas query Rule34 = 4 tag. Urutan prioritas: tag pilihan + sort, lalu tipe/aman/AI/blacklist.
+      // Apa pun yang tidak muat di server tetap disaring di klien.
+      function buildTagQuery(tags, cfg) {
+        var user = [];
+        (tags || []).forEach(function (t) { var n = String(t || "").trim().replace(/\s+/g, "_"); if (n) user.push(n); });
+        var sortTags = [];
+        if (cfg.sort === "popular" || cfg.sort === "top") sortTags.push("sort:score:desc");
+        else if (cfg.sort === "hot") {
+          sortTags.push("sort:score:desc");
+          var km = knownMax(); if (km > HOT_WINDOW) sortTags.push("id:>" + (km - HOT_WINDOW));
+        } else if (cfg.sort === "oldest") sortTags.push("sort:id:asc");
+        var room = Math.max(0, QLIMIT - sortTags.length);
+        var q = user.slice(0, room).concat(sortTags);
+        var client = user.slice(room).filter(function (t) { return t.indexOf(":") < 0 && t.indexOf("*") < 0; });
+        function free() { return QLIMIT - q.length; }
+        if (cfg.type === 1 && free() > 0) q.push("video");
+        else if (cfg.type === 0 && free() > 0) q.push("-video");
+        if (cfg.safe && free() > 0) q.push("rating:safe");
+        if (cfg.ai && free() > 0) q.push("-ai_generated");
+        (cfg.block || []).forEach(function (b) { if (b && free() > 0) q.push("-" + b); });
+        return { q: q.join(" "), client: client };
+      }
+      async function fetchTagPage(tags, cursor, cfg) {
+        var bq = buildTagQuery(tags, cfg);
+        var params = { page: "dapi", s: "post", q: "index", limit: PAGE, pid: cursor };
+        if (bq.q) params.tags = bq.q;
+        var data = await rule34ApiFetch(params);
+        var raw = Array.isArray(data) ? data : [];
+        var kept = [];
+        raw.forEach(function (it) {
+          if (!it || !it.id) return;
+          metaCacheSet(Number(it.id), it);
+          if (isBlockedPost(it, cfg)) return;
+          if (cfg.type === 1 && !postIsVideo(it)) return;
+          if (cfg.type === 0 && postIsVideo(it)) return;
+          if (bq.client.length) {
+            var tg = " " + (it.tags || "") + " ";
+            for (var i = 0; i < bq.client.length; i++) { if (tg.indexOf(" " + bq.client[i] + " ") === -1) return; }
+          }
+          kept.push(it);
+        });
+        return { raw: raw, kept: kept };
+      }
+
+      // ===== Progress tag (termasuk kombinasi multi-tag). Satu sistem: checkpoint =====
+      function tagProgKey(tags, cfg) {
+        cfg = cfg || currentCfg();
+        var t = (tags || []).map(normTag).filter(Boolean).sort().join("+") || "__all__";
+        return t + "|" + cfg.sort + "|" + cfg.type;
+      }
+      function getTagProg(tags, cfg) {
+        var all = jget("pe_tagprog", {}), r = all[tagProgKey(tags, cfg)];
         return r && validId(r.id) ? r : null;
       }
-      function saveTagProg(id) {
-        if (!validId(id)) return;
-        var all = jget("pe_tagprog", {});
-        all[tagProgKey(activeTagsDetail)] = { id: id, t: Date.now() };
-        var keys = Object.keys(all);
-        if (keys.length > 100) {
-          keys.sort(function (x, y) { return all[x].t - all[y].t; });
-          keys.slice(0, keys.length - 100).forEach(function (k) { delete all[k]; });
-        }
-        jset("pe_tagprog", all);
+      function clearTagProg(tags, cfg) {
+        var all = jget("pe_tagprog", {}); delete all[tagProgKey(tags, cfg)]; jset("pe_tagprog", all);
       }
-      function clearTagProg(tags) {
-        var all = jget("pe_tagprog", {}); delete all[tagProgKey(tags)]; jset("pe_tagprog", all);
-      }
-      // ===== Tag Checkpoint System =====
       function getTagCheckpoints() {
         return jget("pe_tag_checkpoints", {});
       }
-      function getTagCheckpoint(tags) {
+      function getTagCheckpoint(tags, cfg) {
         var cpMap = getTagCheckpoints();
-        var key = tagProgKey(tags);
-        return cpMap[key] || null;
+        return cpMap[tagProgKey(tags, cfg)] || null;
       }
-      function saveTagCheckpoint(tags, postId, postIndex) {
+      function saveTagCheckpoint(tags, postId, postIndex, cfg) {
         if (!validId(postId)) return;
-        var key = tagProgKey(tags);
+        var key = tagProgKey(tags, cfg);
         var cpMap = getTagCheckpoints();
-        var idx = typeof postIndex === "number" ? postIndex : tagPosts.indexOf(postId);
         cpMap[key] = {
           lastId: postId,
-          lastIndex: idx >= 0 ? idx : 0,
+          lastIndex: (typeof postIndex === "number" && postIndex >= 0) ? postIndex : 0,
           updatedAt: Date.now()
         };
         var keys = Object.keys(cpMap);
@@ -1481,33 +1830,50 @@ function parseApiResponse(raw) {
         }
         jset("pe_tag_checkpoints", cpMap);
       }
-      function clearTagCheckpoint(tags) {
+      function clearTagCheckpoint(tags, cfg) {
         var cpMap = getTagCheckpoints();
-        var key = tagProgKey(tags);
+        var key = tagProgKey(tags, cfg);
         if (cpMap[key]) {
           delete cpMap[key];
           jset("pe_tag_checkpoints", cpMap);
         }
       }
+      // Posisi terakhir: checkpoint baru, atau data lama (pe_tagprog) bila belum ada
+      function getResume(tags, cfg) {
+        var cp = getTagCheckpoint(tags, cfg);
+        if (cp && validId(cp.lastId)) return { id: cp.lastId, index: cp.lastIndex };
+        var pr = getTagProg(tags, cfg);
+        if (pr && validId(pr.id)) return { id: pr.id, index: -1 };
+        return null;
+      }
+      var cpTimer = null, cpPendingId = null;
+      function scheduleCheckpoint(id) { cpPendingId = id; clearTimeout(cpTimer); cpTimer = setTimeout(flushCheckpoint, 400); }
+      function flushCheckpoint() {
+        clearTimeout(cpTimer);
+        var id = cpPendingId; cpPendingId = null;
+        if (!id || !activeTag || activePlaylistId) return;
+        saveTagCheckpoint(activeTagsDetail, id, tagPosts.indexOf(id), playCfg);
+      }
 
       var tagResuming = false;
       async function resumeTag(tags) {
-        var pr = getTagProg(tags); if (!pr || tagResuming) return;
+        var cp = getResume(tags); if (!cp || tagResuming) return;
         tagResuming = true;
         try {
           var guard = 0;
-          toast("Mencari posisi terakhir #" + pr.id + "…");
-          while (tagPosts.indexOf(pr.id) === -1 && tagHasMore && guard++ < 60) {
-            if (tagLoading) { await new Promise(function (r) { setTimeout(r, 150); }); continue; }
+          toast("Mencari posisi terakhir #" + cp.id + "…");
+          while (!bSet.has(cp.id) && bHasMore && guard++ < 150) {
+            if (bLoading) { await sleep(150); continue; }
             await loadTagDetail(tags, false);
           }
-          if (tagPosts.indexOf(pr.id) !== -1) startTag(tags, pr.id, false);
+          if (bSet.has(cp.id)) startTag(tags, cp.id, false);
           else { toast("Posisi tidak ditemukan, mulai dari awal", "bad"); startTag(tags, null, false); }
         } finally { tagResuming = false; }
       }
 
+      // Memutar daftar yang sedang ditelusuri (browse) -> disalin ke state putar agar grid lain tidak mengubah urutan putar
       function startTag(tags, startId, shuffle) {
-        if (!tagPosts.length) { toast("Belum ada post untuk tag ini", "bad"); return; }
+        if (!bPosts.length) { toast("Belum ada post untuk tag ini", "bad"); return; }
         if (!activePlaylistId && !activeTag) returnId = current;
         if (Array.isArray(tags)) {
           activeTagsDetail = tags.slice();
@@ -1516,17 +1882,22 @@ function parseApiResponse(raw) {
           activeTagsDetail = [tags];
           activeTag = tags;
         }
+        ++tagRequestToken;
+        tagPosts = bPosts.slice(); tagSet = new Set(bSet); tagCursor = bCursor; tagHasMore = bHasMore; tagLoading = false;
+        playCfg = currentCfg();
         activePlaylistId = null;
         shuffleOn = !!shuffle;
         if (shuffleOn) {
           playOrder = shuffleArr(tagPosts.slice());
-          if (startId && tagPosts.indexOf(startId) !== -1) {
+          if (startId && tagSet.has(startId)) {
             playOrder.splice(playOrder.indexOf(startId), 1);
             playOrder.unshift(startId);
           }
         }
-        var ord = activeOrder(), target = startId || ord[0];
-        if (!activeTagsDetail.length && !activePlaylistId) { activeTag = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" ? "Top Rated" : (tagSortMode === "views" ? "Most Viewed" : "Terbaru")); }
+        var ord = activeOrder(), target = (startId && tagSet.has(startId)) ? startId : ord[0];
+        if (!activeTagsDetail.length) {
+          activeTag = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" || tagSortMode === "views" ? "Top Rated" : (tagSortMode === "oldest" ? "Terlama" : "Terbaru"));
+        }
         closeSheet();
         loadPost(target, 0);
         toast((shuffleOn ? "Acak Tag: " : "Tag: ") + activeTag, "ok");
@@ -1803,111 +2174,74 @@ function parseApiResponse(raw) {
         return alphaTagCache[key];
       }
 
+      // Memuat halaman ke state BROWSE (grid). State putar (tagPosts) tidak tersentuh.
       async function loadTagDetail(tags, reset) {
-        if (Array.isArray(tags)) {
-          activeTagsDetail = tags.slice();
-        } else if (typeof tags === "string") {
-          activeTagsDetail = [tags];
-        }
-        if (reset) {
-          ++tagRequestToken;
-          tagPosts = [];
-          tagCursor = 0;
-          tagHasMore = true;
-          tagLoading = false;
-        }
-        if (!tagHasMore || tagLoading) return;
-        var requestToken = tagRequestToken, requestTags = activeTagsDetail.slice(), requestCursor = Number(tagCursor) || 0;
-        tagLoading = true;
+        if (Array.isArray(tags)) bTags = tags.slice();
+        else if (typeof tags === "string") bTags = [tags];
+        if (reset) { ++bToken; bPosts = []; bSet = new Set(); bCursor = 0; bHasMore = true; bLoading = false; }
+        if (!bHasMore || bLoading) return;
+        var myTok = bToken, myTags = bTags.slice(), cfg = currentCfg();
+        bLoading = true;
         rerender();
         try {
-          var queryTags = [];
-          if (activeTagsDetail && activeTagsDetail.length) {
-            activeTagsDetail.forEach(function (t) {
-              if (t) queryTags.push(t.trim().replace(/\s+/g, "_"));
+          var added = 0, tries = 0;
+          while (bHasMore && added < 20 && tries++ < 4) {
+            var res = await fetchTagPage(myTags, bCursor, cfg);
+            if (myTok !== bToken) return;
+            res.kept.forEach(function (item) {
+              var n = Number(item.id);
+              if (!bSet.has(n)) { bSet.add(n); bPosts.push(n); added++; }
             });
+            bCursor += 1;
+            if (res.raw.length < PAGE) bHasMore = false;
           }
-          if (tagSortMode === "popular" || tagSortMode === "top" || tagSortMode === "hot" || tagSortMode === "views") {
-            queryTags.push("sort:score:desc");
-          } else if (tagSortMode === "oldest") {
-            queryTags.push("sort:id:asc");
-          }
-
-          if (tagTypeFilter === 1) {
-            queryTags.push("video");
-          } else if (tagTypeFilter === 0) {
-            queryTags.push("-video");
-          }
-
-          if (S.filterAi) {
-            queryTags.push("-ai_generated");
-          }
-
-          if (blacklistTags.length > 0) {
-            blacklistTags.forEach(function (bt) {
-              if (bt) queryTags.push("-" + bt.trim().replace(/\s+/g, "_"));
-            });
-          }
-
-          if (queryTags.length > 4) {
-            // Rule34 API limit: maksimal 4 tag per request agar query tidak ditolak
-            queryTags = queryTags.slice(0, 4);
-          }
-          var tagsParam = queryTags.join(" ").trim();
-          var params = {
-            page: "dapi",
-            s: "post",
-            q: "index",
-            limit: 40,
-            pid: requestCursor
-          };
-          if (tagsParam) params.tags = tagsParam;
-
-          var data = await rule34ApiFetch(params);
-          if (requestToken !== tagRequestToken || tagLabel(requestTags) !== tagLabel(activeTagsDetail)) return;
-          var rawItems = Array.isArray(data) ? data : [];
-          if (rawItems.length > 0) {
-            rawItems.forEach(function (item) {
-              if (item && item.id) {
-                var numId = Number(item.id);
-                metaCacheSet(numId, item);
-                if (tagPosts.indexOf(numId) === -1) {
-                  tagPosts.push(numId);
-                }
-              }
-            });
-            tagCursor = requestCursor + 1;
-          }
-          if (rawItems.length < 40) tagHasMore = false;
         } catch (err) {
-          if (requestToken === tagRequestToken) toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
+          if (myTok === bToken) toast("Gagal memuat post: " + (err.message || "koneksi"), "bad");
         } finally {
-          if (requestToken === tagRequestToken) { tagLoading = false; rerender(); }
+          if (myTok === bToken) { bLoading = false; rerender(); }
         }
       }
 
+      // Memuat halaman berikutnya ke state PUTAR (dipanggil saat hampir habis di mode tag)
       async function loadMoreTagPosts() {
-        await loadTagDetail(activeTagsDetail, false);
-        if (activeTag) {
-          updateChip();
+        if (!activeTag || tagLoading || !tagHasMore) return;
+        var myTok = tagRequestToken, tags = activeTagsDetail.slice(), cfg = playCfg || currentCfg();
+        tagLoading = true;
+        try {
+          var added = 0, tries = 0;
+          while (tagHasMore && added < 20 && tries++ < 4) {
+            var res = await fetchTagPage(tags, tagCursor || 0, cfg);
+            if (myTok !== tagRequestToken) return;
+            res.kept.forEach(function (item) {
+              var n = Number(item.id);
+              if (!tagSet.has(n)) { tagSet.add(n); tagPosts.push(n); added++; }
+            });
+            tagCursor = (tagCursor || 0) + 1;
+            if (res.raw.length < PAGE) tagHasMore = false;
+          }
+        } catch (err) {
+          if (myTok === tagRequestToken) toast("Gagal memuat post berikutnya", "bad");
+        } finally {
+          if (myTok === tagRequestToken) tagLoading = false;
         }
+        if (activeTag) updateChip();
       }
 
       function saveTagAsPlaylist(tagTitle) {
-        if (!tagPosts.length) { toast("Tidak ada post untuk disimpan", "bad"); return; }
+        if (!bPosts.length) { toast("Tidak ada post untuk disimpan", "bad"); return; }
         var plName = "Tag: " + tagTitle;
         var existing = null;
-        playlists.forEach(function (p) { if (p.name.toLowerCase() === plName.toLowerCase()) existing = p; });
+        playlists.forEach(function (pl) { if (pl.name.toLowerCase() === plName.toLowerCase()) existing = pl; });
         if (existing) {
           var added = 0;
-          tagPosts.forEach(function (id) { if (!isIn(existing, id)) { existing.postIds.push(id); added++; } });
+          bPosts.forEach(function (id) { if (!isIn(existing, id)) { existing.postIds.push(id); added++; } });
           persist();
           toast("Ditambahkan " + added + " post ke " + existing.name, "ok");
         } else {
-          var newPl = { id: genId(), name: plName, postIds: tagPosts.slice(), last: null };
+          var newPl = { id: genId(), name: plName, postIds: bPosts.slice(), last: null };
           playlists.push(newPl);
           persist();
-          toast("Playlist '" + plName + "' dibuat (" + tagPosts.length + " post)", "ok");
+          toast("Playlist '" + plName + "' dibuat (" + bPosts.length + " post)", "ok");
         }
         refreshBtns();
       }
@@ -1925,7 +2259,8 @@ function parseApiResponse(raw) {
       }
       function filterSummary() {
         var a = [];
-        if (tagSortMode === "popular") a.push("Terpopuler"); else if (tagSortMode === "oldest") a.push("Terlama");
+        if (tagSortMode === "popular" || tagSortMode === "views") a.push("Terpopuler"); else if (tagSortMode === "hot") a.push("Hot"); else if (tagSortMode === "oldest") a.push("Terlama");
+        if (S.safeMode) a.push("Mode aman");
         if (tagTypeFilter === 1) a.push("Video"); else if (tagTypeFilter === 0) a.push("Gambar");
         if (S.filterAi) a.push("Tanpa AI");
         if (blacklistTags.length) a.push(blacklistTags.length + " tag disembunyikan");
@@ -2273,20 +2608,19 @@ function parseApiResponse(raw) {
       }
       function renderTagDetailView() {
         var b = sheetBody;
-        var titleStr = activeTagsDetail.length ? activeTagsDetail.join(" + ") : "Semua post";
+        var titleStr = bTags.length ? bTags.join(" + ") : "Semua post";
         var head = el("div", "tdhead");
         head.appendChild(el("div", "tdtitle", titleStr));
         var sm = filterSummary();
-        head.appendChild(el("div", "tdsub", tagPosts.length + " post" + (sm.length ? " · " + sm.join(" · ") : "")));
+        head.appendChild(el("div", "tdsub", bPosts.length + (bHasMore ? "+" : "") + " post" + (sm.length ? " · " + sm.join(" · ") : "")));
         b.appendChild(head);
 
         var row = el("div", "arow");
-        var tagsNow = activeTagsDetail.slice();
-        var cp = getTagCheckpoint(tagsNow) || getTagProg(tagsNow);
-        if (cp && validId(cp.lastId || cp.id)) {
-          var resumePostId = cp.lastId || cp.id;
-          var posLabel = (cp.lastIndex !== undefined && cp.lastIndex >= 0) ? " (post #" + (cp.lastIndex + 1) + ")" : "";
-          row.appendChild(ipill("play", "Lanjut #" + resumePostId + posLabel, "pri", function () { resumeTag(tagsNow); }));
+        var tagsNow = bTags.slice();
+        var cp = getResume(tagsNow);
+        if (cp) {
+          var posLabel = cp.index >= 0 ? " (post #" + (cp.index + 1) + ")" : "";
+          row.appendChild(ipill("play", "Lanjut #" + cp.id + posLabel, "pri", function () { resumeTag(tagsNow); }));
           row.appendChild(ipill("refresh", "Mulai dari #1", "", function () {
             clearTagCheckpoint(tagsNow);
             clearTagProg(tagsNow);
@@ -2303,12 +2637,16 @@ function parseApiResponse(raw) {
 
         var grid = el("div", "grid");
         b.appendChild(grid);
-        if (!tagPosts.length && !tagLoading) grid.appendChild(el("div", "empty", "Tidak ada post yang cocok. Coba ubah Filter atau tag."));
-        tagPosts.forEach(function (id) {
-          grid.appendChild(thumb(id, function () { startTag(activeTagsDetail, id, false); }));
+        if (!bPosts.length && !bLoading) grid.appendChild(el("div", "empty", "Tidak ada post yang cocok. Coba ubah Filter atau tag."));
+        bPosts.forEach(function (id) {
+          grid.appendChild(thumb(id, function () { startTag(bTags, id, false); }));
         });
-        if (tagLoading) grid.appendChild(el("div", "empty", "Memuat post…"));
-        else if (tagHasMore && tagPosts.length > 0) grid.appendChild(pill("Muat 30 lagi", "more", function () { loadMoreTagPosts(); }));
+        if (bLoading) grid.appendChild(el("div", "empty", "Memuat post…"));
+        else if (bHasMore && bPosts.length > 0) {
+          var mb = pill("Muat lagi", "more", function () { loadTagDetail(bTags, false); });
+          grid.appendChild(mb);
+          autoMore(mb);
+        }
       }
       function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = lead(txt); return e; }
       function pill(txt, cls, fn) { var b = el("button", "pill " + (cls || ""), txt); b.onclick = fn; return b; }
@@ -2347,12 +2685,31 @@ function parseApiResponse(raw) {
           resetSel(); renderSheet();
         });
       });
-      function rerender() { var st = sheetBody.scrollTop; renderSheet(); sheetBody.scrollTop = st; }
+      function rerender() { if (!sheet.classList.contains("open")) return; var st = sheetBody.scrollTop; renderSheet(); sheetBody.scrollTop = st; }
+      var moreObs = null, thumbObs = null;
+      function autoMore(btn) {
+        if (typeof IntersectionObserver === "undefined") return;
+        if (!moreObs) moreObs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) { moreObs.unobserve(en.target); en.target.click(); } });
+        }, { root: sheetBody, rootMargin: "240px" });
+        moreObs.observe(btn);
+      }
+      function observeThumb(d) {
+        if (typeof IntersectionObserver === "undefined") { if (d._load) d._load(); return; }
+        if (!thumbObs) thumbObs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) { thumbObs.unobserve(en.target); var f = en.target._load; en.target._load = null; if (f) f(); }
+          });
+        }, { root: sheetBody, rootMargin: "300px" });
+        thumbObs.observe(d);
+      }
       function renderSheet() {
         var labelMap = { tags: "Tag", playlist: "Koleksi", history: "Riwayat", settings: "Setelan" };
         sheet.setAttribute("aria-label", "Panel " + (labelMap[sheetTab] || ""));
         Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === sheetTab); });
         sheetBackBtn.disabled = !((sheetTab === "playlist" && plView === "detail") || (sheetTab === "tags" && tagView === "detail"));
+        if (moreObs) moreObs.disconnect();
+        if (thumbObs) thumbObs.disconnect();
         sheetBody.innerHTML = "";
         if (sheetTab === "tags") renderTagsView();
         else if (sheetTab === "playlist") plView === "list" ? renderPlList() : renderPlDetail();
@@ -2362,23 +2719,42 @@ function parseApiResponse(raw) {
       function thumb(id, onclick) {
         var d = el("div", "thumb");
         var im = new Image(); im.loading = "lazy"; im.decoding = "async"; im.alt = "";
-        var meta = postMetaCache.get(id);
-        if (meta && meta.preview_url) {
-          im.src = meta.preview_url;
-        } else {
-          get(id).then(function (r) {
-            if (r && r.meta && r.meta.preview_url && !im.src) {
-              im.src = r.meta.preview_url;
-            }
-          });
+        var meta = postMetaCache.get(id), tm = thumbMeta.get(id);
+        var url = (meta && meta.preview_url) || (tm && tm[0]) || "";
+        var vid = meta ? postIsVideo(meta) : !!(tm && tm[1]);
+        function markNo() { if (im.parentNode) im.parentNode.removeChild(im); d.classList.add("nothumb"); }
+        function addVidBadge(po) {
+          if (d._vb) return; d._vb = 1;
+          d.appendChild(el("span", "vid-badge", po && po.duration ? po.duration + "s" : "VIDEO"));
         }
-        im.onerror = function () { if (im.parentNode) im.parentNode.removeChild(im); d.classList.add("nothumb"); };
+        im.onerror = function () {
+          if (isOffline(id) && !d._off) {
+            d._off = 1;
+            offlineThumbURL(id).then(function (u) { if (u) im.src = u; else markNo(); });
+            return;
+          }
+          markNo();
+        };
         d.appendChild(im); d.appendChild(el("span", "tid", "#" + id));
-        var isVid = meta && (meta.type === 1 || (meta.file_url && meta.file_url.match(/\.(mp4|webm|mov)(\?|$)/i)));
-        if (isVid) {
-          var vb = el("span", "vid-badge", meta.duration ? meta.duration + "s" : "VIDEO");
-          d.appendChild(vb);
+        if (url) im.src = url;
+        else {
+          // Metadata belum ada: ambil ringan (tanpa gambar penuh) hanya saat thumbnail terlihat di layar
+          d._load = function () {
+            thumbReady.then(function () {
+              var t2 = thumbMeta.get(id);
+              if (t2 && t2[0]) { im.src = t2[0]; if (t2[1]) addVidBadge(null); return; }
+              if (isOffline(id) && navigator.onLine === false) { im.onerror(); return; }
+              fetchThumbMeta(id).then(function (po) {
+                if (po && po.preview_url) { im.src = po.preview_url; if (postIsVideo(po)) addVidBadge(po); }
+                else markNo();
+              });
+            });
+          };
+          observeThumb(d);
         }
+        if (vid) addVidBadge(meta);
+        if (S.markSeen !== false && seenSet.has(id)) d.classList.add("seen");
+        if (isOffline(id)) { var ob = el("span", "off-badge"); ob.innerHTML = ic("download"); d.appendChild(ob); }
         if (id === current) d.classList.add("act");
         d.onclick = onclick; return d;
       }
@@ -2442,6 +2818,7 @@ function parseApiResponse(raw) {
           r2.appendChild(ipill(sortAsc ? "arrowUp" : "arrowDown", "Urut ID", "", function () { ids.sort(function (a, b) { return sortAsc ? a - b : b - a; }); sortAsc = !sortAsc; persist(); rerender(); }));
           r2.appendChild(ipill("shuffle", "Kocok", "", function () { shuffleArr(ids); persist(); rerender(); }));
           r2.appendChild(ipill("download", "ZIP", "", function () { zipPlaylist(p, ids); }));
+          r2.appendChild(ipill("layers", "Offline", "", function () { saveOfflineMany(ids.slice()); }));
           r2.appendChild(ipill("edit", "Nama", "", function () { renamePlaylist(p.id); }));
           sheetBody.appendChild(r2);
           sheetBody.appendChild(el("div", "selinfo", p.name + "  ·  " + ids.length + " post"));
@@ -2469,6 +2846,7 @@ function parseApiResponse(raw) {
           a2.appendChild(ipill("copy", "Salin", "", function () { pickFor(p, false); }));
           a2.appendChild(ipill("arrowRight", "Pindah", "", function () { pickFor(p, true); }));
           a2.appendChild(ipill("download", "ZIP", "", function () { var s = needSel(p); if (s) zipPlaylist(p, s); }));
+          a2.appendChild(ipill("layers", "Offline", "", function () { var s = needSel(p); if (s) saveOfflineMany(s); }));
           a2.appendChild(ipill("trash", "Hapus", "dng", function () { deleteSel(p); }));
           sheetBody.appendChild(a2);
         }
@@ -2487,7 +2865,7 @@ function parseApiResponse(raw) {
             if (selMode && sel[id] === 1) t.classList.add("sel");
             if (!selMode) {
               var x = el("button", "x", "×");
-              x.onclick = function (e) { e.stopPropagation(); removeFrom(p.id, id); rerender(); refreshBtns(); updateChip(); toast("Dihapus dari " + p.name, "bad"); };
+              x.onclick = function (e) { e.stopPropagation(); var snap = snapPlaylists(); removeFrom(p.id, id); rerender(); refreshBtns(); updateChip(); undoable("Dihapus dari " + p.name, snap); };
               t.appendChild(x);
             }
             grid.appendChild(t);
@@ -2496,6 +2874,7 @@ function parseApiResponse(raw) {
         if (ids.length > upto) {
           var more = pill("Tampilkan lagi (" + (ids.length - upto) + ")", "more", function () { plShown += 120; rerender(); });
           grid.appendChild(more);
+          autoMore(more);
         }
       }
       function moveSel(p, toTop) {
@@ -2517,15 +2896,19 @@ function parseApiResponse(raw) {
       function deleteSel(p) {
         var s = needSel(p); if (!s) return;
         dialog("Hapus <b>" + s.length + "</b> post dari <b>" + esc(p.name) + "</b>?", { ok: "Hapus", danger: true }, function () {
+          var snap = snapPlaylists();
           p.postIds = p.postIds.filter(function (id) { return sel[id] !== 1; });
           persist(); resetSel(); renderSheet(); refreshBtns(); updateChip();
-          toast("Dihapus " + s.length + " post", "bad");
+          undoable("Dihapus " + s.length + " post", snap);
           if (activePlaylistId === p.id && !p.postIds.length) exitPlaylist();
         });
       }
       function renderHistory() {
         var row = el("div", "arow");
-        row.appendChild(ipill("trash", "Kosongkan riwayat", "dng", function () { hist = []; jset("pe_hist", hist); renderSheet(); }));
+        row.appendChild(ipill("trash", "Kosongkan riwayat", "dng", function () {
+          var hs = hist.slice(); hist = []; jset("pe_hist", hist); renderSheet();
+          toast("Riwayat dikosongkan", "bad", { label: "Batalkan", fn: function () { hist = hs; jset("pe_hist", hist); rerender(); } });
+        }));
         sheetBody.appendChild(row);
         var grid = el("div", "grid"); sheetBody.appendChild(grid);
         if (!hist.length) { grid.appendChild(el("div", "empty", "Belum ada riwayat.")); return; }
@@ -2550,6 +2933,10 @@ function parseApiResponse(raw) {
         b.appendChild(setRow("Hemat data", "Pakai gambar kecil dulu", seg(onoff, S.saver, function (v) { S.saver = v; saveS(); invalidateCache(); })));
         b.appendChild(setRow("Pertahankan zoom", "Level zoom tetap saat pindah post", seg(onoff, S.keepZoom, function (v) { S.keepZoom = v; saveS(); })));
         b.appendChild(setRow("Tampilan", "Muat utuh / penuhi layar", seg([["contain", "Muat"], ["cover", "Penuh"]], S.fit, function (v) { S.fit = v; saveS(); applyFit(); })));
+        b.appendChild(setRow("Tandai sudah dilihat", "Redupkan & beri centang di grid", seg(onoff, S.markSeen !== false, function (v) { S.markSeen = v; saveS(); })));
+        b.appendChild(setRow("Mode aman", "Sembunyikan post non-aman (berdasar rating)", seg(onoff, !!S.safeMode, function (v) { S.safeMode = v; saveS(); streamAhead = []; streamBehind = []; refreshBadges(); toast(v ? "Mode aman aktif" : "Mode aman mati", "ok"); })));
+        b.appendChild(setRow("Sembunyikan otomatis", "Tutup layar saat tab ditinggalkan", seg(onoff, !!S.autoPanic, function (v) { S.autoPanic = v; saveS(); })));
+        b.appendChild(setRow("Favorit otomatis offline", "Simpan salinan tiap kali menyukai post", seg(onoff, !!S.autoOffline, function (v) { S.autoOffline = v; saveS(); })));
         b.appendChild(setRow("Suara video", "Default saat video dibuka", seg([[true, "Mati"], [false, "Hidup"]], S.muted, function (v) { S.muted = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) vd.muted = v; })));
         b.appendChild(setRow("Kecepatan video", "Playback rate", seg([[0.5, "0.5×"], [1, "1×"], [1.5, "1.5×"], [2, "2×"]], S.speed, function (v) { S.speed = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) { vd.defaultPlaybackRate = v; vd.playbackRate = v; } })));
         var row = el("div", "arow"); row.style.marginTop = "12px";
@@ -2639,12 +3026,58 @@ function parseApiResponse(raw) {
         sBox.appendChild(sActs);
         b.appendChild(sBox);
 
+        b.appendChild(securityCard());
+        b.appendChild(dataCard());
+        b.appendChild(offlineCard());
+
         var gRow = el("div", "arow"); gRow.style.marginTop = "8px";
         gRow.appendChild(ipill("book", "Buka Panduan", "pri", openGuide));
         b.appendChild(gRow);
         var tip = el("div", "", "Gestur: swipe ↑ = post berikutnya · swipe ↓ = post sebelumnya · swipe → = simpan ke playlist · swipe ← = hapus dari playlist · pinch = zoom gambar · double-tap = favorit (animasi heart). Keyboard: ←↑ = sebelumnya · →↓ = berikutnya · Spasi = play/pause · A=auto · F=favorit · R=acak · P=playlist · B=kembali · Esc=tutup. Filter AI & sembunyikan tag ada di menu Filter.");
         tip.style.cssText = "font-size:11px;color:var(--text-faint);line-height:1.6;margin-top:10px";
         b.appendChild(tip);
+      }
+      function securityCard() {
+        var box = el("div", "storage-card");
+        box.appendChild(el("div", "storage-title", "Privasi & Keamanan"));
+        var info = el("div", "storage-stats");
+        info.innerHTML = "<div>Tombol mata di bilah atas (atau tombol <b>`</b> di keyboard) langsung menutup layar. " +
+          (hasPin() ? "PIN aktif: layar terkunci saat aplikasi dibuka." : "Tanpa PIN, ketuk layar gelap 3× untuk membuka.") + "</div>";
+        box.appendChild(info);
+        var acts = el("div", "arow"); acts.style.marginTop = "6px";
+        acts.appendChild(ipill("eyeOff", "Sembunyikan sekarang", "pri", function () { closeSheet(); panicOn(); }));
+        if (hasPin()) acts.appendChild(ipill("trash", "Hapus PIN", "dng", function () { lsSet("pe_pin", ""); toast("PIN dihapus", "ok"); renderSettings(); }));
+        else acts.appendChild(ipill("edit", "Atur PIN", "", setPinDialog));
+        box.appendChild(acts);
+        return box;
+      }
+      function dataCard() {
+        var box = el("div", "storage-card");
+        box.appendChild(el("div", "storage-title", "Cadangan Data"));
+        var info = el("div", "storage-stats");
+        info.innerHTML = "<div>Cadangan lengkap berisi playlist, blacklist, riwayat, checkpoint tag, tanda sudah dilihat, dan setelan (PIN tidak ikut).</div>" +
+          '<div class="storage-row"><b>Post sudah dilihat</b><span>' + seenSet.size + "</span></div>";
+        box.appendChild(info);
+        var acts = el("div", "arow"); acts.style.marginTop = "6px";
+        acts.appendChild(ipill("upload", "Ekspor semua", "pri", exportAll));
+        acts.appendChild(ipill("download", "Impor", "", function () { $("importFile").click(); }));
+        acts.appendChild(ipill("eye", "Reset tanda dilihat", "", function () { seenSet.clear(); saveSeen(); toast("Tanda dilihat direset", "ok"); renderSettings(); }));
+        box.appendChild(acts);
+        return box;
+      }
+      function offlineCard() {
+        var box = el("div", "storage-card");
+        box.appendChild(el("div", "storage-title", "Offline"));
+        var info = el("div", "storage-stats");
+        info.innerHTML = '<div class="storage-row"><b>Post tersimpan offline</b><span>' + offIds.size + "</span></div>" +
+          "<div>Simpan dari menu Detail (satu post) atau tombol Offline di playlist. Agar halaman aplikasi sendiri bisa dibuka tanpa sinyal, service worker (sw.js) harus meng-cache file aplikasi.</div>";
+        box.appendChild(info);
+        var acts = el("div", "arow"); acts.style.marginTop = "6px";
+        acts.appendChild(ipill("trash", "Hapus semua offline", "dng", function () {
+          dialog("Hapus <b>" + offIds.size + "</b> salinan offline?", { ok: "Hapus", danger: true }, function () { clearOffline().then(function () { toast("Salinan offline dihapus", "ok"); renderSettings(); }); });
+        }));
+        box.appendChild(acts);
+        return box;
       }
       function newPlaylist() {
         dialog("Nama playlist baru", { input: true, ok: "Buat" }, function (v) {
@@ -2665,32 +3098,82 @@ function parseApiResponse(raw) {
         if (id === "pl_fav") { toast("Playlist Favorit bawaan tidak dapat dihapus", "bad"); return; }
         var p = getPL(id); if (!p) return;
         dialog("Hapus playlist <b>" + esc(p.name) + "</b> (" + p.postIds.length + " post)?", { ok: "Hapus", danger: true }, function () {
+          var snap = snapPlaylists();
           playlists = playlists.filter(function (x) { return x.id !== id; }); persist();
           if (activePlaylistId === id) exitPlaylist();
-          plView = "list"; plDetailId = null; resetSel(); renderSheet(); refreshBtns(); toast("Playlist dihapus", "bad");
+          plView = "list"; plDetailId = null; resetSel(); renderSheet(); refreshBtns(); undoable("Playlist dihapus", snap);
         });
       }
       function exportPlaylists() {
         saveBlob(new Blob([JSON.stringify({ v: 1, playlists: playlists }, null, 2)], { type: "application/json" }), "post-explorer-playlists.json");
         toast("Playlist diekspor", "ok");
       }
+      function mergePlaylists(arr) {
+        var added = 0;
+        arr.forEach(function (pl) {
+          if (!pl || typeof pl.name !== "string" || !Array.isArray(pl.postIds)) return;
+          var cleanName = pl.name.trim().slice(0, 40); if (!cleanName) return;
+          var ids = uniq(pl.postIds.map(function (v) { return typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v; }).filter(validId));
+          var isFav = pl.id === "pl_fav" || cleanName.toLowerCase() === "favorit";
+          var ex = isFav ? getPL("pl_fav") : null;
+          if (!ex) playlists.forEach(function (x) { if (String(x.name).toLowerCase() === cleanName.toLowerCase()) ex = x; });
+          if (ex) { ids.forEach(function (i) { if (!isIn(ex, i)) { ex.postIds.push(i); added++; } }); }
+          else { playlists.push({ id: isFav ? "pl_fav" : genId(), name: isFav ? "Favorit" : cleanName, postIds: ids, last: null }); added += ids.length; }
+        });
+        persist();
+        return added;
+      }
+      var BACKUP_KEYS = ["playlists_v1", "pe_settings", "pe_blacklist", "pe_hist", "pe_tag_checkpoints", "pe_tagprog", "pe_seen", "pe_anchor_post", "lastPost", "pe_offline_ids"];
+      function exportAll() {
+        persist(); saveSeen();
+        var data = {};
+        BACKUP_KEYS.forEach(function (k) { var v = lsGet(k); if (v !== null && v !== undefined) data[k] = v; });
+        saveBlob(new Blob([JSON.stringify({ v: 2, app: "darknight", at: Date.now(), data: data }, null, 2)], { type: "application/json" }),
+          "darknight-backup-" + new Date().toISOString().slice(0, 10) + ".json");
+        toast("Cadangan lengkap diekspor", "ok");
+      }
+      function importAll(data) {
+        function rd(k) { try { return data[k] != null ? JSON.parse(data[k]) : null; } catch (e) { return null; } }
+        var added = 0;
+        var pls = rd("playlists_v1"); if (Array.isArray(pls)) added += mergePlaylists(pls);
+        var bl = rd("pe_blacklist");
+        if (Array.isArray(bl)) { bl.forEach(function (t) { t = normTag(t); if (t && blacklistTags.indexOf(t) === -1) blacklistTags.push(t); }); saveBlacklist(); }
+        var hs = rd("pe_hist"); if (Array.isArray(hs)) { hist = uniq(hs.filter(validId).concat(hist)).slice(0, 60); jset("pe_hist", hist); }
+        var sn = rd("pe_seen"); if (Array.isArray(sn)) { sn.filter(validId).forEach(function (i) { seenSet.add(i); }); saveSeen(); }
+        var cps = rd("pe_tag_checkpoints");
+        if (cps && typeof cps === "object") {
+          var cur = getTagCheckpoints();
+          Object.keys(cps).forEach(function (k) { var c = cps[k]; if (c && validId(c.lastId) && (!cur[k] || (cur[k].updatedAt || 0) < (c.updatedAt || 0))) cur[k] = c; });
+          jset("pe_tag_checkpoints", cur);
+        }
+        var tp = rd("pe_tagprog");
+        if (tp && typeof tp === "object") {
+          var curP = jget("pe_tagprog", {});
+          Object.keys(tp).forEach(function (k) { var c = tp[k]; if (c && validId(c.id) && (!curP[k] || (curP[k].t || 0) < (c.t || 0))) curP[k] = c; });
+          jset("pe_tagprog", curP);
+        }
+        var st = rd("pe_settings");
+        if (st && typeof st === "object" && !Array.isArray(st)) {
+          Object.keys(st).forEach(function (k) { if (Object.prototype.hasOwnProperty.call(S, k) && typeof st[k] === typeof S[k]) S[k] = st[k]; });
+          saveS(); applyFit();
+        }
+        refreshBtns(); updateChip(); refreshBadges(); renderSheet();
+        toast("Impor selesai (" + added + " post baru ke playlist)", "ok");
+      }
       $("importFile").addEventListener("change", function (e) {
         var f = e.target.files && e.target.files[0]; if (!f) return;
         var fr = new FileReader();
         fr.onload = function () {
           try {
-            var d = JSON.parse(fr.result), arr = Array.isArray(d) ? d : d.playlists;
-            if (!Array.isArray(arr)) throw 0;
-            var added = 0;
-            arr.forEach(function (p) {
-              if (!p || typeof p.name !== "string" || !Array.isArray(p.postIds)) return;
-              var cleanName = p.name.trim().slice(0, 40); if (!cleanName) return;
-              var ids = uniq(p.postIds.map(function (v) { return typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v; }).filter(validId)), ex = null;
-              playlists.forEach(function (x) { if (String(x.name).toLowerCase() === cleanName.toLowerCase()) ex = x; });
-              if (ex) { ids.forEach(function (i) { if (!isIn(ex, i)) { ex.postIds.push(i); added++; } }); }
-              else { playlists.push({ id: genId(), name: cleanName, postIds: ids, last: null }); added += ids.length; }
-            });
-            persist(); renderSheet(); refreshBtns(); toast("Impor selesai: " + added + " post", "ok");
+            var d = JSON.parse(fr.result);
+            if (d && d.v === 2 && d.data && typeof d.data === "object") {
+              dialog("Impor <b>cadangan lengkap</b>? Playlist, blacklist, riwayat, dan checkpoint digabung; setelan ditimpa.", { ok: "Impor" }, function () { importAll(d.data); });
+            } else {
+              var arr = Array.isArray(d) ? d : d.playlists;
+              if (!Array.isArray(arr)) throw 0;
+              var n = mergePlaylists(arr);
+              renderSheet(); refreshBtns(); toast("Impor selesai: " + n + " post", "ok");
+            }
           } catch (err) { toast("File tidak valid", "bad"); }
         };
         fr.readAsText(f); e.target.value = "";
@@ -2749,10 +3232,12 @@ function parseApiResponse(raw) {
             if (i >= list.length) { finish(); return; }
             var id = list[i++];
             toast("Mengambil " + i + "/" + list.length + "…");
-            get(id).then(function (r) {
-              if (!r || r.miss || !r.url) throw 0;
-              var ext = r.type === "mp4" ? "mp4" : "jpg";
-              return fetchMedia(r.url).then(function (res) {
+            fetchThumbMeta(id).then(function (po) {
+              if (!po || !po.file_url) throw 0;
+              var zurl = po.file_url;
+              var zm = zurl.match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
+              var ext = zm ? zm[1].toLowerCase() : (postIsVideo(po) ? "mp4" : "jpg");
+              return fetchMedia(zurl).then(function (res) {
                 if (!res.ok) throw 0;
                 return res.blob().then(function (b) { return { blob: b, ext: ext }; });
               });
@@ -2858,24 +3343,22 @@ function parseApiResponse(raw) {
 
 
       function toggleGrid() {
-        if (sheet.classList.contains("open") && sheetTab === "tags" && tagView === "detail") {
-          closeSheet();
-          return;
-        }
-        // Buka grid post yang sedang aktif (tag / playlist / feed)
-        if (activeTagsDetail && activeTagsDetail.length) {
-          tagView = "detail";
-          openSheet("tags");
+        var open = sheet.classList.contains("open");
+        if (open && sheetTab === "tags" && tagView === "detail") { closeSheet(); return; }
+        if (open && sheetTab === "playlist" && plView === "detail") { closeSheet(); return; }
+        if (activeTag) {
+          // tampilkan daftar yang sedang diputar
+          ++bToken; bTags = activeTagsDetail.slice(); bPosts = tagPosts.slice(); bSet = new Set(tagSet);
+          bCursor = tagCursor || 0; bHasMore = tagHasMore; bLoading = false;
+          openSheet("tags", "detail");
           return;
         }
         if (activePlaylistId) {
-          plView = "detail";
-          openSheet("playlist");
+          openSheet("playlist"); plView = "detail"; plDetailId = activePlaylistId; renderSheet();
           return;
         }
-        // Jika sedang browsing biasa, buka feed post terbaru di grid
-        tagView = "detail";
-        openSheet("tags");
+        // Mode stream biasa: grid post terbaru
+        openSheet("tags", "detail");
         loadTagDetail([], true);
       }
 
@@ -2967,35 +3450,19 @@ function parseApiResponse(raw) {
       async function applyFilterHub() {
         closeFilterHub();
         var inDetail = sheet.classList.contains("open") && sheetTab === "tags" && tagView === "detail";
-        var typed = (tagTypeFilter !== null && tagTypeFilter !== undefined);
-        var needSearch = selectedTags.length > 0 || tagSortMode === "popular" || tagSortMode === "newest" || typed || blacklistTags.length > 0 || !!S.filterAi;
-        if (needSearch) {
-          var sortLabel = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" ? "Top Rated" : (tagSortMode === "views" ? "Most Viewed" : "Terbaru"));
-          var tagLabelStr = selectedTags.length ? selectedTags.join(", ") : "Semua";
-          toast("Memuat: " + tagLabelStr + " (" + sortLabel + ")…");
-          await loadTagDetail(selectedTags.slice(), true);
-          if (inDetail) return;
-          if (tagPosts.length) {
-            startTag(selectedTags.slice(), null, false);
-            toast("Memutar post " + (tagSortMode === "popular" ? "terpopuler" : "terbaru") + (selectedTags.length ? ": " + selectedTags.join(", ") : ""));
-          } else {
-            toast("Tidak ada post yang cocok", "bad");
-          }
-          return;
-        }
-        exitPlaylist();
-        if (tagSortMode === "oldest") {
-          loadPost(1, 0); toast("Mulai dari post terlama (#1)", "ok");
-        } else {
-          toast("Mencari post paling baru…");
-          var latestId = await fetchLatestPostId();
-          loadPost(latestId, 0); toast("Lompat ke post terbaru (#" + latestId + ")", "ok");
-        }
+        var sortLabel = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" || tagSortMode === "views" ? "Top Rated" : (tagSortMode === "oldest" ? "Terlama" : "Terbaru"));
+        var tagLabelStr = selectedTags.length ? selectedTags.join(", ") : "Semua";
+        toast("Memuat: " + tagLabelStr + " (" + sortLabel + ")…");
+        await loadTagDetail(selectedTags.slice(), true);
+        if (inDetail) return;
+        if (bPosts.length) startTag(selectedTags.slice(), null, false);
+        else toast("Tidak ada post yang cocok", "bad");
       }
 
       function overlayOpen() { return (filterHubBackdrop && filterHubBackdrop.classList.contains("open")) || sheet.classList.contains("open") || popupBackdrop.classList.contains("open") || dlgBackdrop.classList.contains("open") || infoBackdrop.classList.contains("open") || ($("guideBackdrop") && $("guideBackdrop").classList.contains("open")); }
 
       document.addEventListener("keydown", function (e) {
+        if (locked) return;
         var ae = document.activeElement;
         if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA")) return;
         if (e.key === "Escape") {
@@ -3010,6 +3477,7 @@ function parseApiResponse(raw) {
           else if (document.body.classList.contains("fs")) toggleFs();
           return;
         }
+        if (e.key === "`") { panicOn(); return; }
         if (overlayOpen()) return;
         var k = e.key;
         if (k === "ArrowLeft" || k === "ArrowUp") change(-1);
@@ -3042,13 +3510,25 @@ function parseApiResponse(raw) {
         if (document.hidden) {
           var v = zoomLayer.querySelector("video");
           if (v) { try { v.pause(); } catch (e) { } }
+          if (S.autoPanic) panicOn();
+          flushCheckpoint(); saveSeen(); tmFlush();
           persist();
           saveSession();
+        } else if (autoEnabled && navigator.wakeLock && !wakeLock) {
+          // wake lock dilepas browser saat tab disembunyikan: minta lagi
+          try {
+            var wt = ++wakeLockRequest;
+            navigator.wakeLock.request("screen").then(function (l) {
+              if (autoEnabled && wt === wakeLockRequest) { wakeLock = l; l.addEventListener("release", function () { if (wakeLock === l) wakeLock = null; }); }
+              else l.release().catch(function () { });
+            }).catch(function () { });
+          } catch (e) { }
         }
       });
-      window.addEventListener("pagehide", function () { persist(); saveSession(); });
+      window.addEventListener("pagehide", function () { flushCheckpoint(); saveSeen(); tmFlush(); persist(); saveSession(); });
 
       paintIcons();
+      Array.prototype.forEach.call(document.querySelectorAll("button[title]"), function (bt) { if (!bt.getAttribute("aria-label")) bt.setAttribute("aria-label", bt.title); });
       refreshBtns(); updateChip(); updateBack();
       
   // --- Restore session state on init ---
@@ -3057,29 +3537,25 @@ function parseApiResponse(raw) {
           var sess = jget('pe_session', null);
           if (!sess) return;
           if (validId(sess.current)) current = sess.current;
-          if (sess.tagSortMode !== undefined) tagSortMode = sess.tagSortMode;
+          if (sess.tagSortMode !== undefined) tagSortMode = (sess.tagSortMode === "views") ? "popular" : sess.tagSortMode;
           if (sess.tagTypeFilter !== undefined) tagTypeFilter = sess.tagTypeFilter;
           if (Array.isArray(sess.selectedTags) && sess.selectedTags.length) selectedTags = sess.selectedTags;
-          if (sess.shuffleOn !== undefined) shuffleOn = sess.shuffleOn;
-          if (sess.tagView !== undefined) tagView = sess.tagView;
-          if (sess.tagCursor !== undefined) tagCursor = sess.tagCursor;
-          if (sess.tagHasMore !== undefined) tagHasMore = sess.tagHasMore;
+          if (sess.shuffleOn !== undefined) shuffleOn = !!sess.shuffleOn;
           if (Array.isArray(sess.playOrder) && sess.playOrder.length) playOrder = sess.playOrder;
           if (sess.activePlaylistId) {
-            var pls = getPL ? getPL(sess.activePlaylistId) : null;
+            var pls = getPL(sess.activePlaylistId);
             if (pls) activePlaylistId = sess.activePlaylistId;
           }
-          if (sess.activeTag && Array.isArray(sess.activeTagsDetail) && sess.activeTagsDetail.length) {
+          if (!activePlaylistId && sess.activeTag && Array.isArray(sess.activeTagsDetail) && Array.isArray(sess.tagPosts) && sess.tagPosts.length) {
             activeTag = sess.activeTag;
             activeTagsDetail = sess.activeTagsDetail;
-            if (Array.isArray(sess.tagPosts) && sess.tagPosts.length) {
-              tagPosts = sess.tagPosts;
-              returnId = null;
-            } else {
-              loadTagDetail(activeTagsDetail, false);
-            }
+            tagPosts = sess.tagPosts; tagSet = new Set(tagPosts);
+            tagCursor = Number(sess.tagCursor) || 0;
+            tagHasMore = sess.tagHasMore !== false;
+            playCfg = sess.playCfg || currentCfg();
+            returnId = null;
           }
-        } catch(e) { console.warn('restoreSession error', e); }
+        } catch (e) { console.warn('restoreSession error', e); }
       })();
 
       updateChip();
@@ -3116,6 +3592,7 @@ function parseApiResponse(raw) {
       }
 
       try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
+      if (hasPin()) panicOn();
       restoreFromBackup();
       if (playlists.length) persist();
       if (!okLS) setTimeout(function () { toast("Penyimpanan browser mati (mode private?). Playlist tidak akan tersimpan.", "bad"); }, 1200);
@@ -3131,7 +3608,64 @@ function parseApiResponse(raw) {
         }
       } catch (e) { }
 
-      function goToSidebarInput() { var v = Number($("numberInputSidebar").value); if (validId(v)) loadPost(v, 0); else toast("ID tidak valid", "bad"); }
+      function goToSidebarInput() { var v = Number($("numberInputSidebar").value); if (validId(v)) { exitPlaylist(); loadPost(v, 0); } else toast("ID tidak valid", "bad"); }
+
+      // ===== Privasi: tutup layar cepat (panic) + PIN opsional =====
+      var panicEl = $("panicCover"), panicForm = $("panicForm"), panicPin = $("panicPin"), panicMsg = $("panicMsg");
+      var origTitle = document.title, panicTaps = 0, panicTapT = null;
+      function hasPin() { return !!lsGet("pe_pin"); }
+      function hashPin(pin) {
+        var s = "darknight:" + pin;
+        try {
+          if (window.crypto && crypto.subtle && window.TextEncoder) {
+            return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (buf) {
+              return Array.from(new Uint8Array(buf)).map(function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+            });
+          }
+        } catch (e) { }
+        var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+        return Promise.resolve("x" + (h >>> 0).toString(16));
+      }
+      function setPinDialog() {
+        dialog("Masukkan PIN baru (4–12 angka)", { input: true, password: true, ok: "Simpan" }, function (v) {
+          v = (v || "").trim();
+          if (!/^\d{4,12}$/.test(v)) { toast("PIN harus 4–12 angka", "bad"); return; }
+          hashPin(v).then(function (h) { lsSet("pe_pin", h); toast("PIN disimpan", "ok"); renderSettings(); });
+        });
+      }
+      function panicOn() {
+        if (locked || !panicEl) return;
+        locked = true;
+        var v = zoomLayer.querySelector("video"); if (v) { try { v.pause(); v.muted = true; } catch (e) { } }
+        if (autoEnabled) stopAuto();
+        try { closeSheet(); closeInfo(); closePopup(); closeFilterHub(); dlgNo(); closeGuide(); } catch (e) { }
+        document.body.classList.add("panic");
+        panicEl.classList.add("on"); panicEl.setAttribute("aria-hidden", "false");
+        panicForm.style.display = hasPin() ? "flex" : "none";
+        panicPin.value = ""; panicMsg.textContent = "";
+        try { document.title = "Catatan"; } catch (e) { }
+        if (hasPin()) setTimeout(function () { try { panicPin.focus(); } catch (e) { } }, 60);
+      }
+      function panicOff() {
+        locked = false;
+        document.body.classList.remove("panic");
+        panicEl.classList.remove("on"); panicEl.setAttribute("aria-hidden", "true");
+        try { document.title = origTitle; } catch (e) { }
+      }
+      if (panicEl) {
+        panicEl.addEventListener("click", function () {
+          if (hasPin()) return;
+          panicTaps++; clearTimeout(panicTapT); panicTapT = setTimeout(function () { panicTaps = 0; }, 700);
+          if (panicTaps >= 3) { panicTaps = 0; panicOff(); }
+        });
+        panicForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          hashPin(panicPin.value || "").then(function (h) {
+            if (h === lsGet("pe_pin")) panicOff();
+            else { panicMsg.textContent = "PIN salah"; panicPin.value = ""; }
+          });
+        });
+      }
       return {
         loadPost: loadPost,
         getCurrent: function () { return current; },
@@ -3145,6 +3679,6 @@ function parseApiResponse(raw) {
         dlgYes: dlgYes, dlgNo: dlgNo, leavePlaylist: leavePlaylist, goToInput: goToInput, openGuide: openGuide, closeGuide: closeGuide,
         toggleFilterHub: toggleFilterHub, closeFilterHub: closeFilterHub, setHubSort: setHubSort, applyFilterHub: applyFilterHub, setHubType: setHubType, pickTags: pickTags, pickBlockTags: pickBlockTags, resetFilter: resetFilter, toggleHubAi: toggleHubAi,
         addHubTag: addHubTag, addHubBlockTag: addHubBlockTag,
-        toggleSound: toggleSound, toggleGrid: toggleGrid
+        toggleSound: toggleSound, toggleGrid: toggleGrid, panic: panicOn
       };
     })();
