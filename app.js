@@ -372,7 +372,22 @@ function parseApiResponse(raw) {
           return { type: null, miss: true, error: true };
         });
       }
+      // Preload metadata video tetangga DIMATIKAN: berebut koneksi ke host CDN yang sama dengan video aktif.
+      var videoHold = false, videoHoldT = null;
+      function holdPreload() {
+        videoHold = true;
+        clearTimeout(preloadTimer); clearQueued();
+        clearTimeout(videoHoldT);
+        videoHoldT = setTimeout(function () { releasePreload(current); }, 12000); // pengaman bila canplaythrough tak pernah muncul
+      }
+      function releasePreload(id) {
+        clearTimeout(videoHoldT);
+        if (!videoHold) return;
+        videoHold = false;
+        if (id === current) preloadAround(id);
+      }
       function warmVideo(id, r) {
+        return;
         if (!r || r.type !== "mp4" || id === current || r.warm) return;
         try { var w = document.createElement("video"); w.preload = "metadata"; w.muted = true; w.src = r.url; r.warm = w; } catch (e) { }
       }
@@ -433,6 +448,7 @@ function parseApiResponse(raw) {
         return promise;
       }
       function schedule(id) {
+        if (videoHold) return;
         if (id < 1 || id > MAXID || cache.has(id) || pending.has(id) || queue.indexOf(id) > -1) return;
         queue.push(id); pump();
       }
@@ -979,7 +995,9 @@ function parseApiResponse(raw) {
           v.playbackRate = S.speed;
         });
         v.addEventListener("waiting", function () { if (id === current) setLoading(true); });
-        v.addEventListener("canplay", function () { if (id === current) { setLoading(false); preloadAround(id); } });
+        v.addEventListener("canplay", function () { if (id === current) setLoading(false); });
+        // Preload tetangga baru jalan setelah video aktif cukup ter-buffer, supaya bandwidth 100% untuk video ini
+        v.addEventListener("canplaythrough", function () { if (id === current) releasePreload(id); });
         v.addEventListener("playing", function () { if (id === current) setLoading(false); });
         v.addEventListener("ended", function () {
           if ((autoEnabled || S.autoNextVid) && v.parentNode && id === current) {
@@ -1104,6 +1122,7 @@ function parseApiResponse(raw) {
         if (r.type === "mp4") {
           var poster = r.poster || (r.meta && (r.meta.sample_url || r.meta.preview_url)) || "";
           releaseWarm(r);
+          holdPreload();
           var el = makeVideo(current, r.url, poster, r.altUrl); setMedia(el);
           clearAutoTimer();
           if (autoEnabled) { lastLbl = "VIDEO"; autoLbl.textContent = "VIDEO"; autoFill.style.width = "100%"; }
@@ -1114,6 +1133,7 @@ function parseApiResponse(raw) {
             if (p2 && p2.catch) p2.catch(function () { });
           });
         } else {
+          videoHold = false; clearTimeout(videoHoldT);
           setMedia(r.el);
           if (autoEnabled) resetAutoTimer();
         }
