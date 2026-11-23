@@ -1519,6 +1519,7 @@ function parseApiResponse(raw) {
       }
 
       function openPopup(id) {
+        closeOverlays("popup");
         popupMode = "add"; pickCb = null; popupPostId = id;
         $("popupTitle").innerHTML = 'Simpan ke playlist <span>#' + id + '</span>';
         renderPopup(); popupNewRow.classList.remove("show"); popupNewInput.value = "";
@@ -1578,6 +1579,7 @@ function parseApiResponse(raw) {
 
       var infoRequestToken = 0;
       function openInfo(id) {
+        closeOverlays("info");
         id = id || current;
         var infoToken = ++infoRequestToken;
         infoIdEl.textContent = id;
@@ -2734,21 +2736,38 @@ function parseApiResponse(raw) {
       function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = lead(txt); return e; }
       function pill(txt, cls, fn) { var b = el("button", "pill " + (cls || ""), txt); b.onclick = fn; return b; }
       function resetSel() { selMode = false; sel = {}; plShown = 120; }
+      // ===== Hanya SATU overlay (panel / Filter Hub / info / panduan / popup) yang boleh aktif =====
+      var hubReturn = null; // panel yang sedang terbuka saat Filter Hub dibuka, dipulihkan bila Filter Hub dibatalkan
+      function closeOverlays(except) {
+        if (except !== "sheet" && sheet.classList.contains("open")) {
+          sheet.classList.remove("open"); sheetBackdrop.classList.remove("open");
+          resetSel(); if (tagPickMode === "block") tagPickMode = "want";
+        }
+        if (except !== "hub" && filterHubBackdrop) filterHubBackdrop.classList.remove("open");
+        if (except !== "info" && infoBackdrop.classList.contains("open")) { ++infoRequestToken; infoBackdrop.classList.remove("open"); }
+        if (except !== "guide") { var gb = $("guideBackdrop"); if (gb) gb.classList.remove("open"); }
+        if (except !== "popup" && popupBackdrop.classList.contains("open")) { popupBackdrop.classList.remove("open"); popupPostId = null; popupMode = "add"; pickCb = null; }
+        syncNavActive();
+      }
+      function closeAll() { hubReturn = null; closeOverlays(""); }
       function syncNavActive() {
         var isOpen = sheet && sheet.classList.contains("open");
-        var cur = isOpen ? sheetTab : "stream";
-        var bns = { stream: $("bnStream"), tags: $("tagBtn"), playlist: $("bnPlaylist"), settings: $("bnSettings") };
+        var hubOpen = !!(filterHubBackdrop && filterHubBackdrop.classList.contains("open"));
+        var cur = hubOpen ? "filter" : (isOpen ? sheetTab : "stream");
+        var bns = { stream: $("bnStream"), tags: $("tagBtn"), playlist: $("bnPlaylist"), filter: $("filterBtn"), settings: $("bnSettings") };
         for (var k in bns) { if (bns[k]) bns[k].classList.toggle("active", k === cur); }
         var sidebarItems = document.querySelectorAll(".app-sidebar .nav-item");
         if (sidebarItems.length >= 6) {
           sidebarItems[0].classList.toggle("active", cur === "stream");
           sidebarItems[1].classList.toggle("active", cur === "tags");
           sidebarItems[2].classList.toggle("active", cur === "playlist");
+          sidebarItems[3].classList.toggle("active", cur === "filter");
           sidebarItems[4].classList.toggle("active", cur === "history");
           sidebarItems[5].classList.toggle("active", cur === "settings");
         }
       }
       function openSheet(tab, mode) {
+        closeOverlays("sheet");
         if (tab) sheetTab = tab;
         if (tab === "playlist") { plView = "list"; plDetailId = null; resetSel(); }
         if (tab === "tags") { tagView = (mode === "detail" || (!mode && tagView === "detail" && bPosts.length)) ? "detail" : "list"; tagPickMode = mode === "block" ? "block" : "want"; }
@@ -3404,6 +3423,7 @@ function parseApiResponse(raw) {
         }
       }
       function openGuide() {
+        closeOverlays("guide");
         var gb = $("guideBackdrop");
         if (gb) gb.classList.add("open");
       }
@@ -3459,15 +3479,31 @@ function parseApiResponse(raw) {
 
       function openFilterHub() {
         if (!filterHubBackdrop) return;
+        // ingat panel yang sedang terbuka (mis. Explore) lalu tutup, supaya tidak ada 2 panel aktif sekaligus
+        hubReturn = sheet.classList.contains("open") ? { tab: sheetTab, tagView: tagView, plView: plView, plDetailId: plDetailId } : null;
+        closeOverlays("hub");
         renderFilterHub();
         filterHubBackdrop.classList.add("open");
+        syncNavActive();
       }
 
+      // Tutup tanpa memulihkan panel sebelumnya (dipakai Terapkan, Pilih tag, mode sembunyi)
+      function hideFilterHub(e) {
+        if (!filterHubBackdrop) return false;
+        if (e && e.target !== filterHubBackdrop) return false;
+        var was = filterHubBackdrop.classList.contains("open");
+        filterHubBackdrop.classList.remove("open");
+        syncNavActive();
+        return was;
+      }
+
+      // Dibatalkan pengguna (X / area gelap / Esc): kembali ke panel sebelumnya bila ada
       function closeFilterHub(e) {
-        if (!filterHubBackdrop) return;
-        if (!e || e.target === filterHubBackdrop) {
-          filterHubBackdrop.classList.remove("open");
-        }
+        if (!hideFilterHub(e)) return;
+        var r = hubReturn; hubReturn = null;
+        if (!r) return;
+        openSheet(r.tab, (r.tab === "tags" && r.tagView === "detail") ? "detail" : undefined);
+        if (r.tab === "playlist" && r.plView === "detail" && getPL(r.plDetailId)) { plView = "detail"; plDetailId = r.plDetailId; renderSheet(); }
       }
 
       function renderFilterHub() {
@@ -3505,8 +3541,8 @@ function parseApiResponse(raw) {
       function setHubSort(mode) { tagSortMode = mode; renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
       function setHubType(v) { tagTypeFilter = v; renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
       function toggleHubAi() { S.filterAi = !S.filterAi; saveS(); renderFilterHub(); refreshBadges(); if ($("tagFsum")) renderTagFsum(); }
-      function pickTags() { closeFilterHub(); openSheet("tags"); }
-      function pickBlockTags() { closeFilterHub(); openSheet("tags", "block"); }
+      function pickTags() { hubReturn = null; hideFilterHub(); openSheet("tags"); }
+      function pickBlockTags() { hubReturn = null; hideFilterHub(); openSheet("tags", "block"); }
 
       function addHubTag() {
         if (!fhTagInput) return;
@@ -3534,13 +3570,13 @@ function parseApiResponse(raw) {
       }
 
       async function applyFilterHub() {
-        closeFilterHub();
-        var inDetail = sheet.classList.contains("open") && sheetTab === "tags" && tagView === "detail";
+        var ret = hubReturn; hubReturn = null; hideFilterHub();
+        var inDetail = !!(ret && ret.tab === "tags" && ret.tagView === "detail");
         var sortLabel = tagSortMode === "hot" ? "Hot" : (tagSortMode === "popular" || tagSortMode === "top" || tagSortMode === "views" ? "Top Rated" : (tagSortMode === "oldest" ? "Terlama" : "Terbaru"));
         var tagLabelStr = selectedTags.length ? selectedTags.join(", ") : "Semua";
         toast("Memuat: " + tagLabelStr + " (" + sortLabel + ")…");
         await loadTagDetail(selectedTags.slice(), true);
-        if (inDetail) return;
+        if (inDetail) { openSheet("tags", "detail"); return; }
         if (bPosts.length) startTag(selectedTags.slice(), null, false);
         else toast("Tidak ada post yang cocok", "bad");
       }
@@ -3630,27 +3666,57 @@ function parseApiResponse(raw) {
       // ===== Auto-tutup panel: tap area gelap + geser turun =====
       sheetBackdrop.addEventListener("click", function () { if (S.autoClose !== false) closeSheet(); });
       (function sheetDrag() {
-        var y0 = null, dy = 0, drag = false;
-        var head = sheet.querySelector(".grab"), shead = sheet.querySelector(".shead");
-        function start(e) { var t = e.touches[0]; y0 = t.clientY; dy = 0; drag = true; sheet.style.transition = "none"; }
-        function move(e) {
-          if (!drag) return;
-          dy = Math.max(0, e.touches[0].clientY - y0);
+        var y0 = 0, dy = 0, drag = false, lastY = 0, lastT = 0, vel = 0;
+        var grab = sheet.querySelector(".grab"), shead = sheet.querySelector(".shead");
+        function begin(y) { y0 = y; dy = 0; vel = 0; lastY = y; lastT = performance.now(); drag = true; sheet.style.transition = "none"; }
+        function moveTo(y) {
+          dy = Math.max(0, y - y0);
+          var t = performance.now(); if (t > lastT) vel = (y - lastY) / (t - lastT); lastY = y; lastT = t;
           sheet.style.transform = "translateY(" + dy + "px)";
-          sheetBackdrop.style.opacity = String(Math.max(0, 1 - dy / 320));
+          sheetBackdrop.style.opacity = String(Math.max(0, 1 - dy / 360));
         }
-        function end() {
+        function finish() {
           if (!drag) return; drag = false;
-          sheet.style.transition = ""; sheetBackdrop.style.opacity = "";
-          if (dy > 90) { sheet.style.transform = ""; closeSheet(); } else sheet.style.transform = "";
+          sheet.style.transition = ""; sheetBackdrop.style.opacity = ""; sheet.style.transform = "";
+          if (dy > 100 || (dy > 30 && vel > 0.6)) closeSheet(); // geser jauh atau lempar cepat = tutup
         }
-        [head, shead].forEach(function (n) {
+        // Strip + header: Pointer Events (jari & mouse). Tombol di header tetap bisa diketuk karena capture baru aktif setelah bergeser.
+        [grab, shead].forEach(function (n) {
           if (!n) return;
-          n.addEventListener("touchstart", start, { passive: true });
-          n.addEventListener("touchmove", move, { passive: true });
-          n.addEventListener("touchend", end, { passive: true });
-          n.addEventListener("touchcancel", end, { passive: true });
+          var down = false, sy = 0, pid = null;
+          n.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse" && e.button !== 0) return; down = true; sy = e.clientY; pid = e.pointerId; });
+          n.addEventListener("pointermove", function (e) {
+            if (!down || e.pointerId !== pid) return;
+            if (!drag) {
+              if (e.clientY - sy < 6) return;
+              begin(sy); try { n.setPointerCapture(pid); } catch (er) { }
+            }
+            moveTo(e.clientY);
+          });
+          function up(e) { if (e.pointerId !== pid) return; down = false; finish(); }
+          n.addEventListener("pointerup", up);
+          n.addEventListener("pointercancel", up);
         });
+        // Isi panel: geser turun saat sudah di paling atas (seperti bottom sheet bawaan HP)
+        var by0 = null, bx0 = 0, engaged = false;
+        sheetBody.addEventListener("touchstart", function (e) {
+          if (e.touches.length !== 1) { by0 = null; return; }
+          by0 = e.touches[0].clientY; bx0 = e.touches[0].clientX; engaged = false;
+        }, { passive: true });
+        sheetBody.addEventListener("touchmove", function (e) {
+          if (by0 === null) return;
+          var t = e.touches[0], ddy = t.clientY - by0, ddx = t.clientX - bx0;
+          if (!engaged) {
+            if (sheetBody.scrollTop > 0) { by0 = null; return; }
+            if (ddy < 0) return;
+            if (ddy > 8 && Math.abs(ddx) < ddy) { engaged = true; begin(by0); } else return;
+          }
+          if (e.cancelable) e.preventDefault();
+          moveTo(t.clientY);
+        }, { passive: false });
+        function bodyEnd() { by0 = null; if (engaged) { engaged = false; finish(); } }
+        sheetBody.addEventListener("touchend", bodyEnd, { passive: true });
+        sheetBody.addEventListener("touchcancel", bodyEnd, { passive: true });
       })();
 
       paintIcons();
@@ -3764,7 +3830,7 @@ function parseApiResponse(raw) {
         locked = true;
         var v = zoomLayer.querySelector("video"); if (v) { try { v.pause(); v.muted = true; } catch (e) { } }
         if (autoEnabled) stopAuto();
-        try { closeSheet(); closeInfo(); closePopup(); closeFilterHub(); dlgNo(); closeGuide(); } catch (e) { }
+        try { hubReturn = null; closeOverlays(""); dlgNo(); } catch (e) { }
         document.body.classList.add("panic");
         panicEl.classList.add("on"); panicEl.setAttribute("aria-hidden", "false");
         panicForm.style.display = hasPin() ? "flex" : "none";
@@ -3812,6 +3878,6 @@ function parseApiResponse(raw) {
         dlgYes: dlgYes, dlgNo: dlgNo, leavePlaylist: leavePlaylist, goToInput: goToInput, openGuide: openGuide, closeGuide: closeGuide,
         toggleFilterHub: toggleFilterHub, closeFilterHub: closeFilterHub, setHubSort: setHubSort, applyFilterHub: applyFilterHub, setHubType: setHubType, pickTags: pickTags, pickBlockTags: pickBlockTags, resetFilter: resetFilter, toggleHubAi: toggleHubAi,
         addHubTag: addHubTag, addHubBlockTag: addHubBlockTag,
-        toggleSound: toggleSound, toggleGrid: toggleGrid, panic: panicOn
+        toggleSound: toggleSound, toggleGrid: toggleGrid, panic: panicOn, closeAll: closeAll
       };
     })();
