@@ -8,6 +8,9 @@
   <meta name="referrer" content="no-referrer">
   <link rel="preconnect" href="https://ahrimp4.rule34.xxx" crossorigin>
   <link rel="dns-prefetch" href="https://ahrimp4.rule34.xxx">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -58,7 +61,7 @@
           <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya"><span data-ic="back"></span><span id="backId"></span></button>
           <div class="chip" id="chip">
             <span class="ck-ico" id="chipIco"></span>
-            <span class="ck-txt"><small id="chipKind" style="font-size:9.5px;color:var(--text-muted);text-transform:uppercase;margin-right:4px">TAG</small><b id="chipName" style="font-size:11.5px"></b></span>
+            <span class="ck-txt"><small id="chipKind" style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-right:4px">TAG</small><b id="chipName" style="font-size:12px"></b></span>
             <span class="ck-pos" id="chipPos" style="font-size:10px;color:var(--text-muted);margin-left:4px"></span>
             <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dari tag/playlist" aria-label="Keluar"><span data-ic="x"></span></button>
             <i class="ck-bar"><u id="chipBar"></u></i>
@@ -182,10 +185,10 @@
     <div class="box" style="max-width:440px;max-height:82vh" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <h4 id="infoTitle" style="margin:0;font-size:14px;font-weight:700">Post #<span id="infoId"></span></h4>
-        <button class="hb" onclick="PE.closeInfo()" style="width:28px;height:28px"><span data-ic="x"></span></button>
+        <button class="hb" onclick="PE.closeInfo()"><span data-ic="x"></span></button>
       </div>
       <div id="infoMeta"
-        style="display:flex;gap:8px;font-size:11.5px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap"></div>
+        style="display:flex;gap:8px;font-size:12px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap"></div>
       <div id="infoBody" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;padding-right:2px">
         <div id="infoTags"></div>
         <div id="infoSuggestions"></div>
@@ -199,14 +202,14 @@
     <div class="box guide-box" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <h4 style="margin:0;font-size:14px;font-weight:700">Panduan Penggunaan</h4>
-        <button class="hb" onclick="PE.closeGuide()" style="width:28px;height:28px"><span data-ic="x"></span></button>
+        <button class="hb" onclick="PE.closeGuide()"><span data-ic="x"></span></button>
       </div>
       <div class="guide-content" style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-secondary)">
         <div><b>Swipe Atas / Bawah:</b> Navigasi ke post berikutnya / sebelumnya.</div>
         <div><b>Swipe samping &amp; double-tap:</b> mati secara default (rawan salah ketuk), bisa dinyalakan di Setelan.</div>
         <div><b>Pinch:</b> Zoom gambar. Simpan ke Favorit lewat tombol Suka.</div>
         <div><b>Tahan ikon mata (atau tombol `):</b> Tutup layar seketika (PIN opsional di Setelan).</div>
-        <div><b>Keyboard (PC):</b> <b>↓ / →</b>: Berikutnya · <b>↑ / ←</b>: Sebelumnya · <b>Space</b>: Play/Pause Video · <b>F</b>: Favorit · <b>I</b>: Info · <b>R</b>: Acak</div>
+        <div><b>Keyboard (PC):</b> <kbd class="key"><span data-ic="arrowDown"></span></kbd><kbd class="key"><span data-ic="arrowRight"></span></kbd> Berikutnya &nbsp;·&nbsp; <kbd class="key"><span data-ic="arrowUp"></span></kbd><kbd class="key"><span data-ic="arrowLeft"></span></kbd> Sebelumnya &nbsp;·&nbsp; <kbd class="key">Space</kbd> Play/Pause &nbsp;·&nbsp; <kbd class="key">F</kbd> Favorit &nbsp;·&nbsp; <kbd class="key">I</kbd> Info &nbsp;·&nbsp; <kbd class="key">R</kbd> Acak</div>
       </div>
       <button class="bwide b-pri" style="margin-top:12px" onclick="PE.closeGuide()">Mengerti</button>
     </div>
@@ -275,7 +278,7 @@
           <input id="fhTagInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off" autocapitalize="off">
           <button onclick="PE.addHubTag()">Tambah</button>
         </div>
-        <button class="fsum" style="margin-top:2px;background:transparent;border:0;padding:2px 0;font-size:11.5px;color:var(--text-secondary);cursor:pointer;text-align:left" onclick="PE.pickTags()">
+        <button class="fsum" style="margin-top:2px;background:transparent;border:0;padding:2px 0;font-size:12px;color:var(--text-secondary);cursor:pointer;text-align:left" onclick="PE.pickTags()">
           <span data-ic="tag" style="margin-right:4px"></span><span>Pilih dari daftar tag</span>
         </button>
       </div>
@@ -287,7 +290,7 @@
           <input id="fhBlockInput" type="text" placeholder="Ketik nama tag…" maxlength="60" autocomplete="off" autocapitalize="off">
           <button style="background:rgba(239,68,68,0.2);color:#fca5a5;border-color:rgba(239,68,68,0.4)" onclick="PE.addHubBlockTag()">Blok</button>
         </div>
-        <button class="fsum" style="margin-top:2px;background:transparent;border:0;padding:2px 0;font-size:11.5px;color:#fca5a5;cursor:pointer;text-align:left" onclick="PE.pickBlockTags()">
+        <button class="fsum" style="margin-top:2px;background:transparent;border:0;padding:2px 0;font-size:12px;color:#fca5a5;cursor:pointer;text-align:left" onclick="PE.pickBlockTags()">
           <span data-ic="ban" style="margin-right:4px"></span><span>Pilih tag untuk diblokir</span>
         </button>
       </div>

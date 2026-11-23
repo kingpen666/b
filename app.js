@@ -8,6 +8,9 @@
       function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (!s[x]) { s[x] = 1; o.push(x); } }); return o; }
 
       var ICONS = {
+        more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+        chevD: '<path d="M5 9l7 7 7-7"/>',
+        chevUp: '<path d="M5 15l7-7 7 7"/>',
         sparkle: '<path d="M12 3l1.8 5.4L19.2 10.2 13.8 12l-1.8 5.4L10.2 12 4.8 10.2 10.2 8.4zM19 17l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>',
         flame: '<path d="M8.5 14.5A3.5 3.5 0 0 0 12 18a3.5 3.5 0 0 0 3.5-3.5C15.5 10 12 7 12 7s-3.5 3-3.5 7.5z"/><path d="M12 2c5 4 8 8.5 8 13a8 8 0 1 1-16 0c0-4.5 3-9 8-13z"/>',
         star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
@@ -90,7 +93,7 @@
       function jset(k, v) { try { lsSet(k, JSON.stringify(v)); } catch (e) { } }
 
       var S = (function () {
-        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false };
+        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false, autoClose: true };
         var s = jget("pe_settings", {});
         if (!s || typeof s !== "object" || Array.isArray(s)) s = {};
         for (var k in d) if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k];
@@ -109,6 +112,7 @@
         if (typeof d.hswipe !== "boolean") d.hswipe = false;
         if (typeof d.dblFav !== "boolean") d.dblFav = false;
         if (typeof d.wheelNav !== "boolean") d.wheelNav = false;
+        if (typeof d.autoClose !== "boolean") d.autoClose = true;
         if (!isFinite(Number(d.speed)) || Number(d.speed) < 0.25 || Number(d.speed) > 4) d.speed = 1; else d.speed = Number(d.speed);
         return d;
       })();
@@ -195,7 +199,9 @@
       var toastT = null;
       function toast(msg, type, action) {
         toastEl.textContent = lead(msg);
-        toastEl.className = "toast show" + (type ? " " + type : "") + (action ? " act" : "");
+        toastEl.className = "toast" + (type ? " " + type : "") + (action ? " act" : "");
+        void toastEl.offsetWidth; // paksa reflow agar animasi toast diulang tiap pesan baru
+        toastEl.classList.add("show");
         if (action) {
           var ab = document.createElement("button");
           ab.className = "toast-act"; ab.textContent = action.label;
@@ -205,8 +211,9 @@
           };
           toastEl.appendChild(ab);
         }
-        clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove("show"); }, action ? 5500 : 1800);
+        clearTimeout(toastT); var dur = action ? 5500 : 1800; toastEl.style.setProperty("--toast-dur", dur + "ms"); toastT = setTimeout(function () { toastEl.classList.remove("show"); }, dur);
       }
+      function pulse(node, cls) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); setTimeout(function () { node.classList.remove(cls); }, 700); }
       function snapPlaylists() { try { return JSON.stringify(playlists); } catch (e) { return null; } }
       function restorePlaylists(snap) {
         if (!snap) return;
@@ -912,7 +919,7 @@ function parseApiResponse(raw) {
         var p = getPL("pl_fav");
         if (!p) { p = { id: "pl_fav", name: "Favorit", postIds: [], last: null }; playlists.unshift(p); }
         if (isIn(p, current)) { var sn = snapPlaylists(); removeFrom("pl_fav", current); undoable("Dihapus dari Favorit", sn); }
-        else { addTo("pl_fav", current); toast("Masuk Favorit", "ok"); vibe(12); autoOff(current); }
+        else { addTo("pl_fav", current); toast("Masuk Favorit", "ok"); vibe(12); autoOff(current); pulse($("favBtn"), "pop"); }
         refreshBtns(); updateChip();
         if (sheet.classList.contains("open")) rerender();
       }
@@ -955,6 +962,7 @@ function parseApiResponse(raw) {
       function setMedia(el, kind) {
         emptyStage();
         if (el.tagName === "IMG") { el.alt = "Post " + current; el.className = kind === "ph" ? "ph" : ""; el.draggable = false; }
+        if (el.tagName === "IMG" || el.tagName === "VIDEO") { el.classList.remove("media-in"); void el.offsetWidth; el.classList.add("media-in"); }
         zoomLayer.appendChild(el);
         stage.classList.toggle("isvid", el.tagName === "VIDEO");
         if (soundBtn) { soundBtn.style.display = el.tagName === "VIDEO" ? "flex" : "none"; soundBtn.innerHTML = ic(S.muted ? "mute" : "volume"); }
@@ -1538,7 +1546,11 @@ function parseApiResponse(raw) {
           it.onclick = function () {
             if (popupMode === "pick") { var cb = pickCb; closePopup(); if (cb) cb(pl); return; }
             if (inl) { removeFrom(pl.id, popupPostId); toast("Dihapus dari " + pl.name, "bad"); }
-            else { addTo(pl.id, popupPostId); toast("Ditambahkan ke " + pl.name, "ok"); }
+            else {
+              addTo(pl.id, popupPostId); toast("Ditambahkan ke " + pl.name, "ok"); vibe(10);
+              pulse($("plBtnAction"), "pop");
+              if (S.autoClose) { var pidKeep = popupPostId; setTimeout(function () { if (popupPostId === pidKeep) closePopup(); }, 650); }
+            }
             renderPopup(); refreshBtns(); updateChip();
             if (sheet.classList.contains("open")) rerender();
           };
@@ -2621,7 +2633,7 @@ function parseApiResponse(raw) {
         };
         alphaPad.appendChild(numBtn);
 
-        var alphaTog = el("button", "tag-cat-btn", tagAlphaOpen ? "Tutup abjad A–Z" : "Abjad A–Z ▾");
+        var alphaTog = el("button", "tag-cat-btn"); alphaTog.innerHTML = "<span>" + (tagAlphaOpen ? "Tutup abjad A-Z" : "Abjad A-Z") + "</span>" + ic(tagAlphaOpen ? "chevUp" : "chevD");
         alphaTog.style.cssText = "width:100%;margin:6px 0";
         alphaTog.onclick = function () { tagAlphaOpen = !tagAlphaOpen; renderTagsView(); };
         b.appendChild(alphaTog);
@@ -2756,7 +2768,7 @@ function parseApiResponse(raw) {
           resetSel(); renderSheet();
         });
       });
-      function rerender() { if (!sheet.classList.contains("open")) return; var st = sheetBody.scrollTop; renderSheet(); sheetBody.scrollTop = st; }
+      function rerender() { if (!sheet.classList.contains("open")) return; var st = sheetBody.scrollTop; sheetBody.classList.add("static"); renderSheet(); sheetBody.scrollTop = st; setTimeout(function () { sheetBody.classList.remove("static"); }, 450); }
       var moreObs = null, thumbObs = null;
       function autoMore(btn) {
         if (typeof IntersectionObserver === "undefined") return;
@@ -2854,7 +2866,7 @@ function parseApiResponse(raw) {
             cv.appendChild(im);
           } else cv.innerHTML = ic("layers");
           var play = el("button", "play"); play.innerHTML = ic("play"); play.onclick = function (e) { e.stopPropagation(); startPlaylist(pl.id); };
-          var menu = el("button", "menu", "⋯");
+          var menu = el("button", "menu"); menu.innerHTML = ic("more");
           var acts = el("div", "acts");
           var b1 = el("button", ""); b1.innerHTML = ic("shuffle") + "<span>Putar acak</span>"; b1.onclick = function (e) { e.stopPropagation(); startPlaylist(pl.id, null, true); };
           var b2 = el("button", ""); b2.innerHTML = ic("edit") + "<span>Ganti nama</span>"; b2.onclick = function (e) { e.stopPropagation(); renamePlaylist(pl.id); };
@@ -2935,7 +2947,7 @@ function parseApiResponse(raw) {
             });
             if (selMode && sel[id] === 1) t.classList.add("sel");
             if (!selMode) {
-              var x = el("button", "x", "×");
+              var x = el("button", "x"); x.innerHTML = ic("x");
               x.onclick = function (e) { e.stopPropagation(); var snap = snapPlaylists(); removeFrom(p.id, id); rerender(); refreshBtns(); updateChip(); undoable("Dihapus dari " + p.name, snap); };
               t.appendChild(x);
             }
@@ -3010,6 +3022,7 @@ function parseApiResponse(raw) {
         b.appendChild(setRow("Tandai sudah dilihat", "Redupkan & beri centang di grid", seg(onoff, S.markSeen !== false, function (v) { S.markSeen = v; saveS(); })));
         b.appendChild(setRow("Mode aman", "Sembunyikan post non-aman (berdasar rating)", seg(onoff, !!S.safeMode, function (v) { S.safeMode = v; saveS(); streamAhead = []; streamBehind = []; refreshBadges(); toast(v ? "Mode aman aktif" : "Mode aman mati", "ok"); })));
         b.appendChild(setRow("Sembunyikan otomatis", "Tutup layar saat tab ditinggalkan", seg(onoff, !!S.autoPanic, function (v) { S.autoPanic = v; saveS(); })));
+        b.appendChild(setRow("Tutup panel otomatis", "Popup koleksi menutup sendiri setelah menyimpan; tap area gelap atau geser turun untuk menutup panel", seg(onoff, S.autoClose !== false, function (v) { S.autoClose = v; saveS(); })));
         b.appendChild(setRow("Favorit otomatis offline", "Simpan salinan tiap kali menyukai post", seg(onoff, !!S.autoOffline, function (v) { S.autoOffline = v; saveS(); })));
         b.appendChild(setRow("Suara video", "Default saat video dibuka", seg([[true, "Mati"], [false, "Hidup"]], S.muted, function (v) { S.muted = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) vd.muted = v; })));
         b.appendChild(setRow("Kecepatan video", "Playback rate", seg([[0.5, "0.5×"], [1, "1×"], [1.5, "1.5×"], [2, "2×"]], S.speed, function (v) { S.speed = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) { vd.defaultPlaybackRate = v; vd.playbackRate = v; } })));
@@ -3107,8 +3120,7 @@ function parseApiResponse(raw) {
         var gRow = el("div", "arow"); gRow.style.marginTop = "8px";
         gRow.appendChild(ipill("book", "Buka Panduan", "pri", openGuide));
         b.appendChild(gRow);
-        var tip = el("div", "", "Gestur: swipe ↑ = post berikutnya · swipe ↓ = post sebelumnya · swipe → = simpan ke playlist · swipe ← = hapus dari playlist · pinch = zoom gambar · double-tap = favorit (animasi heart). Keyboard: ←↑ = sebelumnya · →↓ = berikutnya · Spasi = play/pause · A=auto · F=favorit · R=acak · P=playlist · B=kembali · Esc=tutup. Filter AI & sembunyikan tag ada di menu Filter.");
-        tip.style.cssText = "font-size:11px;color:var(--text-faint);line-height:1.6;margin-top:10px";
+        var tip = el("div", "tipbox"); tip.innerHTML = "<b>Gestur:</b> swipe "+ic("arrowUp")+" post berikutnya · swipe "+ic("arrowDown")+" post sebelumnya · swipe "+ic("arrowRight")+" simpan ke playlist · swipe "+ic("arrowLeft")+" hapus dari playlist · pinch = zoom gambar · double-tap = favorit. "+"<br><b>Keyboard:</b> "+ic("arrowLeft")+ic("arrowUp")+" sebelumnya · "+ic("arrowRight")+ic("arrowDown")+" berikutnya · Spasi = play/pause · A = auto · F = favorit · R = acak · P = playlist · B = kembali · Esc = tutup. Filter AI &amp; sembunyikan tag ada di menu Filter.";
         b.appendChild(tip);
       }
       function securityCard() {
@@ -3601,6 +3613,46 @@ function parseApiResponse(raw) {
       });
       window.addEventListener("pagehide", function () { flushCheckpoint(); saveSeen(); tmFlush(); persist(); saveSession(); });
 
+      // ===== Feedback sentuhan: ripple di semua tombol =====
+      document.addEventListener("pointerdown", function (e) {
+        var b = e.target && e.target.closest ? e.target.closest("button, .pli, .trow, .card") : null;
+        if (!b || b.disabled || b.id === "panicBtn") return;
+        var r = b.getBoundingClientRect(), sz = Math.max(r.width, r.height) * 2;
+        var d = document.createElement("span");
+        d.className = "ripple";
+        d.style.cssText = "width:" + sz + "px;height:" + sz + "px;left:" + (e.clientX - r.left - sz / 2) + "px;top:" + (e.clientY - r.top - sz / 2) + "px";
+        if (getComputedStyle(b).position === "static") b.classList.add("rip-host");
+        b.classList.add("rip-clip");
+        b.appendChild(d);
+        setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 600);
+      }, { passive: true });
+
+      // ===== Auto-tutup panel: tap area gelap + geser turun =====
+      sheetBackdrop.addEventListener("click", function () { if (S.autoClose !== false) closeSheet(); });
+      (function sheetDrag() {
+        var y0 = null, dy = 0, drag = false;
+        var head = sheet.querySelector(".grab"), shead = sheet.querySelector(".shead");
+        function start(e) { var t = e.touches[0]; y0 = t.clientY; dy = 0; drag = true; sheet.style.transition = "none"; }
+        function move(e) {
+          if (!drag) return;
+          dy = Math.max(0, e.touches[0].clientY - y0);
+          sheet.style.transform = "translateY(" + dy + "px)";
+          sheetBackdrop.style.opacity = String(Math.max(0, 1 - dy / 320));
+        }
+        function end() {
+          if (!drag) return; drag = false;
+          sheet.style.transition = ""; sheetBackdrop.style.opacity = "";
+          if (dy > 90) { sheet.style.transform = ""; closeSheet(); } else sheet.style.transform = "";
+        }
+        [head, shead].forEach(function (n) {
+          if (!n) return;
+          n.addEventListener("touchstart", start, { passive: true });
+          n.addEventListener("touchmove", move, { passive: true });
+          n.addEventListener("touchend", end, { passive: true });
+          n.addEventListener("touchcancel", end, { passive: true });
+        });
+      })();
+
       paintIcons();
       Array.prototype.forEach.call(document.querySelectorAll("button[title]"), function (bt) { if (!bt.getAttribute("aria-label")) bt.setAttribute("aria-label", bt.title); });
       refreshBtns(); updateChip(); updateBack();
@@ -3641,7 +3693,7 @@ function parseApiResponse(raw) {
         // Pengunjung baru pertama kali: ambil post terbaru agar tidak membuka post #1 yang sudah dihapus
         fetchLatestPostId().then(function (latestId) {
           var numInp = $("numberInput");
-          if (numInp) numInp.placeholder = "Nomor Post (#" + latestId + ")…";
+          if (numInp) numInp.placeholder = "#" + latestId;
           var sbInp = $("numberInputSidebar");
           if (sbInp) sbInp.placeholder = "#" + latestId + "…";
           if (validId(latestId) && latestId > 1000) {
@@ -3659,7 +3711,7 @@ function parseApiResponse(raw) {
         loadPost(current, 0);
         fetchLatestPostId().then(function (id) {
           var numInp = $("numberInput");
-          if (numInp) numInp.placeholder = "Nomor Post (#" + id + ")…";
+          if (numInp) numInp.placeholder = "#" + id;
           var sbInp = $("numberInputSidebar");
           if (sbInp) sbInp.placeholder = "#" + id + "…";
         }).catch(function () { });
