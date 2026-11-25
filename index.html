@@ -104,6 +104,8 @@
           <div class="spin" id="spin"></div>
 
           <div class="zoom-badge" id="zoomBadge">1.0x</div>
+          <div class="vprog" id="vprog"><i id="vprogFill"></i></div>
+          <div class="speed-badge" id="speedBadge"><span data-ic="play"></span><span data-ic="play"></span><b>2×</b></div>
 
           <div class="idtag-box" id="idTagBox">
             <span class="idtag" id="idTag">#1</span>
@@ -190,6 +192,7 @@
       <div id="infoMeta"
         style="display:flex;gap:8px;font-size:12px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap"></div>
       <div id="infoBody" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;padding-right:2px">
+        <div id="infoActions" class="arow"></div>
         <div id="infoTags"></div>
         <div id="infoSuggestions"></div>
       </div>
@@ -208,8 +211,9 @@
         <div><b>Swipe Atas / Bawah:</b> Navigasi ke post berikutnya / sebelumnya.</div>
         <div><b>Swipe samping &amp; double-tap:</b> mati secara default (rawan salah ketuk), bisa dinyalakan di Setelan.</div>
         <div><b>Pinch:</b> Zoom gambar. Simpan ke Favorit lewat tombol Suka.</div>
+        <div><b>Video:</b> tahan layar = putar 2× · ketuk 2× sisi kiri/kanan = mundur/maju 10 dtk · ketuk 2× di tengah = Favorit (bila Double-tap aktif).</div>
         <div><b>Tahan ikon mata (atau tombol `):</b> Tutup layar seketika (PIN opsional di Setelan).</div>
-        <div><b>Keyboard (PC):</b> <kbd class="key"><span data-ic="arrowDown"></span></kbd><kbd class="key"><span data-ic="arrowRight"></span></kbd> Berikutnya &nbsp;·&nbsp; <kbd class="key"><span data-ic="arrowUp"></span></kbd><kbd class="key"><span data-ic="arrowLeft"></span></kbd> Sebelumnya &nbsp;·&nbsp; <kbd class="key">Space</kbd> Play/Pause &nbsp;·&nbsp; <kbd class="key">F</kbd> Favorit &nbsp;·&nbsp; <kbd class="key">I</kbd> Info &nbsp;·&nbsp; <kbd class="key">R</kbd> Acak</div>
+        <div><b>Keyboard (PC):</b> <kbd class="key"><span data-ic="arrowDown"></span></kbd><kbd class="key"><span data-ic="arrowRight"></span></kbd> Berikutnya &nbsp;·&nbsp; <kbd class="key"><span data-ic="arrowUp"></span></kbd><kbd class="key"><span data-ic="arrowLeft"></span></kbd> Sebelumnya &nbsp;·&nbsp; <kbd class="key">Space</kbd> Play/Pause &nbsp;·&nbsp; <kbd class="key">F</kbd> Favorit &nbsp;·&nbsp; <kbd class="key">I</kbd> Info &nbsp;·&nbsp; <kbd class="key">R</kbd> Acak &nbsp;·&nbsp; <kbd class="key">M</kbd> Suara &nbsp;·&nbsp; <kbd class="key">J</kbd><kbd class="key">L</kbd> ±5 dtk</div>
       </div>
       <button class="bwide b-pri" style="margin-top:12px" onclick="PE.closeGuide()">Mengerti</button>
     </div>

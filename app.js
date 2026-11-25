@@ -93,7 +93,7 @@
       function jset(k, v) { try { lsSet(k, JSON.stringify(v)); } catch (e) { } }
 
       var S = (function () {
-        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false, autoClose: true };
+        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false, autoClose: true, haptic: true, sfx: false };
         var s = jget("pe_settings", {});
         if (!s || typeof s !== "object" || Array.isArray(s)) s = {};
         for (var k in d) if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k];
@@ -113,6 +113,8 @@
         if (typeof d.dblFav !== "boolean") d.dblFav = false;
         if (typeof d.wheelNav !== "boolean") d.wheelNav = false;
         if (typeof d.autoClose !== "boolean") d.autoClose = true;
+        if (typeof d.haptic !== "boolean") d.haptic = true;
+        if (typeof d.sfx !== "boolean") d.sfx = false;
         if (!isFinite(Number(d.speed)) || Number(d.speed) < 0.25 || Number(d.speed) > 4) d.speed = 1; else d.speed = Number(d.speed);
         return d;
       })();
@@ -142,6 +144,8 @@
         h.style.left = (x || window.innerWidth / 2) + "px";
         h.style.top = (y || window.innerHeight / 2) + "px";
         document.body.appendChild(h);
+        burst(x || window.innerWidth / 2, y || window.innerHeight / 2, 12);
+        sfx("like");
         setTimeout(function () {
           if (h.parentNode) h.parentNode.removeChild(h);
         }, 780);
@@ -201,6 +205,7 @@
         toastEl.textContent = lead(msg);
         toastEl.className = "toast" + (type ? " " + type : "") + (action ? " act" : "");
         void toastEl.offsetWidth; // paksa reflow agar animasi toast diulang tiap pesan baru
+        if (type === "bad") sfx("bad");
         toastEl.classList.add("show");
         if (action) {
           var ab = document.createElement("button");
@@ -235,7 +240,48 @@
       function dlgYes() { var v = dlgInput.value; dlgBackdrop.classList.remove("open"); var cb = dlgCb; dlgCb = null; if (cb) cb(v); }
       function dlgNo() { dlgBackdrop.classList.remove("open"); dlgCb = null; }
       dlgInput.addEventListener("keydown", function (e) { if (e.key === "Enter") dlgYes(); });
-      function vibe(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) { } }
+      function vibe(ms) { try { if (S.haptic !== false && navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) { } }
+
+      // Efek suara kecil (opsional, default mati) lewat WebAudio, tanpa file eksternal
+      var _ac = null;
+      function sfx(kind) {
+        if (!S.sfx) return;
+        try {
+          _ac = _ac || new (window.AudioContext || window.webkitAudioContext)();
+          if (_ac.state === "suspended") _ac.resume();
+          var t0 = _ac.currentTime;
+          var tones = kind === "like" ? [[660, 0], [990, 0.07]] : kind === "bad" ? [[220, 0]] : [[520, 0]];
+          tones.forEach(function (n) {
+            var o = _ac.createOscillator(), g = _ac.createGain(), s = t0 + n[1];
+            o.type = "sine"; o.frequency.value = n[0];
+            g.gain.setValueAtTime(0.0001, s);
+            g.gain.exponentialRampToValueAtTime(0.12, s + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, s + 0.14);
+            o.connect(g); g.connect(_ac.destination); o.start(s); o.stop(s + 0.16);
+          });
+        } catch (e) { }
+      }
+
+      // Percikan partikel (Suka / Simpan)
+      function burst(x, y, n, cls) {
+        n = n || 10;
+        for (var i = 0; i < n; i++) {
+          var p = document.createElement("i"); p.className = "spark" + (cls ? " " + cls : "");
+          var a = (Math.PI * 2 * i) / n + Math.random() * 0.5, d = 36 + Math.random() * 36;
+          p.style.cssText = "left:" + x + "px;top:" + y + "px;--dx:" + (Math.cos(a) * d).toFixed(1) + "px;--dy:" + (Math.sin(a) * d).toFixed(1) + "px;--s:" + (0.6 + Math.random() * 0.9).toFixed(2);
+          document.body.appendChild(p);
+          (function (q) { setTimeout(function () { if (q.parentNode) q.parentNode.removeChild(q); }, 720); })(p);
+        }
+      }
+      function burstFrom(node, n, cls) { if (!node) return; var r = node.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, n, cls); }
+
+      function copyText(txt, okMsg) {
+        function done(ok) { toast(ok ? okMsg : "Gagal menyalin", ok ? "ok" : "bad"); if (ok) vibe(10); }
+        function legacy() {
+          try { var t = document.createElement("textarea"); t.value = txt; t.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(t); t.select(); var ok = document.execCommand("copy"); document.body.removeChild(t); done(ok); } catch (e) { done(false); }
+        }
+        try { navigator.clipboard.writeText(txt).then(function () { done(true); }, legacy); } catch (e) { legacy(); }
+      }
       function saveBlob(blob, name) {
         var u = URL.createObjectURL(blob), a = document.createElement("a");
         a.href = u; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -919,7 +965,7 @@ function parseApiResponse(raw) {
         var p = getPL("pl_fav");
         if (!p) { p = { id: "pl_fav", name: "Favorit", postIds: [], last: null }; playlists.unshift(p); }
         if (isIn(p, current)) { var sn = snapPlaylists(); removeFrom("pl_fav", current); undoable("Dihapus dari Favorit", sn); }
-        else { addTo("pl_fav", current); toast("Masuk Favorit", "ok"); vibe(12); autoOff(current); pulse($("favBtn"), "pop"); }
+        else { addTo("pl_fav", current); toast("Masuk Favorit", "ok"); vibe([12, 40, 18]); sfx("like"); autoOff(current); pulse($("favBtn"), "pop"); burstFrom($("favBtn"), 12); }
         refreshBtns(); updateChip();
         if (sheet.classList.contains("open")) rerender();
       }
@@ -959,10 +1005,11 @@ function parseApiResponse(raw) {
         while (zoomLayer.firstChild) zoomLayer.removeChild(zoomLayer.firstChild);
         teardownVideo(old);
       }
+      var navDir = 0;
       function setMedia(el, kind) {
         emptyStage();
         if (el.tagName === "IMG") { el.alt = "Post " + current; el.className = kind === "ph" ? "ph" : ""; el.draggable = false; }
-        if (el.tagName === "IMG" || el.tagName === "VIDEO") { el.classList.remove("media-in"); void el.offsetWidth; el.classList.add("media-in"); }
+        if (el.tagName === "IMG" || el.tagName === "VIDEO") { el.classList.remove("media-in"); el.setAttribute("data-dir", String(navDir)); void el.offsetWidth; el.classList.add("media-in"); }
         zoomLayer.appendChild(el);
         stage.classList.toggle("isvid", el.tagName === "VIDEO");
         if (soundBtn) { soundBtn.style.display = el.tagName === "VIDEO" ? "flex" : "none"; soundBtn.innerHTML = ic(S.muted ? "mute" : "volume"); }
@@ -1002,6 +1049,9 @@ function parseApiResponse(raw) {
           if (t && isFinite(v.duration) && t < v.duration - 2) { try { v.currentTime = t; } catch (e) { } }
           v.playbackRate = S.speed;
         });
+        v.addEventListener("timeupdate", function () { if (id === current && v.duration && vprogFill) vprogFill.style.transform = "scaleX(" + Math.min(1, v.currentTime / v.duration).toFixed(4) + ")"; });
+        v.addEventListener("play", function () { if (id === current && v.currentTime > 0.3) playFlash(false); });
+        v.addEventListener("pause", function () { if (id === current && !v.ended && !v.seeking) playFlash(true); });
         v.addEventListener("waiting", function () { if (id === current) setLoading(true); });
         v.addEventListener("canplay", function () { if (id === current) setLoading(false); });
         // Preload tetangga baru jalan setelah video aktif cukup ter-buffer, supaya bandwidth 100% untuk video ini
@@ -1054,6 +1104,7 @@ function parseApiResponse(raw) {
         if (id === undefined || id === null) id = Number(input.value);
         if (!validId(id)) { toast("ID harus 1 – 100000000", "bad"); input.value = current; return; }
         tries = tries || 0;
+        navDir = dir || 0;
         if (!dir) { streamAhead = []; streamBehind = []; }
         commit(id);
         var tok = ++token;
@@ -1349,7 +1400,7 @@ function parseApiResponse(raw) {
       var gm = null;
       var g = { d0: 0, s0: 1, tx0: 0, ty0: 0, mx: 0, my: 0, px: 0, py: 0, lastTap: 0, lx: 0, ly: 0 };
 
-      function hint(el, vis, armed) { el.classList.toggle("visible", !!vis); el.classList.toggle("armed", !!armed); }
+      function hint(el, vis, armed) { if (armed && !el.classList.contains("armed")) vibe(10); el.classList.toggle("visible", !!vis); el.classList.toggle("armed", !!armed); }
       function clearHints() { hint(hintL, 0, 0); hint(hintR, 0, 0); hint(hintU, 0, 0); hint(hintD, 0, 0); }
       function isDbl(t) { return (now() - g.lastTap < DT_MS) && Math.abs(t.clientX - g.lx) < 30 && Math.abs(t.clientY - g.ly) < 30; }
       function beginSwipe(t, dbl) {
@@ -1456,9 +1507,14 @@ function parseApiResponse(raw) {
           if (sw.dbl && !S.dblFav) { g.lastTap = 0; }
           else if (sw.dbl) {
             g.lastTap = 0;
-            lastHeart = now();
-            showHeartPop(sw.sx, sw.sy);
-            addFav(current);
+            // Di video: sisi kiri/kanan = loncat 10 dtk, area kontrol bawah = milik kontrol video; hanya bagian tengah yang jadi Favorit
+            var vd = zoomLayer.querySelector("video"), seekZone = false;
+            if (vd) { var vr = vd.getBoundingClientRect(), rel = (sw.sx - vr.left) / vr.width; seekZone = sw.sy > vr.bottom - 64 || rel < 0.38 || rel > 0.62; }
+            if (!seekZone) {
+              lastHeart = now();
+              showHeartPop(sw.sx, sw.sy);
+              addFav(current);
+            }
           } else { g.lastTap = now(); g.lx = sw.sx; g.ly = sw.sy; }
           return;
         }
@@ -1549,7 +1605,7 @@ function parseApiResponse(raw) {
             if (inl) { removeFrom(pl.id, popupPostId); toast("Dihapus dari " + pl.name, "bad"); }
             else {
               addTo(pl.id, popupPostId); toast("Ditambahkan ke " + pl.name, "ok"); vibe(10);
-              pulse($("plBtnAction"), "pop");
+              pulse($("plBtnAction"), "pop"); burstFrom($("plBtnAction"), 8, "w"); sfx("save");
               if (S.autoClose) { var pidKeep = popupPostId; setTimeout(function () { if (popupPostId === pidKeep) closePopup(); }, 650); }
             }
             renderPopup(); refreshBtns(); updateChip();
@@ -1586,6 +1642,14 @@ function parseApiResponse(raw) {
         infoMetaEl.innerHTML = "Mengambil detail post…";
         infoTagsEl.innerHTML = "";
         infoSuggEl.innerHTML = "";
+        var ia = $("infoActions");
+        if (ia) {
+          ia.innerHTML = "";
+          var pageUrl = "https://rule34.xxx/index.php?page=post&s=view&id=" + id;
+          ia.appendChild(ipill("copy", "Salin ID", "", function () { copyText(String(id), "ID #" + id + " disalin"); }));
+          ia.appendChild(ipill("link", "Salin link", "", function () { copyText(id === current && currentURL ? currentURL : pageUrl, "Link disalin"); }));
+          ia.appendChild(ipill("share", "Buka sumber", "", function () { window.open(pageUrl, "_blank", "noopener,noreferrer"); }));
+        }
         infoBackdrop.classList.add("open");
 
         var postPromise;
@@ -3036,12 +3100,14 @@ function parseApiResponse(raw) {
         b.appendChild(setRow("Pertahankan zoom", "Level zoom tetap saat pindah post", seg(onoff, S.keepZoom, function (v) { S.keepZoom = v; saveS(); })));
         b.appendChild(setRow("Tampilan", "Muat utuh / penuhi layar", seg([["contain", "Muat"], ["cover", "Penuh"]], S.fit, function (v) { S.fit = v; saveS(); applyFit(); })));
         b.appendChild(setRow("Swipe samping", "Kanan: simpan ke playlist · Kiri: hapus dari playlist (rawan salah)", seg(onoff, !!S.hswipe, function (v) { S.hswipe = v; saveS(); })));
-        b.appendChild(setRow("Double-tap = Favorit", "Ketuk 2x / klik ganda menyimpan ke Favorit", seg(onoff, !!S.dblFav, function (v) { S.dblFav = v; saveS(); })));
+        b.appendChild(setRow("Double-tap = Favorit", "Ketuk 2x menyimpan ke Favorit. Di video hanya bagian tengah; sisi kiri/kanan = loncat 10 dtk", seg(onoff, !!S.dblFav, function (v) { S.dblFav = v; saveS(); })));
         b.appendChild(setRow("Scroll roda = pindah post", "Roda mouse / trackpad di layar post (desktop)", seg(onoff, !!S.wheelNav, function (v) { S.wheelNav = v; saveS(); })));
         b.appendChild(setRow("Tandai sudah dilihat", "Redupkan & beri centang di grid", seg(onoff, S.markSeen !== false, function (v) { S.markSeen = v; saveS(); })));
         b.appendChild(setRow("Mode aman", "Sembunyikan post non-aman (berdasar rating)", seg(onoff, !!S.safeMode, function (v) { S.safeMode = v; saveS(); streamAhead = []; streamBehind = []; refreshBadges(); toast(v ? "Mode aman aktif" : "Mode aman mati", "ok"); })));
         b.appendChild(setRow("Sembunyikan otomatis", "Tutup layar saat tab ditinggalkan", seg(onoff, !!S.autoPanic, function (v) { S.autoPanic = v; saveS(); })));
         b.appendChild(setRow("Tutup panel otomatis", "Popup koleksi menutup sendiri setelah menyimpan; tap area gelap atau geser turun untuk menutup panel", seg(onoff, S.autoClose !== false, function (v) { S.autoClose = v; saveS(); })));
+        b.appendChild(setRow("Getar (haptic)", "Getaran halus saat suka, simpan, dan geser", seg(onoff, S.haptic !== false, function (v) { S.haptic = v; saveS(); if (v) vibe(12); })));
+        b.appendChild(setRow("Efek suara", "Bunyi kecil saat suka, simpan, dan error", seg(onoff, !!S.sfx, function (v) { S.sfx = v; saveS(); if (v) sfx("like"); })));
         b.appendChild(setRow("Favorit otomatis offline", "Simpan salinan tiap kali menyukai post", seg(onoff, !!S.autoOffline, function (v) { S.autoOffline = v; saveS(); })));
         b.appendChild(setRow("Suara video", "Default saat video dibuka", seg([[true, "Mati"], [false, "Hidup"]], S.muted, function (v) { S.muted = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) vd.muted = v; })));
         b.appendChild(setRow("Kecepatan video", "Playback rate", seg([[0.5, "0.5×"], [1, "1×"], [1.5, "1.5×"], [2, "2×"]], S.speed, function (v) { S.speed = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) { vd.defaultPlaybackRate = v; vd.playbackRate = v; } })));
@@ -3139,7 +3205,7 @@ function parseApiResponse(raw) {
         var gRow = el("div", "arow"); gRow.style.marginTop = "8px";
         gRow.appendChild(ipill("book", "Buka Panduan", "pri", openGuide));
         b.appendChild(gRow);
-        var tip = el("div", "tipbox"); tip.innerHTML = "<b>Gestur:</b> swipe "+ic("arrowUp")+" post berikutnya · swipe "+ic("arrowDown")+" post sebelumnya · swipe "+ic("arrowRight")+" simpan ke playlist · swipe "+ic("arrowLeft")+" hapus dari playlist · pinch = zoom gambar · double-tap = favorit. "+"<br><b>Keyboard:</b> "+ic("arrowLeft")+ic("arrowUp")+" sebelumnya · "+ic("arrowRight")+ic("arrowDown")+" berikutnya · Spasi = play/pause · A = auto · F = favorit · R = acak · P = playlist · B = kembali · Esc = tutup. Filter AI &amp; sembunyikan tag ada di menu Filter.";
+        var tip = el("div", "tipbox"); tip.innerHTML = "<b>Gestur:</b> tahan video = 2× · ketuk 2× kiri/kanan video = loncat 10 dtk · swipe "+ic("arrowUp")+" post berikutnya · swipe "+ic("arrowDown")+" post sebelumnya · swipe "+ic("arrowRight")+" simpan ke playlist · swipe "+ic("arrowLeft")+" hapus dari playlist · pinch = zoom gambar · double-tap = favorit. "+"<br><b>Keyboard:</b> "+ic("arrowLeft")+ic("arrowUp")+" sebelumnya · "+ic("arrowRight")+ic("arrowDown")+" berikutnya · Spasi = play/pause · M = suara · J/L = mundur/maju 5 dtk · A = auto · F = favorit · R = acak · P = playlist · B = kembali · Esc = tutup. Filter AI &amp; sembunyikan tag ada di menu Filter.";
         b.appendChild(tip);
       }
       function securityCard() {
@@ -3434,6 +3500,76 @@ function parseApiResponse(raw) {
         }
       }
 
+      // ===== Gestur video: tahan = 2x, ketuk 2x kiri/kanan = loncat 10 dtk, J/L = 5 dtk, indikator play/pause =====
+      var vprogFill = $("vprogFill"), speedBadge = $("speedBadge"), lastAct = 0;
+      ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, function () { lastAct = now(); }, true); });
+      function flashEl(cls, html, ms) {
+        var d = document.createElement("div"); d.className = cls; d.innerHTML = html;
+        stage.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, ms || 650);
+      }
+      function playFlash(paused) {
+        if (now() - lastAct > 600) return;
+        var old = stage.querySelector(".play-flash"); if (old) old.parentNode.removeChild(old);
+        flashEl("play-flash", ic(paused ? "pause" : "play"), 600);
+      }
+      function seekBy(sec, side) {
+        var v = zoomLayer.querySelector("video");
+        if (!v || !isFinite(v.duration)) return;
+        v.currentTime = Math.max(0, Math.min(v.duration - 0.1, v.currentTime + sec));
+        var old = stage.querySelectorAll(".seek-flash"); for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+        var sd = side || (sec < 0 ? "l" : "r");
+        flashEl("seek-flash " + sd, (sd === "l" ? ic("chevL") + ic("chevL") : ic("chevR") + ic("chevR")) + "<span>" + Math.abs(sec) + " dtk</span>", 600);
+        vibe(8);
+      }
+      (function videoGestures() {
+        var lp = null, lpT = null, slow = false, suppress = 0, lastTap = { t: 0, x: 0 };
+        function vidAt(e) {
+          var v = e.target && e.target.tagName === "VIDEO" ? e.target : null; if (!v) return null;
+          var r = v.getBoundingClientRect(); if (e.clientY > r.bottom - 64) return null; // area kontrol bawaan: jangan diganggu
+          return v;
+        }
+        function endLp() {
+          clearTimeout(lpT);
+          if (slow) { slow = false; suppress = now() + 350; if (lp && lp.v) lp.v.playbackRate = S.speed; if (speedBadge) speedBadge.classList.remove("on"); }
+          lp = null;
+        }
+        zoomLayer.addEventListener("pointerdown", function (e) {
+          var v = vidAt(e); if (!v || (e.pointerType === "mouse" && e.button !== 0)) return;
+          lp = { x: e.clientX, y: e.clientY, v: v }; clearTimeout(lpT);
+          lpT = setTimeout(function () {
+            if (!lp || lp.v.paused) return;
+            slow = true; lp.v.playbackRate = 2; if (speedBadge) speedBadge.classList.add("on"); vibe(14);
+          }, 450);
+        });
+        zoomLayer.addEventListener("pointermove", function (e) {
+          if (lp && !slow && (Math.abs(e.clientX - lp.x) > 12 || Math.abs(e.clientY - lp.y) > 12)) { clearTimeout(lpT); lp = null; }
+        });
+        // Chrome Android sudah punya ketuk-2x loncat 10 dtk bawaan (tidak bisa dicegat). Deteksi otomatis:
+        // bila setelah loncat milik kita posisi video melebihi target, berarti bawaan ikut jalan -> nonaktifkan versi kita.
+        var nativeDbl = lsGet("pe_native_dbl") === "1";
+        zoomLayer.addEventListener("pointerup", function (e) {
+          var wasSlow = slow; endLp();
+          if (wasSlow || e.pointerType !== "touch" || nativeDbl) return;
+          var v = vidAt(e); if (!v) return;
+          var t = now();
+          if (t - lastTap.t < 320 && Math.abs(e.clientX - lastTap.x) < 50) {
+            var r = v.getBoundingClientRect(), rel = (e.clientX - r.left) / r.width, sec = rel < 0.38 ? -10 : (rel > 0.62 ? 10 : 0);
+            lastTap.t = 0; if (!sec) return;
+            var target = Math.max(0, Math.min((v.duration || 1e9) - 0.1, v.currentTime + sec));
+            seekBy(sec, sec < 0 ? "l" : "r"); suppress = t + 350;
+            setTimeout(function () {
+              if (Math.abs(v.currentTime - target) > 5) { nativeDbl = true; lsSet("pe_native_dbl", "1"); try { v.currentTime = target; } catch (er) { } }
+            }, 220);
+          } else lastTap = { t: t, x: e.clientX };
+        });
+        zoomLayer.addEventListener("pointercancel", endLp);
+        zoomLayer.addEventListener("click", function (e) { if (now() < suppress) { e.stopPropagation(); e.preventDefault(); } }, true);
+      })();
+
+      // Status koneksi
+      window.addEventListener("offline", function () { toast("Offline: hanya konten tersimpan yang bisa dibuka", "bad"); });
+      window.addEventListener("online", function () { toast("Kembali online", "ok"); });
+
       function toggleSound() {
         S.muted = !S.muted;
         saveS();
@@ -3612,6 +3748,10 @@ function parseApiResponse(raw) {
         else if (k === "t" || k === "T") openSheet("tags");
         else if (k === "i" || k === "I") openInfo();
         else if (k === "b" || k === "B") back();
+        else if (k === "m" || k === "M") toggleSound();
+        else if (k === "j" || k === "J") seekBy(-5);
+        else if (k === "l" || k === "L") seekBy(5);
+        else if (k === "?") openGuide();
       });
 
       document.addEventListener("keydown", function (e) {

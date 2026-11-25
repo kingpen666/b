@@ -2086,3 +2086,63 @@ html, body { font-variant-numeric: normal; }
 .grab:active { cursor: grabbing; }
 .shead { touch-action: none; }
 .sbody { overscroll-behavior: contain; }
+
+/* ==========================================================================
+   JUICY LAYER: partikel, indikator video, transisi arah, loading bar
+   ========================================================================== */
+
+/* Partikel percikan */
+.spark { position: fixed; z-index: 998; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; pointer-events: none;
+  background: var(--accent-like); box-shadow: 0 0 8px rgba(244,63,94,.6);
+  transform: translate(0,0) scale(var(--s,1)); animation: spark .68s var(--ease) forwards; }
+.spark.w { background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.5); }
+@keyframes spark { 0% { opacity: 1; transform: translate(0,0) scale(var(--s,1)); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); } }
+
+/* Progress video (garis tipis di atas stage) */
+.vprog { position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 11; background: rgba(255,255,255,.10); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+.stage.isvid .vprog { opacity: 1; }
+.vprog i { display: block; height: 100%; width: 100%; background: var(--accent-video); transform-origin: left; transform: scaleX(0); box-shadow: 0 0 8px rgba(56,189,248,.7); }
+
+/* Badge 2x saat menahan layar video */
+.speed-badge { position: absolute; top: 14px; left: 50%; z-index: 14; display: flex; align-items: center; gap: 2px; padding: 5px 12px; border-radius: var(--radius-pill);
+  background: rgba(18,20,24,.88); border: 1px solid var(--border-subtle); color: var(--text-primary); font: 700 var(--fs-base) var(--font-mono);
+  opacity: 0; transform: translateX(-50%) translateY(-8px) scale(.9); pointer-events: none; transition: opacity .15s var(--ease), transform .25s var(--spring); }
+.speed-badge.on { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+.speed-badge .ic { width: 12px; height: 12px; fill: currentColor; stroke: none; }
+.speed-badge .ic + .ic { margin-left: -5px; opacity: .55; animation: ffwd .7s ease-in-out infinite; }
+.speed-badge b { margin-left: 6px; }
+@keyframes ffwd { 50% { opacity: 1; transform: translateX(2px); } }
+
+/* Kilatan play/pause di tengah */
+.play-flash { position: absolute; top: 50%; left: 50%; z-index: 14; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(0,0,0,.55); border: 1px solid var(--border-subtle); color: #fff; pointer-events: none; animation: playflash .6s var(--ease) forwards; }
+.play-flash .ic { width: 26px; height: 26px; fill: currentColor; }
+@keyframes playflash { 0% { opacity: 0; transform: scale(.6); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.25); } }
+
+/* Kilatan loncat 10 dtk */
+.seek-flash { position: absolute; top: 50%; z-index: 14; width: 96px; height: 96px; margin-top: -48px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.14); color: #fff; font: 600 var(--fs-sm) var(--font-sans); pointer-events: none; animation: seekflash .6s var(--ease) forwards; }
+.seek-flash.l { left: 6%; } .seek-flash.r { right: 6%; }
+.seek-flash .ic { width: 18px; height: 18px; display: inline-block; margin: 0 -3px; }
+.seek-flash span { margin-top: 2px; }
+@keyframes seekflash { 0% { opacity: 0; transform: scale(.7); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+/* Transisi geser sesuai arah navigasi (menimpa fade polos) */
+.zoom-layer .media-in[data-dir="1"]  { animation-name: slideup; }
+.zoom-layer .media-in[data-dir="-1"] { animation-name: slidedown; }
+@keyframes slideup   { from { opacity: 0; transform: translateY(28px); }  to { opacity: 1; transform: none; } }
+@keyframes slidedown { from { opacity: 0; transform: translateY(-28px); } to { opacity: 1; transform: none; } }
+.zoom-layer .media-in { animation-duration: .32s; }
+
+/* Bar loading di atas stage saat spinner aktif (shimmer) */
+.stage:has(.spin.show:not(.x))::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 12; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--text-primary), transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: shimmer 1.1s linear infinite; }
+@keyframes shimmer { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+
+/* Info modal: baris aksi */
+#infoActions { margin: 0; }
+#infoActions .pill { min-height: var(--h-sm); }
+
+/* Toast naik di atas bar aksi saat tampil, tanpa menutupi tombol */
+.heart-pop { z-index: 999; }
