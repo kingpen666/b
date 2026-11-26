@@ -79,7 +79,7 @@
             return;
           } catch (e) {
             try {
-              localStorage.removeItem("darknight_alpha_cache");
+              localStorage.removeItem("darknight_alpha_cache2");
               localStorage.setItem(k, v);
               return;
             } catch (e2) {
@@ -319,6 +319,7 @@ function parseApiResponse(raw) {
             var root = xmlDoc.documentElement;
             if (root && root.getAttribute && root.getAttribute("success") === "false") return null;
             var postNodes = xmlDoc.getElementsByTagName("post");
+            if (!postNodes.length) postNodes = xmlDoc.getElementsByTagName("tag");
             var posts = [];
             for (var i = 0; i < postNodes.length; i++) {
               var node = postNodes[i];
@@ -339,7 +340,9 @@ function parseApiResponse(raw) {
           if (Array.isArray(parsed)) return parsed;
           if (parsed && typeof parsed === "object") {
             if (parsed.success === false || parsed.error) return null;
-            if (Array.isArray(parsed.post)) return parsed.post;
+            var inner = parsed.post !== undefined ? parsed.post : parsed.tag;
+            if (Array.isArray(inner)) return inner.map(unwrapAttrs);
+            if (inner && typeof inner === "object") return [unwrapAttrs(inner)];
             return [];
           }
           return null;
@@ -348,6 +351,7 @@ function parseApiResponse(raw) {
         }
       }
 
+      function unwrapAttrs(o) { return (o && o["@attributes"]) ? o["@attributes"] : o; }
       function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
       function fetchT(url, ms) {
         if (typeof AbortController === "undefined") return fetch(url);
@@ -1660,6 +1664,24 @@ function parseApiResponse(raw) {
       popupNewInput.addEventListener("keydown", function (e) { if (e.key === "Enter") confirmNewPl(); });
 
       var infoRequestToken = 0;
+      // created_at Rule34: "Fri Nov 21 09:15:33 +0000 2025" (di-parse manual karena Safari tidak konsisten)
+      function parseR34Date(str) {
+        if (!str) return 0;
+        var m = String(str).match(/^\w{3} (\w{3}) (\d{1,2}) (\d{2}):(\d{2}):(\d{2}) ([+-])(\d{2})(\d{2}) (\d{4})$/);
+        if (m) {
+          var mon = "JanFebMarAprMayJunJulAugSepOctNovDec".indexOf(m[1]) / 3;
+          if (mon >= 0 && mon % 1 === 0) {
+            var off = (m[6] === "-" ? -1 : 1) * (Number(m[7]) * 60 + Number(m[8]));
+            return Date.UTC(Number(m[9]), mon, Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5])) - off * 60000;
+          }
+        }
+        var t = Date.parse(str);
+        return isNaN(t) ? 0 : t;
+      }
+      function fmtUpload(ts) {
+        try { return new Date(ts).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
+        catch (e) { return new Date(ts).toISOString().slice(0, 16).replace("T", " "); }
+      }
       function openInfo(id) {
         closeOverlays("info");
         id = id || current;
@@ -1723,6 +1745,10 @@ function parseApiResponse(raw) {
             var rt = el("span", "", post.rating);
             infoMetaEl.appendChild(rt);
           }
+          var upTs = parseR34Date(post.created_at);
+          if (upTs) infoMetaEl.appendChild(el("span", "", "Diunggah " + fmtUpload(upTs)));
+          else if (post.change) infoMetaEl.appendChild(el("span", "", "Diubah " + fmtUpload(Number(post.change) * 1000)));
+          if (post.owner) infoMetaEl.appendChild(el("span", "", "Oleh " + post.owner));
 
           var tagStr = (post.tags || "").trim();
           var tagTokens = tagStr ? tagStr.split(/\s+/).filter(Boolean) : [];
@@ -1730,10 +1756,9 @@ function parseApiResponse(raw) {
             infoTagsEl.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic">Tidak ada metadata tag untuk post ini</div>';
           } else {
             infoTagsEl.innerHTML = "";
-            var sec = el("div", "infotag-sec");
-            sec.appendChild(el("div", "infotag-title", "Tags (" + tagTokens.length + ")"));
-            var chips = el("div", "infotag-chips");
-            tagTokens.forEach(function (tVal) {
+            var groupsHost = el("div", "infotag-groups");
+            infoTagsEl.appendChild(groupsHost);
+            function buildChip(tVal) {
               var wrap = el("span", "tagchip-wrap");
               var chip = el("button", "tagchip", tVal);
               chip.onclick = function () {
@@ -1760,10 +1785,31 @@ function parseApiResponse(raw) {
               };
               paintBlk();
               wrap.appendChild(chip); wrap.appendChild(bb);
-              chips.appendChild(wrap);
+              return wrap;
+            }
+            var GROUPS = [[8, "Artist", "#f59e0b"], [4, "Karakter", "#38bdf8"], [2, "Seri", "#10b981"], [1, "Tag umum", ""], [16, "Meta", ""]];
+            function paintGroups() {
+              groupsHost.innerHTML = "";
+              var by = { 8: [], 4: [], 2: [], 1: [], 16: [] };
+              tagTokens.forEach(function (tv) { var ty = tagTypeMap[normTag(tv)] || 1; (by[ty] || by[1]).push(tv); });
+              GROUPS.forEach(function (g) {
+                var arr = by[g[0]];
+                if (!arr.length) return;
+                var sec = el("div", "infotag-sec");
+                var ttl = el("div", "infotag-title", g[1] + " (" + arr.length + ")");
+                if (g[2]) ttl.style.color = g[2];
+                sec.appendChild(ttl);
+                var chips = el("div", "infotag-chips");
+                arr.forEach(function (tv) { chips.appendChild(buildChip(tv)); });
+                sec.appendChild(chips);
+                groupsHost.appendChild(sec);
+              });
+            }
+            paintGroups();
+            resolveTagTypes(tagTokens).then(function () {
+              if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
+              paintGroups();
             });
-            sec.appendChild(chips);
-            infoTagsEl.appendChild(sec);
 
             // Post serupa berdasarkan tag yang menarik (pilih tag selain tag generik seperti 1girl/video jika ada)
             var chosenTag = tagTokens[0];
@@ -1823,6 +1869,18 @@ function parseApiResponse(raw) {
       }
 
 
+      // Tipe dari autocomplete bila tersedia; 0 = belum diketahui (nanti dicari lewat dapi)
+      function acTypeOf(item) {
+        var raw = item && (item.category !== undefined ? item.category : item.type);
+        if (raw === undefined || raw === null) return 0;
+        var str = String(raw).toLowerCase();
+        if (str === "artist") return 8;
+        if (str === "character") return 4;
+        if (str === "copyright" || str === "series") return 2;
+        if (str === "metadata" || str === "meta") return 16;
+        if (str === "general") return 1;
+        return 0;
+      }
       function parseAutocompleteList(list) {
         if (!Array.isArray(list)) return [];
         return list.map(function (item) {
@@ -1836,7 +1894,7 @@ function parseApiResponse(raw) {
             value: val,
             count: cnt,
             popularity: cnt,
-            type: 1
+            type: acTypeOf(item)
           };
         });
       }
@@ -2074,9 +2132,70 @@ function parseApiResponse(raw) {
 
       var alphaFetchTokens = {};
       var alphaRenderDebounce = null;
+      // ===== Kategori tag: 1 General, 2 Seri, 4 Karakter, 8 Artist, 16 Meta =====
+      var tagTypeMap = jget("darknight_tagtypes", {}), tagTypeMiss = {}, tagTypePending = {}, tagTypeSaveT = null, tagTypeRenderT = null;
+      function dapiTypeToInternal(n) { n = Number(n); return n === 1 ? 8 : n === 3 ? 2 : n === 4 ? 4 : n === 5 ? 16 : 1; }
+      function tagTypeOf(t) {
+        var v = t && (t.value || t.name);
+        var k = normTag(v);
+        if (tagTypeMap[k]) return tagTypeMap[k];
+        if (t && t.type > 0) return t.type;
+        return 0;
+      }
+      function saveTagTypes() {
+        if (tagTypeSaveT) return;
+        tagTypeSaveT = setTimeout(function () {
+          tagTypeSaveT = null;
+          var keys = Object.keys(tagTypeMap);
+          if (keys.length > 6000) { keys.slice(0, keys.length - 6000).forEach(function (k) { delete tagTypeMap[k]; }); }
+          jset("darknight_tagtypes", tagTypeMap);
+        }, 1500);
+      }
+      function rememberTagType(name, type) { var k = normTag(name); if (k && type) { tagTypeMap[k] = type; saveTagTypes(); } }
+      function dapiTagRow(t) { return { value: t.name, count: Number(t.count) || 0, type: dapiTypeToInternal(t.type) }; }
+      // Cari kategori sekumpulan nama tag lewat dapi (names=a b c). Mengembalikan Promise yang selesai saat semua batch tuntas.
+      function resolveTagTypes(names) {
+        var todo = [];
+        (names || []).forEach(function (n) {
+          var k = normTag(n);
+          if (k && !tagTypeMap[k] && !tagTypeMiss[k] && !tagTypePending[k] && todo.indexOf(k) === -1) todo.push(k);
+        });
+        if (!todo.length) return Promise.resolve(0);
+        todo.forEach(function (k) { tagTypePending[k] = 1; });
+        var batches = [];
+        for (var i = 0; i < todo.length; i += 80) batches.push(todo.slice(i, i + 80));
+        var bi = 0, found = 0;
+        async function runner() {
+          while (bi < batches.length) {
+            var batch = batches[bi++], got = {};
+            try {
+              var rows = await rule34ApiFetch({ page: "dapi", s: "tag", q: "index", names: batch.join(" "), limit: 100 });
+              (rows || []).forEach(function (r) { if (r && r.name) { var row = dapiTagRow(r); got[normTag(row.value)] = row.type; } });
+            } catch (e) { }
+            if (!Object.keys(got).length && batch.length > 1) {
+              // names= tidak didukung / gagal: coba satu-satu (dibatasi)
+              for (var j = 0; j < Math.min(batch.length, 25); j++) {
+                try {
+                  var one = await rule34ApiFetch({ page: "dapi", s: "tag", q: "index", name: batch[j], limit: 1 });
+                  if (one && one[0] && one[0].name) got[normTag(one[0].name)] = dapiTypeToInternal(one[0].type);
+                } catch (e2) { }
+              }
+            }
+            batch.forEach(function (k) {
+              delete tagTypePending[k];
+              if (got[k]) { tagTypeMap[k] = got[k]; found++; } else tagTypeMiss[k] = 1;
+            });
+            saveTagTypes();
+            if (typeof onTagTypesResolved === "function") onTagTypesResolved();
+          }
+        }
+        return Promise.all([runner(), runner(), runner()]).then(function () { return found; });
+      }
+      var onTagTypesResolved = null;
+
       var alphaTagCache = {};
       try {
-        var savedAlpha = lsGet("darknight_alpha_cache");
+        var savedAlpha = lsGet("darknight_alpha_cache2");
         if (savedAlpha) {
           var parsedAlpha = JSON.parse(savedAlpha);
           if (parsedAlpha && typeof parsedAlpha === "object") alphaTagCache = parsedAlpha;
@@ -2095,7 +2214,7 @@ function parseApiResponse(raw) {
                 toSave[k] = alphaTagCache[k].slice(0, 150);
               }
             });
-            lsSet("darknight_alpha_cache", JSON.stringify(toSave));
+            lsSet("darknight_alpha_cache2", JSON.stringify(toSave));
           } catch (e) { }
         }, 1500);
       }
@@ -2516,9 +2635,20 @@ function parseApiResponse(raw) {
           listTitle = "Tag Populer";
         }
 
-        var src = tagCatFilter !== null ? rawSrc.filter(function (t) { return t.type === tagCatFilter; }) : rawSrc;
+        var src = tagCatFilter !== null ? rawSrc.filter(function (t) { return tagTypeOf(t) === tagCatFilter; }) : rawSrc;
+        // Cari kategori tag yang belum diketahui (untuk filter Artist/Karakter/Seri dan lencana)
+        var unknownNames = [];
+        for (var ui = 0; ui < rawSrc.length && unknownNames.length < (tagCatFilter !== null ? 3000 : 150); ui++) {
+          if (!tagTypeOf(rawSrc[ui])) unknownNames.push(rawSrc[ui].value);
+        }
+        var typesPending = unknownNames.some(function (n) { var k = normTag(n); return !tagTypeMiss[k]; });
+        if (unknownNames.length) resolveTagTypes(unknownNames);
         if (!src.length) {
-          if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : "Tag tidak ditemukan")); return; }
+          if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : (tagCatFilter !== null && typesPending ? "Mengenali kategori tag…" : "Tag tidak ditemukan"))); return; }
+          if (tagCatFilter !== null && rawSrc.length && !tagFetching) {
+            box.appendChild(el("div", "empty", typesPending ? "Mengenali kategori tag…" : "Tidak ada tag kategori ini di daftar ini. Coba cari lewat kolom pencarian atau pilih huruf."));
+            return;
+          }
           if (tagListErr) {
             box.appendChild(el("div", "empty", "Gagal memuat daftar tag."));
             var rb = el("button", "pill", "Coba lagi");
@@ -2529,22 +2659,21 @@ function parseApiResponse(raw) {
           box.appendChild(el("div", "empty", tagFetching ? "Memuat tag bertahap…" : "Memuat tag…"));
           if (!tagFetching && !tagAlphaActive) {
             tagFetching = true;
-            rule34ApiFetch({ page: "dapi", s: "tag", q: "index", limit: 100, orderby: "count" }).then(function (tags) {
-              if (Array.isArray(tags)) {
-                popularTagsCache = tags.map(function (t) {
-                  var rType = Number(t.type);
-                  var dnType = rType === 1 ? 8 : (rType === 4 ? 4 : (rType === 3 ? 2 : 1));
-                  return {
-                    value: t.name,
-                    count: Number(t.count) || 0,
-                    type: dnType
-                  };
-                });
-              } else {
-                popularTagsCache = [];
-              }
-              if (!popularTagsCache.length) tagListErr = true;
-            }).catch(function () { tagListErr = true; }).then(function () { tagFetching = false; renderTagList(); });
+            rule34ApiFetch({ page: "dapi", s: "tag", q: "index", limit: 1000, orderby: "count", order: "DESC" })
+              .catch(function () { return rule34ApiFetch({ page: "dapi", s: "tag", q: "index", limit: 100, orderby: "count" }); })
+              .then(function (tags) {
+                if (Array.isArray(tags)) {
+                  popularTagsCache = tags.filter(function (t) { return t && t.name; }).map(function (t) {
+                    var row = dapiTagRow(t);
+                    tagTypeMap[normTag(row.value)] = row.type;
+                    return row;
+                  });
+                  saveTagTypes();
+                } else {
+                  popularTagsCache = [];
+                }
+                if (!popularTagsCache.length) tagListErr = true;
+              }).catch(function () { tagListErr = true; }).then(function () { tagFetching = false; renderTagList(); });
           }
           return;
         }
@@ -2561,7 +2690,8 @@ function parseApiResponse(raw) {
           else if (blockMode && isBlk) ck.innerHTML = ic("ban");
           row.appendChild(ck);
           row.appendChild(el("span", "tnm", val));
-          var kind = t.type === 8 ? ["artist", "Artist"] : t.type === 4 ? ["character", "Karakter"] : t.type === 2 ? ["copyright", "Seri"] : null;
+          var tt = tagTypeOf(t);
+          var kind = tt === 8 ? ["artist", "Artist"] : tt === 4 ? ["character", "Karakter"] : tt === 2 ? ["copyright", "Seri"] : null;
           if (isBlk) row.appendChild(el("span", "tkind", "disembunyikan"));
           else if (kind) row.appendChild(el("span", "tkind " + kind[0], kind[1]));
           if (t.count) row.appendChild(el("span", "tcnt", fmtN(t.count)));
@@ -2581,6 +2711,12 @@ function parseApiResponse(raw) {
           box.appendChild(row);
         });
       }
+      onTagTypesResolved = function () {
+        clearTimeout(tagTypeRenderT);
+        tagTypeRenderT = setTimeout(function () {
+          if (sheet && sheet.classList.contains("open") && sheetTab === "tags" && tagView === "list") renderTagList();
+        }, 200);
+      };
       function onTagSearchInput(val) {
         tagSearchTerm = val.trim();
         var clr = $("tagSearchClear"); if (clr) clr.style.display = tagSearchTerm ? "flex" : "none";
@@ -3190,7 +3326,7 @@ function parseApiResponse(raw) {
         }));
         sActs.appendChild(ipill("tag", "Hapus Cache Tag", "", function () {
           alphaTagCache = {};
-          lsSet("darknight_alpha_cache", "{}");
+          lsSet("darknight_alpha_cache2", "{}"); lsSet("darknight_tagtypes", "{}");
           toast("Cache tag dibersihkan", "ok");
           renderSettings();
         }));
