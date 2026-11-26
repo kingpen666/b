@@ -26,64 +26,44 @@
 <body>
 
   <div class="app-container">
-    <!-- DESKTOP SLIM SIDEBAR (220px) -->
-    <aside class="app-sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-icon">D</div>
-        <div class="brand-title">Darknight</div>
-      </div>
-      <nav class="sidebar-nav">
-        <button class="nav-item active" onclick="PE.closeAll()"><span class="ic" data-ic="play"></span><span>Stream</span></button>
-        <button class="nav-item" onclick="PE.openSheet('tags')"><span class="ic" data-ic="tag"></span><span>Explore / Tags</span></button>
-        <button class="nav-item" onclick="PE.openSheet('playlist')"><span class="ic" data-ic="layers"></span><span>Koleksi</span></button>
-        <button class="nav-item" onclick="PE.toggleFilterHub()"><span class="ic" data-ic="filter"></span><span>Filter Hub</span></button>
-        <button class="nav-item" onclick="PE.openSheet('history')"><span class="ic" data-ic="clock"></span><span>Riwayat</span></button>
-        <button class="nav-item" onclick="PE.openSheet('settings')"><span class="ic" data-ic="gear"></span><span>Setelan</span></button>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-quick-jumper">
-          <span style="font-size:11px;color:var(--text-muted);font-weight:700">#</span>
-          <input id="numberInputSidebar" type="number" inputmode="numeric" min="1" max="100000000" placeholder="Lompat ID…">
-          <button onclick="PE.goToSidebarInput()">Go</button>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="nav-item" style="flex:1;padding:6px 10px;font-size:12px;justify-content:center" onclick="PE.randomPost()"><span class="ic" data-ic="dice"></span><span>Acak</span></button>
-          <button class="nav-item" style="padding:6px 10px;justify-content:center" onclick="PE.openGuide()" title="Panduan"><span class="ic" data-ic="help"></span></button>
-        </div>
-      </div>
-    </aside>
+    <nav class="app-nav" id="appNav" aria-label="Navigasi utama">
+      <div class="nav-brand"><div class="brand-icon">D</div><div class="brand-title">Darknight</div></div>
+      <button class="nav-item active" id="bnStream" onclick="PE.closeAll()"><span class="ic" data-ic="play"></span><span>Stream</span></button>
+      <button class="nav-item" id="tagBtn" onclick="PE.navTo('tags')"><span class="ic" data-ic="tag"></span><span>Explore</span></button>
+      <button class="nav-item" id="bnPlaylist" onclick="PE.navTo('playlist')"><span class="ic" data-ic="layers"></span><span>Koleksi</span></button>
+      <button class="nav-item" id="filterBtn" onclick="PE.toggleFilterHub()"><span class="ic" data-ic="filter"></span><span>Filter</span></button>
+      <button class="nav-item" id="bnSettings" onclick="PE.navTo('settings')"><span class="ic" data-ic="gear"></span><span>Setelan</span></button>
+    </nav>
 
     <!-- MAIN VIEWPORT -->
     <main class="app-main">
-      <!-- TOP CONTEXT BAR -->
+      <!-- TOPBAR: kembali + lompat ID (satu-satunya) | alat -->
       <header class="app-topbar">
         <div class="topbar-left">
-          <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya"><span data-ic="back"></span><span id="backId"></span></button>
-          <div class="chip" id="chip">
-            <span class="ck-ico" id="chipIco"></span>
-            <span class="ck-txt"><small id="chipKind" style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-right:4px">TAG</small><b id="chipName" style="font-size:12px"></b></span>
-            <span class="ck-pos" id="chipPos" style="font-size:10px;color:var(--text-muted);margin-left:4px"></span>
-            <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dari tag/playlist" aria-label="Keluar"><span data-ic="x"></span></button>
-            <i class="ck-bar"><u id="chipBar"></u></i>
-          </div>
-          <!-- ID BOX untuk mobile / tablet -->
+          <button class="backbtn" id="backBtn" onclick="PE.back()" title="Kembali ke post sebelumnya" aria-label="Kembali"><span data-ic="back"></span><span id="backId"></span></button>
           <div class="idbox-top" id="idBoxTop">
             <span class="idprefix">#</span>
-            <input id="numberInput" type="number" inputmode="numeric" min="1" max="100000000" placeholder="ID...">
+            <input id="numberInput" type="number" inputmode="numeric" min="1" max="100000000" placeholder="ID" aria-label="Lompat ke ID post">
             <button class="idgo" onclick="PE.goToInput()">Go</button>
-            <button class="rnd-btn" onclick="PE.randomPost()" title="Post acak"><span data-ic="dice"></span></button>
+            <button class="rnd-btn" onclick="PE.randomPost()" title="Post acak" aria-label="Post acak"><span data-ic="dice"></span></button>
           </div>
         </div>
-
         <div class="topbar-right">
-          <button class="icon-tool-btn panic-hold" id="panicBtn" title="Tahan untuk menyembunyikan layar"><span data-ic="eyeOff"></span></button>
-          <button class="icon-tool-btn" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" style="display:none"><span data-ic="mute"></span></button>
-          <button class="icon-tool-btn" id="fitBtn" onclick="PE.toggleFit()" title="Muat / penuhi layar"><span data-ic="fit"></span></button>
-          <button class="icon-tool-btn" id="gridBtn" onclick="PE.toggleGrid()" title="Tampilan Grid Galeri"><span data-ic="grid"></span></button>
-          <button class="icon-tool-btn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh"><span data-ic="expand"></span></button>
-          <button class="icon-tool-btn help-mobile-btn" onclick="PE.openGuide()" title="Panduan"><span data-ic="help"></span></button>
+          <button class="icon-tool-btn panic-hold" id="panicBtn" title="Tahan untuk menyembunyikan layar" aria-label="Sembunyikan layar"><span data-ic="eyeOff"></span></button>
+          <button class="icon-tool-btn" id="gridBtn" onclick="PE.toggleGrid()" title="Galeri daftar yang sedang diputar" aria-label="Galeri"><span data-ic="grid"></span></button>
+          <button class="icon-tool-btn" id="fsBtn" onclick="PE.toggleFs()" title="Layar penuh" aria-label="Layar penuh"><span data-ic="expand"></span></button>
         </div>
       </header>
+      <!-- KONTEKS: tag / playlist yang sedang diputar (muncul hanya bila aktif) -->
+      <div class="ctxbar">
+        <div class="chip" id="chip">
+          <span class="ck-ico" id="chipIco"></span>
+          <span class="ck-txt"><small id="chipKind" style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-right:6px">TAG</small><b id="chipName" style="font-size:12px"></b></span>
+          <span class="ck-pos" id="chipPos"></span>
+          <button class="ck-x" onclick="PE.leavePlaylist()" title="Keluar dari tag/playlist" aria-label="Keluar"><span data-ic="x"></span></button>
+          <i class="ck-bar"><u id="chipBar"></u></i>
+        </div>
+      </div>
 
       <!-- MEDIA STAGE WRAPPER -->
       <div class="stage-wrapper">
@@ -111,55 +91,19 @@
             <span class="idtag" id="idTag">#1</span>
             <span class="idfmt" id="idFormat"></span>
           </div>
-
-          <!-- Glass controls hidden compatibility untuk JS queries -->
-          <div style="display:none">
-            <button id="plBtn" onclick="PE.togglePopup()"><span id="plIco" data-ic="plus"></span></button>
-            <button id="infoBtn" onclick="PE.openInfo()"><span data-ic="info"></span></button>
-            <button id="dlBtn" onclick="PE.download()"><span data-ic="download"></span></button>
-          </div>
+          <button class="stage-fab" id="soundBtn" onclick="PE.toggleSound()" title="Suara video" aria-label="Suara video" style="display:none"><span data-ic="mute"></span></button>
         </div>
 
       </div>
 
       <!-- REFINED SOCIAL ACTION BAR (DI LUAR stage-wrapper) -->
       <div class="post-actionbar" id="postActionBar">
-        <div class="post-actionbar-left">
-          <button class="action-btn" id="favBtn" onclick="PE.toggleFav()" title="Favorit">
-            <span id="favIco" data-ic="heart"></span>
-            <span id="favText">Suka</span>
-          </button>
-          <button class="action-btn" id="plBtnAction" onclick="PE.togglePopup()" title="Simpan ke Playlist">
-            <span id="plIcoAction" data-ic="plus"></span>
-            <span>Koleksi</span>
-          </button>
-          <button class="action-btn" onclick="PE.download()" title="Unduh Kualitas Penuh">
-            <span data-ic="download"></span>
-            <span>Unduh</span>
-          </button>
-        </div>
-
-        <div class="post-actionbar-right">
-          <button class="action-btn" id="autoBtn" onclick="PE.toggleAuto()" title="Otomatis Putar (Slideshow)">
-            <span id="autoIco" data-ic="play"></span>
-            <span id="autoTxt">Auto</span>
-          </button>
-          <button class="action-btn" onclick="PE.openInfo()" title="Info Post & Tags">
-            <span data-ic="info"></span>
-            <span>Detail</span>
-          </button>
-        </div>
+        <button class="action-btn" id="favBtn" onclick="PE.toggleFav()" title="Favorit"><span id="favIco" data-ic="heart"></span><span id="favText">Suka</span></button>
+        <button class="action-btn" id="plBtnAction" onclick="PE.togglePopup()" title="Simpan ke koleksi"><span id="plIcoAction" data-ic="plus"></span><span>Koleksi</span></button>
+        <button class="action-btn" onclick="PE.download()" title="Unduh kualitas penuh"><span data-ic="download"></span><span>Unduh</span></button>
+        <button class="action-btn" id="autoBtn" onclick="PE.toggleAuto()" title="Putar otomatis (slideshow)"><span id="autoIco" data-ic="play"></span><span id="autoTxt">Auto</span></button>
+        <button class="action-btn" onclick="PE.openInfo()" title="Detail & tag post"><span data-ic="info"></span><span>Detail</span></button>
       </div>
-
-      
-      <!-- MOBILE BOTTOM NAVIGATION (Max 5 Tabs) -->
-      <nav class="app-bottomnav" id="appBottomNav">
-        <button class="bottomnav-item active" id="bnStream" onclick="PE.closeAll()"><span class="ic" data-ic="play"></span><span>Stream</span></button>
-        <button class="bottomnav-item" id="tagBtn" onclick="PE.openSheet('tags')"><span class="ic" data-ic="tag"></span><span>Explore</span></button>
-        <button class="bottomnav-item" id="bnPlaylist" onclick="PE.openSheet('playlist')"><span class="ic" data-ic="layers"></span><span>Koleksi</span></button>
-        <button class="bottomnav-item" id="filterBtn" onclick="PE.toggleFilterHub()"><span class="ic" data-ic="filter"></span><span>Filter</span></button>
-        <button class="bottomnav-item" id="bnSettings" onclick="PE.openSheet('settings')"><span class="ic" data-ic="gear"></span><span>Setelan</span></button>
-      </nav>
     </main>
   </div>
 
@@ -169,12 +113,7 @@
     <div class="grab"></div>
     <div class="shead">
       <button class="hb" id="sheetBack" onclick="PE.sheetBack()" disabled><span data-ic="back"></span></button>
-      <div class="tabs">
-        <button data-tab="tags">Tag</button>
-        <button data-tab="playlist">Koleksi</button>
-        <button data-tab="history">Riwayat</button>
-        <button data-tab="settings">Setelan</button>
-      </div>
+      <div class="stitle" id="sheetTitle">Panel</div>
       <button class="hb" onclick="PE.closeSheet()"><span data-ic="x"></span></button>
     </div>
     <div class="sbody" id="sheetBody"></div>
@@ -212,6 +151,8 @@
         <div><b>Swipe samping &amp; double-tap:</b> mati secara default (rawan salah ketuk), bisa dinyalakan di Setelan.</div>
         <div><b>Pinch:</b> Zoom gambar. Simpan ke Favorit lewat tombol Suka.</div>
         <div><b>Video:</b> tahan layar = putar 2× · ketuk 2× sisi kiri/kanan = mundur/maju 10 dtk · ketuk 2× di tengah = Favorit (bila Double-tap aktif).</div>
+        <div><b>Gambar:</b> ketuk 2× = zoom ke titik itu, ketuk 2× lagi = reset (bila Double-tap = Favorit mati).</div>
+        <div><b>Tempel link:</b> salin link atau ID post, lalu tempel (Ctrl+V) di mana saja = langsung buka. Tombol <b>G</b> = lompat ke kotak ID.</div>
         <div><b>Tahan ikon mata (atau tombol `):</b> Tutup layar seketika (PIN opsional di Setelan).</div>
         <div><b>Keyboard (PC):</b> <kbd class="key"><span data-ic="arrowDown"></span></kbd><kbd class="key"><span data-ic="arrowRight"></span></kbd> Berikutnya &nbsp;·&nbsp; <kbd class="key"><span data-ic="arrowUp"></span></kbd><kbd class="key"><span data-ic="arrowLeft"></span></kbd> Sebelumnya &nbsp;·&nbsp; <kbd class="key">Space</kbd> Play/Pause &nbsp;·&nbsp; <kbd class="key">F</kbd> Favorit &nbsp;·&nbsp; <kbd class="key">I</kbd> Info &nbsp;·&nbsp; <kbd class="key">R</kbd> Acak &nbsp;·&nbsp; <kbd class="key">M</kbd> Suara &nbsp;·&nbsp; <kbd class="key">J</kbd><kbd class="key">L</kbd> ±5 dtk</div>
       </div>

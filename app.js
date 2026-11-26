@@ -93,7 +93,7 @@
       function jset(k, v) { try { lsSet(k, JSON.stringify(v)); } catch (e) { } }
 
       var S = (function () {
-        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false, autoClose: true, haptic: true, sfx: false };
+        var d = { interval: 5, skipMissing: true, fit: "contain", muted: true, saver: false, keepZoom: false, speed: 1, filterAi: false, autoNextVid: false, markSeen: true, safeMode: false, autoPanic: false, autoOffline: false, hswipe: false, dblFav: false, wheelNav: false, autoClose: true, haptic: true, sfx: false, skipSeen: false };
         var s = jget("pe_settings", {});
         if (!s || typeof s !== "object" || Array.isArray(s)) s = {};
         for (var k in d) if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k];
@@ -115,6 +115,7 @@
         if (typeof d.autoClose !== "boolean") d.autoClose = true;
         if (typeof d.haptic !== "boolean") d.haptic = true;
         if (typeof d.sfx !== "boolean") d.sfx = false;
+        if (typeof d.skipSeen !== "boolean") d.skipSeen = false;
         if (!isFinite(Number(d.speed)) || Number(d.speed) < 0.25 || Number(d.speed) > 4) d.speed = 1; else d.speed = Number(d.speed);
         return d;
       })();
@@ -193,9 +194,25 @@
       var seenSet = new Set((jget("pe_seen", []) || []).filter(validId));
       var seenT = null;
       function saveSeen() { clearTimeout(seenT); jset("pe_seen", Array.from(seenSet)); }
+      // ===== Statistik harian + streak =====
+      function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+      var daily = jget("pe_daily", {}); if (!daily || typeof daily !== "object" || Array.isArray(daily)) daily = {};
+      function bumpDaily() {
+        var k = dayKey(); daily[k] = (daily[k] || 0) + 1;
+        var ks = Object.keys(daily).sort(); while (ks.length > 120) delete daily[ks.shift()];
+        jset("pe_daily", daily);
+        var n = daily[k];
+        if (n === 25 || n === 50 || n === 100 || n === 250 || n === 500 || n === 1000) { toast(n + " post baru hari ini", "ok"); vibe([10, 30, 10]); }
+      }
+      function streakDays() {
+        var d = new Date(), s = 0;
+        if (!daily[dayKey(d)]) d.setDate(d.getDate() - 1); // hari ini belum mulai: streak kemarin tetap dihitung
+        while (daily[dayKey(d)]) { s++; d.setDate(d.getDate() - 1); }
+        return s;
+      }
       function markSeen(id) {
         if (S.markSeen === false || seenSet.has(id)) return;
-        seenSet.add(id);
+        seenSet.add(id); bumpDaily();
         if (seenSet.size > 10000) seenSet.delete(seenSet.values().next().value);
         clearTimeout(seenT); seenT = setTimeout(saveSeen, 1500);
       }
@@ -933,7 +950,6 @@ function parseApiResponse(raw) {
       function refreshBtns() {
         var any = false, fav = false;
         playlists.forEach(function (p) { if (isIn(p, current)) { any = true; if (p.id === "pl_fav") fav = true; } });
-        $("plBtn").classList.toggle("on", any); $("plIco").innerHTML = ic(any ? "check" : "plus");
         var plActBtn = $("plBtnAction"), plActIco = $("plIcoAction");
         if (plActBtn) plActBtn.classList.toggle("on", any);
         if (plActIco) plActIco.innerHTML = ic(any ? "check" : "plus");
@@ -1084,7 +1100,7 @@ function parseApiResponse(raw) {
 
       var saveSessionDebounce = null;
       function commit(id) {
-        current = id; input.value = id; var sbInp = $("numberInputSidebar"); if (sbInp) sbInp.value = id; lsSet("lastPost", String(id)); updateAnchor(id);
+        current = id; input.value = id; lsSet("lastPost", String(id)); updateAnchor(id);
         refreshBtns(); updateChip(); updateBack();
         if (activePlaylistId) {
           var ap = getPL(activePlaylistId);
@@ -1209,7 +1225,7 @@ function parseApiResponse(raw) {
           var ni = idx + step;
           if (activeTag) {
             var cfgB = currentCfg(), skipped = 0;
-            while (ni >= 0 && ni < ord.length && skipped < 30 && isBlockedPost(postMetaCache.get(ord[ni]), cfgB)) { ni += step; skipped++; }
+            while (ni >= 0 && ni < ord.length && skipped < 30 && (isBlockedPost(postMetaCache.get(ord[ni]), cfgB) || (S.skipSeen && seenSet.has(ord[ni])))) { ni += step; skipped++; }
           }
           if (activeTag && ni >= ord.length - 3 && tagHasMore && !tagLoading) {
             loadMoreTagPosts();
@@ -1388,6 +1404,16 @@ function parseApiResponse(raw) {
         var show = zoom.scale > 1.05; zoomBadge.classList.toggle("visible", show);
         if (show) zoomBadge.textContent = zoom.scale.toFixed(1) + "x";
       }
+      var lastZoomT = 0;
+      function toggleDblZoom(x, y) {
+        if (now() - lastZoomT < 500) return; // dblclick + sentuhan bisa datang bersamaan
+        if (!zoomLayer.querySelector("img")) return;
+        lastZoomT = now();
+        zoomLayer.classList.add("zsmooth"); setTimeout(function () { zoomLayer.classList.remove("zsmooth"); }, 320);
+        if (zoom.scale > 1.05) { resetZoom(); vibe(6); return; }
+        var r = stage.getBoundingClientRect(), dx = x - (r.left + r.width / 2), dy = y - (r.top + r.height / 2);
+        zoom.scale = 2.5; zoom.tx = -dx * 1.5; zoom.ty = -dy * 1.5; clampPan(); applyZoom(); vibe(6);
+      }
       function resetZoom() { zoom.scale = 1; zoom.tx = 0; zoom.ty = 0; zoomLayer.classList.remove("dragging"); applyZoom(); }
       function clampPan() {
         if (zoom.scale <= 1) { zoom.tx = 0; zoom.ty = 0; return; }
@@ -1504,7 +1530,7 @@ function parseApiResponse(raw) {
         var dx = sw.cx - sw.sx, dy = sw.cy - sw.sy, dt = now() - sw.t, adx = Math.abs(dx), ady = Math.abs(dy);
         if (adx < 10 && ady < 10 && dt < 300) {
           clearSwipeStyles(); clearHints();
-          if (sw.dbl && !S.dblFav) { g.lastTap = 0; }
+          if (sw.dbl && !S.dblFav) { g.lastTap = 0; toggleDblZoom(sw.sx, sw.sy); }
           else if (sw.dbl) {
             g.lastTap = 0;
             // Di video: sisi kiri/kanan = loncat 10 dtk, area kontrol bawah = milik kontrol video; hanya bagian tengah yang jadi Favorit
@@ -1546,8 +1572,8 @@ function parseApiResponse(raw) {
         change(e.deltaY > 0 ? 1 : -1);
       }, { passive: false });
       stage.addEventListener("dblclick", function (e) {
-        if (!S.dblFav) return;
         if (e.target && e.target.closest && e.target.closest("button")) return;
+        if (!S.dblFav) { toggleDblZoom(e.clientX, e.clientY); return; }
         if (isVideo()) return;
         if (now() - lastHeart < 600) return;
         lastHeart = now();
@@ -1648,7 +1674,8 @@ function parseApiResponse(raw) {
           var pageUrl = "https://rule34.xxx/index.php?page=post&s=view&id=" + id;
           ia.appendChild(ipill("copy", "Salin ID", "", function () { copyText(String(id), "ID #" + id + " disalin"); }));
           ia.appendChild(ipill("link", "Salin link", "", function () { copyText(id === current && currentURL ? currentURL : pageUrl, "Link disalin"); }));
-          ia.appendChild(ipill("share", "Buka sumber", "", function () { window.open(pageUrl, "_blank", "noopener,noreferrer"); }));
+          if (navigator.share && id === current && currentURL) ia.appendChild(ipill("share", "Bagikan", "", shareURL));
+          ia.appendChild(ipill("expand", "Sumber", "", function () { window.open(pageUrl, "_blank", "noopener,noreferrer"); }));
         }
         infoBackdrop.classList.add("open");
 
@@ -2626,20 +2653,6 @@ function parseApiResponse(raw) {
         sb.appendChild(si); sb.appendChild(inp); sb.appendChild(clr);
         b.appendChild(sb);
 
-        // 1. Mode Switcher Simetris (50% : 50%)
-        var segRow = el("div", "tag-mode-seg");
-        var btnWant = el("button", "tag-mode-btn want" + (tagPickMode === "want" ? " on" : ""));
-        btnWant.innerHTML = ic("tag") + "<span>Pilih (" + selectedTags.length + ")</span>";
-        btnWant.onclick = function () { tagPickMode = "want"; renderTagsView(); };
-
-        var btnBlock = el("button", "tag-mode-btn block" + (tagPickMode === "block" ? " on" : ""));
-        btnBlock.innerHTML = ic("ban") + "<span>Sembunyikan (" + blacklistTags.length + ")</span>";
-        btnBlock.onclick = function () { tagPickMode = "block"; renderTagsView(); };
-
-        segRow.appendChild(btnWant);
-        segRow.appendChild(btnBlock);
-        b.appendChild(segRow);
-
         // 2. Kategori Tag Simetris (5 Kolom Rata: 20% x 5)
         var catBar = el("div", "tag-cat-bar");
         var cats = [
@@ -2660,7 +2673,7 @@ function parseApiResponse(raw) {
         b.appendChild(catBar);
 
         // 3. Keypad Abjad 7 x 4 = 28 Tombol Simetris Presisi (Zero Celah)
-        var alphaPad = el("div", "tag-alpha-pad");
+        var alphaPad = el("div", "tag-alpha-row");
 
         // Cell 1: Populer
         var popBtn = el("button", "tag-alpha-btn" + (!tagAlphaActive ? " on" : ""));
@@ -2699,11 +2712,8 @@ function parseApiResponse(raw) {
         };
         alphaPad.appendChild(numBtn);
 
-        var alphaTog = el("button", "tag-cat-btn"); alphaTog.innerHTML = "<span>" + (tagAlphaOpen ? "Tutup abjad A-Z" : "Abjad A-Z") + "</span>" + ic(tagAlphaOpen ? "chevUp" : "chevD");
-        alphaTog.style.cssText = "width:100%;margin:6px 0";
-        alphaTog.onclick = function () { tagAlphaOpen = !tagAlphaOpen; renderTagsView(); };
-        b.appendChild(alphaTog);
-        if (tagAlphaOpen) b.appendChild(alphaPad);
+        b.appendChild(alphaPad);
+        var actAlpha = alphaPad.querySelector(".on"); if (actAlpha && actAlpha.offsetLeft > 200) alphaPad.scrollLeft = actAlpha.offsetLeft - 120;
 
         if (tagPickMode === "block") {
           var blkNotice = el("div", "fsum");
@@ -2817,18 +2827,9 @@ function parseApiResponse(raw) {
       function syncNavActive() {
         var isOpen = sheet && sheet.classList.contains("open");
         var hubOpen = !!(filterHubBackdrop && filterHubBackdrop.classList.contains("open"));
-        var cur = hubOpen ? "filter" : (isOpen ? sheetTab : "stream");
+        var cur = hubOpen ? "filter" : (isOpen ? (sheetTab === "history" ? "playlist" : sheetTab) : "stream");
         var bns = { stream: $("bnStream"), tags: $("tagBtn"), playlist: $("bnPlaylist"), filter: $("filterBtn"), settings: $("bnSettings") };
         for (var k in bns) { if (bns[k]) bns[k].classList.toggle("active", k === cur); }
-        var sidebarItems = document.querySelectorAll(".app-sidebar .nav-item");
-        if (sidebarItems.length >= 6) {
-          sidebarItems[0].classList.toggle("active", cur === "stream");
-          sidebarItems[1].classList.toggle("active", cur === "tags");
-          sidebarItems[2].classList.toggle("active", cur === "playlist");
-          sidebarItems[3].classList.toggle("active", cur === "filter");
-          sidebarItems[4].classList.toggle("active", cur === "history");
-          sidebarItems[5].classList.toggle("active", cur === "settings");
-        }
       }
       function openSheet(tab, mode) {
         closeOverlays("sheet");
@@ -2839,18 +2840,14 @@ function parseApiResponse(raw) {
         syncNavActive();
       }
       function closeSheet() { sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); if (tagPickMode === "block") tagPickMode = "want"; syncNavActive(); }
+      function navTo(tab) {
+        var open = sheet.classList.contains("open");
+        if (open && (sheetTab === tab || (tab === "playlist" && sheetTab === "history"))) closeSheet(); else openSheet(tab);
+      }
       function sheetBack() {
         if (sheetTab === "playlist" && plView === "detail") { plView = "list"; plDetailId = null; resetSel(); renderSheet(); }
         else if (sheetTab === "tags" && tagView === "detail") { tagView = "list"; renderSheet(); }
       }
-      Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (b) {
-        b.addEventListener("click", function () {
-          sheetTab = b.getAttribute("data-tab");
-          if (sheetTab === "playlist") { plView = "list"; plDetailId = null; }
-          if (sheetTab === "tags") { tagView = "list"; tagPickMode = "want"; }
-          resetSel(); renderSheet();
-        });
-      });
       function rerender() { if (!sheet.classList.contains("open")) return; var st = sheetBody.scrollTop; sheetBody.classList.add("static"); renderSheet(); sheetBody.scrollTop = st; setTimeout(function () { sheetBody.classList.remove("static"); }, 450); }
       var moreObs = null, thumbObs = null;
       function autoMore(btn) {
@@ -2872,7 +2869,7 @@ function parseApiResponse(raw) {
       function renderSheet() {
         var labelMap = { tags: "Tag", playlist: "Koleksi", history: "Riwayat", settings: "Setelan" };
         sheet.setAttribute("aria-label", "Panel " + (labelMap[sheetTab] || ""));
-        Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === sheetTab); });
+        var stEl = $("sheetTitle"); if (stEl) stEl.textContent = { tags: "Explore", playlist: "Koleksi", history: "Koleksi", settings: "Setelan" }[sheetTab] || "";
         sheetBackBtn.disabled = !((sheetTab === "playlist" && plView === "detail") || (sheetTab === "tags" && tagView === "detail"));
         if (moreObs) moreObs.disconnect();
         if (thumbObs) thumbObs.disconnect();
@@ -2924,11 +2921,23 @@ function parseApiResponse(raw) {
         if (id === current) d.classList.add("act");
         d.onclick = onclick; return d;
       }
+      function subnav(active) {
+        var s = el("div", "subnav");
+        [["playlist", "Playlist"], ["history", "Riwayat"]].forEach(function (x) {
+          var bt = el("button", x[0] === active ? "on" : "", x[1]);
+          bt.onclick = function () {
+            if (x[0] === active) return;
+            sheetTab = x[0]; if (x[0] === "playlist") { plView = "list"; plDetailId = null; }
+            resetSel(); renderSheet(); syncNavActive();
+          };
+          s.appendChild(bt);
+        });
+        return s;
+      }
       function renderPlList() {
+        sheetBody.appendChild(subnav("playlist"));
         var row = el("div", "arow");
         row.appendChild(ipill("plus", "Baru", "pri", newPlaylist));
-        row.appendChild(ipill("upload", "Ekspor", "", exportPlaylists));
-        row.appendChild(ipill("download", "Impor", "", function () { $("importFile").click(); }));
         sheetBody.appendChild(row);
         var grid = el("div", "grid"); sheetBody.appendChild(grid);
         if (!playlists.length) { grid.appendChild(el("div", "empty", "Belum ada playlist. Tap Baru, atau swipe kanan di post.")); return; }
@@ -3070,6 +3079,7 @@ function parseApiResponse(raw) {
         });
       }
       function renderHistory() {
+        sheetBody.appendChild(subnav("history"));
         var row = el("div", "arow");
         row.appendChild(ipill("trash", "Kosongkan riwayat", "dng", function () {
           var hs = hist.slice(); hist = []; jset("pe_hist", hist); renderSheet();
@@ -3093,44 +3103,39 @@ function parseApiResponse(raw) {
       function renderSettings() {
         var b = sheetBody, onoff = [[true, "On"], [false, "Off"]];
         b.innerHTML = "";
+        var sc = el("div", "stat-grid"), today = daily[dayKey()] || 0, strk = streakDays();
+        [[today, "Hari ini"], [strk, "Streak (hari)"], [seenSet.size, "Total dilihat"]].forEach(function (x) {
+          var t = el("div", "stat-tile"); t.innerHTML = '<b data-n="' + x[0] + '">0</b><span>' + esc(x[1]) + "</span>"; sc.appendChild(t);
+        });
+        b.appendChild(sc);
+        Array.prototype.forEach.call(sc.querySelectorAll("b"), function (nb) { // hitung naik dari 0
+          var to = Number(nb.getAttribute("data-n")), t0 = performance.now(), dur = 600;
+          (function tick(t) { var p = Math.min(1, (t - t0) / dur); nb.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(tick); })(t0);
+        });
+        b.appendChild(el("div", "set-sec", "Pemutaran"));
         b.appendChild(setRow("Auto-Next Video", "Otomatis lanjut post berikutnya saat video selesai", seg(onoff, !!S.autoNextVid, function (v) { S.autoNextVid = v; saveS(); var vid = zoomLayer.querySelector("video"); if (vid) vid.loop = !(autoEnabled || S.autoNextVid); })));
         b.appendChild(setRow("Interval Auto", "Jeda antar post", seg([[2, "2s"], [3, "3s"], [5, "5s"], [8, "8s"], [12, "12s"], [20, "20s"]], S.interval, function (v) { S.interval = v; saveS(); if (autoEnabled && !isVideo()) resetAutoTimer(); })));
+        b.appendChild(setRow("Suara video", "Default saat video dibuka", seg([[true, "Mati"], [false, "Hidup"]], S.muted, function (v) { S.muted = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) vd.muted = v; })));
+        b.appendChild(setRow("Kecepatan video", "Playback rate", seg([[0.5, "0.5×"], [1, "1×"], [1.5, "1.5×"], [2, "2×"]], S.speed, function (v) { S.speed = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) { vd.defaultPlaybackRate = v; vd.playbackRate = v; } })));
         b.appendChild(setRow("Lewati post kosong", "Loncat otomatis ID yang tidak ada", seg(onoff, S.skipMissing, function (v) { S.skipMissing = v; saveS(); })));
-        b.appendChild(setRow("Hemat data", "Pakai gambar kecil dulu", seg(onoff, S.saver, function (v) { S.saver = v; saveS(); invalidateCache(); })));
-        b.appendChild(setRow("Pertahankan zoom", "Level zoom tetap saat pindah post", seg(onoff, S.keepZoom, function (v) { S.keepZoom = v; saveS(); })));
+        b.appendChild(setRow("Lewati yang sudah dilihat", "Saat menjelajah tag, langsung loncat ke post yang belum pernah dibuka", seg(onoff, !!S.skipSeen, function (v) { S.skipSeen = v; saveS(); })));
+        b.appendChild(el("div", "set-sec", "Tampilan"));
         b.appendChild(setRow("Tampilan", "Muat utuh / penuhi layar", seg([["contain", "Muat"], ["cover", "Penuh"]], S.fit, function (v) { S.fit = v; saveS(); applyFit(); })));
+        b.appendChild(setRow("Pertahankan zoom", "Level zoom tetap saat pindah post", seg(onoff, S.keepZoom, function (v) { S.keepZoom = v; saveS(); })));
+        b.appendChild(setRow("Hemat data", "Pakai gambar kecil dulu", seg(onoff, S.saver, function (v) { S.saver = v; saveS(); invalidateCache(); })));
+        b.appendChild(setRow("Tandai sudah dilihat", "Redupkan & beri centang di grid", seg(onoff, S.markSeen !== false, function (v) { S.markSeen = v; saveS(); })));
+        b.appendChild(el("div", "set-sec", "Gestur"));
         b.appendChild(setRow("Swipe samping", "Kanan: simpan ke playlist · Kiri: hapus dari playlist (rawan salah)", seg(onoff, !!S.hswipe, function (v) { S.hswipe = v; saveS(); })));
         b.appendChild(setRow("Double-tap = Favorit", "Ketuk 2x menyimpan ke Favorit. Di video hanya bagian tengah; sisi kiri/kanan = loncat 10 dtk", seg(onoff, !!S.dblFav, function (v) { S.dblFav = v; saveS(); })));
         b.appendChild(setRow("Scroll roda = pindah post", "Roda mouse / trackpad di layar post (desktop)", seg(onoff, !!S.wheelNav, function (v) { S.wheelNav = v; saveS(); })));
-        b.appendChild(setRow("Tandai sudah dilihat", "Redupkan & beri centang di grid", seg(onoff, S.markSeen !== false, function (v) { S.markSeen = v; saveS(); })));
-        b.appendChild(setRow("Mode aman", "Sembunyikan post non-aman (berdasar rating)", seg(onoff, !!S.safeMode, function (v) { S.safeMode = v; saveS(); streamAhead = []; streamBehind = []; refreshBadges(); toast(v ? "Mode aman aktif" : "Mode aman mati", "ok"); })));
-        b.appendChild(setRow("Sembunyikan otomatis", "Tutup layar saat tab ditinggalkan", seg(onoff, !!S.autoPanic, function (v) { S.autoPanic = v; saveS(); })));
-        b.appendChild(setRow("Tutup panel otomatis", "Popup koleksi menutup sendiri setelah menyimpan; tap area gelap atau geser turun untuk menutup panel", seg(onoff, S.autoClose !== false, function (v) { S.autoClose = v; saveS(); })));
+        b.appendChild(el("div", "set-sec", "Umpan balik"));
         b.appendChild(setRow("Getar (haptic)", "Getaran halus saat suka, simpan, dan geser", seg(onoff, S.haptic !== false, function (v) { S.haptic = v; saveS(); if (v) vibe(12); })));
         b.appendChild(setRow("Efek suara", "Bunyi kecil saat suka, simpan, dan error", seg(onoff, !!S.sfx, function (v) { S.sfx = v; saveS(); if (v) sfx("like"); })));
+        b.appendChild(setRow("Tutup panel otomatis", "Popup koleksi menutup sendiri setelah menyimpan; tap area gelap atau geser turun untuk menutup panel", seg(onoff, S.autoClose !== false, function (v) { S.autoClose = v; saveS(); })));
+        b.appendChild(el("div", "set-sec", "Privasi & data"));
+        b.appendChild(setRow("Mode aman", "Sembunyikan post non-aman (berdasar rating)", seg(onoff, !!S.safeMode, function (v) { S.safeMode = v; saveS(); streamAhead = []; streamBehind = []; refreshBadges(); toast(v ? "Mode aman aktif" : "Mode aman mati", "ok"); })));
+        b.appendChild(setRow("Sembunyikan otomatis", "Tutup layar saat tab ditinggalkan", seg(onoff, !!S.autoPanic, function (v) { S.autoPanic = v; saveS(); })));
         b.appendChild(setRow("Favorit otomatis offline", "Simpan salinan tiap kali menyukai post", seg(onoff, !!S.autoOffline, function (v) { S.autoOffline = v; saveS(); })));
-        b.appendChild(setRow("Suara video", "Default saat video dibuka", seg([[true, "Mati"], [false, "Hidup"]], S.muted, function (v) { S.muted = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) vd.muted = v; })));
-        b.appendChild(setRow("Kecepatan video", "Playback rate", seg([[0.5, "0.5×"], [1, "1×"], [1.5, "1.5×"], [2, "2×"]], S.speed, function (v) { S.speed = v; saveS(); var vd = zoomLayer.querySelector("video"); if (vd) { vd.defaultPlaybackRate = v; vd.playbackRate = v; } })));
-        var row = el("div", "arow"); row.style.marginTop = "12px";
-        row.appendChild(ipill("link", "Salin URL", "", copyURL));
-        row.appendChild(ipill("share", "Bagikan", "", shareURL));
-        b.appendChild(row);
-
-        var allTagBox = el("div", "storage-card");
-        allTagBox.appendChild(el("div", "storage-title", "Direktori & Semua Tag"));
-        var atStats = el("div", "storage-stats");
-        atStats.innerHTML = "<div>Jelajahi seluruh koleksi tag Rule34 berdasarkan abjad (A–Z) dan kategori (Artist, Karakter, Seri).</div>";
-        allTagBox.appendChild(atStats);
-        var atActs = el("div", "arow");
-        atActs.style.marginTop = "6px";
-        atActs.appendChild(ipill("tag", "Buka Semua Tag", "pri", function () {
-          tagView = "list";
-          tagCatFilter = null;
-          tagAlphaActive = null;
-          openSheet("tags");
-        }));
-        allTagBox.appendChild(atActs);
-        b.appendChild(allTagBox);
 
         var sBox = el("div", "storage-card");
         var sTitle = el("div", "storage-title", "Pengelola Penyimpanan & Cache");
@@ -3183,12 +3188,6 @@ function parseApiResponse(raw) {
           toast("Cache RAM dibersihkan", "ok");
           renderSettings();
         }));
-        sActs.appendChild(ipill("trash", "Kosongkan Riwayat", "", function () {
-          hist = [];
-          jset("pe_hist", hist);
-          toast("Riwayat dikosongkan", "ok");
-          renderSettings();
-        }));
         sActs.appendChild(ipill("tag", "Hapus Cache Tag", "", function () {
           alphaTagCache = {};
           lsSet("darknight_alpha_cache", "{}");
@@ -3205,8 +3204,6 @@ function parseApiResponse(raw) {
         var gRow = el("div", "arow"); gRow.style.marginTop = "8px";
         gRow.appendChild(ipill("book", "Buka Panduan", "pri", openGuide));
         b.appendChild(gRow);
-        var tip = el("div", "tipbox"); tip.innerHTML = "<b>Gestur:</b> tahan video = 2× · ketuk 2× kiri/kanan video = loncat 10 dtk · swipe "+ic("arrowUp")+" post berikutnya · swipe "+ic("arrowDown")+" post sebelumnya · swipe "+ic("arrowRight")+" simpan ke playlist · swipe "+ic("arrowLeft")+" hapus dari playlist · pinch = zoom gambar · double-tap = favorit. "+"<br><b>Keyboard:</b> "+ic("arrowLeft")+ic("arrowUp")+" sebelumnya · "+ic("arrowRight")+ic("arrowDown")+" berikutnya · Spasi = play/pause · M = suara · J/L = mundur/maju 5 dtk · A = auto · F = favorit · R = acak · P = playlist · B = kembali · Esc = tutup. Filter AI &amp; sembunyikan tag ada di menu Filter.";
-        b.appendChild(tip);
       }
       function securityCard() {
         var box = el("div", "storage-card");
@@ -3463,12 +3460,6 @@ function parseApiResponse(raw) {
       var deb = null;
       input.addEventListener("focus", function () { try { input.select(); } catch (e) { } });
       input.addEventListener("keydown", function (e) { if (e.key === "Enter") { clearTimeout(deb); input.blur(); exitPlaylist(); loadPost(); } });
-      var sbInpEl = $("numberInputSidebar");
-      if (sbInpEl) {
-        sbInpEl.addEventListener("keydown", function (e) {
-          if (e.key === "Enter") { sbInpEl.blur(); goToSidebarInput(); }
-        });
-      }
       input.addEventListener("input", function () {
         clearTimeout(deb);
         deb = setTimeout(function () {
@@ -3721,6 +3712,7 @@ function parseApiResponse(raw) {
 
       document.addEventListener("keydown", function (e) {
         if (locked) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return; // jangan bentrok dengan Ctrl+R, Ctrl+L, dll milik browser
         var ae = document.activeElement;
         if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA")) return;
         if (e.key === "Escape") {
@@ -3752,6 +3744,7 @@ function parseApiResponse(raw) {
         else if (k === "j" || k === "J") seekBy(-5);
         else if (k === "l" || k === "L") seekBy(5);
         else if (k === "?") openGuide();
+        else if (k === "g" || k === "G") { e.preventDefault(); input.focus(); input.select(); }
       });
 
       document.addEventListener("keydown", function (e) {
@@ -3900,8 +3893,6 @@ function parseApiResponse(raw) {
         fetchLatestPostId().then(function (latestId) {
           var numInp = $("numberInput");
           if (numInp) numInp.placeholder = "#" + latestId;
-          var sbInp = $("numberInputSidebar");
-          if (sbInp) sbInp.placeholder = "#" + latestId + "…";
           if (validId(latestId) && latestId > 1000) {
             current = latestId;
             input.value = latestId;
@@ -3918,8 +3909,6 @@ function parseApiResponse(raw) {
         fetchLatestPostId().then(function (id) {
           var numInp = $("numberInput");
           if (numInp) numInp.placeholder = "#" + id;
-          var sbInp = $("numberInputSidebar");
-          if (sbInp) sbInp.placeholder = "#" + id + "…";
         }).catch(function () { });
       }
 
@@ -3940,7 +3929,33 @@ function parseApiResponse(raw) {
         }
       } catch (e) { }
 
-      function goToSidebarInput() { var v = Number($("numberInputSidebar").value); if (validId(v)) { exitPlaylist(); loadPost(v, 0); } else toast("ID tidak valid", "bad"); }
+      // ===== Tempel link / ID: langsung buka post =====
+      function parseIdFromText(t) {
+        t = String(t || "").trim();
+        var m = t.match(/(?:[?&]id=|\/posts?\/|\/show\/|#)(\d{1,9})(?!\d)/) || t.match(/^(\d{1,9})$/);
+        var n = m ? Number(m[1]) : NaN; return validId(n) ? n : null;
+      }
+      [input].forEach(function (inp) {
+        inp.addEventListener("paste", function (e) {
+          var t = (e.clipboardData || window.clipboardData).getData("text"), n = parseIdFromText(t);
+          if (n && String(n) !== String(t).trim()) { e.preventDefault(); inp.value = n; inp.blur(); exitPlaylist(); loadPost(n, 0); toast("Membuka #" + n + " dari link", "ok"); }
+        });
+      });
+      document.addEventListener("paste", function (e) {
+        if (locked) return;
+        var ae = document.activeElement; if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA")) return;
+        var n = parseIdFromText((e.clipboardData || window.clipboardData).getData("text"));
+        if (n) { exitPlaylist(); loadPost(n, 0); toast("Membuka #" + n + " dari clipboard", "ok"); vibe(8); }
+      });
+
+      // Kursor & label ID menghilang saat mouse diam (nonton lebih bersih)
+      (function idleUI() {
+        var t = null;
+        function wake() { stage.classList.remove("idle"); clearTimeout(t); t = setTimeout(function () { stage.classList.add("idle"); }, 2500); }
+        stage.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") wake(); });
+        stage.addEventListener("pointerleave", function () { clearTimeout(t); stage.classList.remove("idle"); });
+      })();
+
 
       // ===== Privasi: tutup layar cepat (panic) + PIN opsional =====
       var panicEl = $("panicCover"), panicForm = $("panicForm"), panicPin = $("panicPin"), panicMsg = $("panicMsg");
@@ -4008,7 +4023,6 @@ function parseApiResponse(raw) {
       return {
         loadPost: loadPost,
         getCurrent: function () { return current; },
-        goToSidebarInput: goToSidebarInput,
         prev: function () { change(-1); }, next: function () { change(1); }, back: back,
         randomPost: randomPost, toggleAuto: toggleAuto, toggleFav: toggleFav,
         togglePopup: togglePopup, closePopup: closePopup, showNewRow: showNewRow, confirmNewPl: confirmNewPl,
@@ -4018,6 +4032,6 @@ function parseApiResponse(raw) {
         dlgYes: dlgYes, dlgNo: dlgNo, leavePlaylist: leavePlaylist, goToInput: goToInput, openGuide: openGuide, closeGuide: closeGuide,
         toggleFilterHub: toggleFilterHub, closeFilterHub: closeFilterHub, setHubSort: setHubSort, applyFilterHub: applyFilterHub, setHubType: setHubType, pickTags: pickTags, pickBlockTags: pickBlockTags, resetFilter: resetFilter, toggleHubAi: toggleHubAi,
         addHubTag: addHubTag, addHubBlockTag: addHubBlockTag,
-        toggleSound: toggleSound, toggleGrid: toggleGrid, panic: panicOn, closeAll: closeAll
+        toggleSound: toggleSound, toggleGrid: toggleGrid, panic: panicOn, closeAll: closeAll, navTo: navTo
       };
     })();
