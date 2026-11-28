@@ -2720,7 +2720,7 @@ function parseApiResponse(raw) {
             }
           });
           Object.keys(tagTypeMap).forEach(function (k) {
-            if (tagTypeMap[k] === tagCatFilter && !seenCat[k] && matchesActiveScope(k) && extraCat.length < 150) {
+            if (tagTypeMap[k] === tagCatFilter && !seenCat[k] && matchesActiveScope(k)) {
               seenCat[k] = 1;
               extraCat.push({ value: k, count: 0, popularity: 0, type: tagCatFilter });
             }
