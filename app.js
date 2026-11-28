@@ -2159,7 +2159,7 @@ function parseApiResponse(raw) {
       var alphaFetchTokens = {};
       var alphaRenderDebounce = null;
       // ===== Kategori tag: 1 General, 2 Seri, 4 Karakter, 8 Artist, 16 Meta =====
-      var tagTypeMap = jget("darknight_tagtypes", {}), tagTypeMiss = {}, tagTypePending = {}, tagTypeSaveT = null, tagTypeRenderT = null;
+      var tagTypeMap = jget("darknight_tagtypes", {}), tagTypeMiss = {}, tagTypePending = {}, tagTypeSaveT = null, tagTypeRenderT = null, tagListResolving = false;
       var POPULAR_CAT_SEEDS = {
         8: ["sakimichan", "wlop", "cutesexyrobutts", "derpixon", "dross", "nyantcha", "afrobull", "kinkymation", "sciamano240", "diives", "minus8", "hews", "ratatatat74", "khyle.", "speedosausage", "zone", "incase", "flick", "slugbox", "shindol", "krekk0v", "fumihiko", "personal_ami", "reiq", "yakovlev-vad"],
         4: ["d.va_(overwatch)", "mercy_(overwatch)", "tracer_(overwatch)", "widowmaker_(overwatch)", "2b_(nier:automata)", "tifa_lockhart", "aerith_gainsborough", "raiden_shogun", "ganyu_(genshin_impact)", "hu_tao_(genshin_impact)", "yelan_(genshin_impact)", "furina_(genshin_impact)", "kafka_(honkai:_star_rail)", "nami_(one_piece)", "nico_robin", "hinata_hyuga", "tsunade", "zero_two_(darling_in_the_franxx)", "makima_(chainsaw_man)", "power_(chainsaw_man)", "yor_forger", "frieren", "fern_(sousou_no_frieren)", "gardevoir", "lopunny"],
@@ -2487,25 +2487,7 @@ function parseApiResponse(raw) {
           }
         }
 
-        var dapiAlphaPromise = (key !== "0-9")
-          ? rule34ApiFetch({ page: "dapi", s: "tag", q: "index", name_pattern: lower + "%", order: "count", limit: 1000, _xml: true })
-              .then(function (rows) {
-                if (!Array.isArray(rows)) return;
-                var mapped = rows.map(function (r) {
-                  var val = r.name || r.value || "";
-                  var cnt = parseInt(r.count, 10) || 0;
-                  var tp = dapiTypeToInternal(r.type);
-                  if (val && tp) tagTypeMap[normTag(val)] = tp;
-                  return val ? { value: val, count: cnt, popularity: cnt, type: tp } : null;
-                }).filter(Boolean);
-                if (alphaFetchTokens[key] === token && mapped.length) {
-                  processTagList(mapped);
-                  saveTagTypes();
-                }
-              }).catch(function () { })
-          : Promise.resolve();
-
-        var workers = [dapiAlphaPromise];
+        var workers = [];
         for (var w = 0; w < concurrency; w++) {
           workers.push(worker());
         }
@@ -2718,6 +2700,29 @@ function parseApiResponse(raw) {
         }
 
         var src = tagCatFilter !== null ? rawSrc.filter(function (t) { return tagTypeOf(t) === tagCatFilter; }) : rawSrc;
+        // Kenali kategori asli dari tag populer yang belum punya tipe saat filter kategori aktif
+        if (tagCatFilter !== null && rawSrc.length && !tagListResolving) {
+          var unknownNames = [];
+          for (var ui = 0; ui < rawSrc.length && unknownNames.length < 40; ui++) {
+            var uVal = rawSrc[ui] && rawSrc[ui].value;
+            var uNorm = normTag(uVal);
+            if (uNorm && !tagTypeMap[uNorm] && !tagTypeMiss[uNorm] && !tagTypePending[uNorm]) {
+              unknownNames.push(uVal);
+            }
+          }
+          if (unknownNames.length) {
+            tagListResolving = true;
+            resolveTagTypes(
+              unknownNames,
+              function () { return sheet.classList.contains("open") && sheetTab === "tags" && tagView === "list"; },
+              function () { if (sheet.classList.contains("open") && sheetTab === "tags" && tagView === "list") renderTagList(); }
+            ).then(function () {
+              tagListResolving = false;
+            }, function () {
+              tagListResolving = false;
+            });
+          }
+        }
         // Gabungkan tag kategori yang sudah dikenal di cache/seed (sesuai filter: ★, huruf A-Z, atau pencarian)
         if (tagCatFilter !== null) {
           var seenCat = {};
@@ -2764,34 +2769,6 @@ function parseApiResponse(raw) {
           if (!tagFetching && !tagAlphaActive) {
             tagFetching = true;
             var popSeeds = ["", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
-            function dapiTagType(rawType) {
-              var n = Number(rawType);
-              if (n === 1) return 8; // artist
-              if (n === 4) return 4; // character
-              if (n === 3) return 2; // copyright
-              if (n === 5) return 16; // metadata
-              if (n === 0) return 1; // general
-              return 0;
-            }
-            var dapiTagPromise = Promise.all([0, 1, 2].map(function (pid) {
-              return rule34ApiFetch({ page: "dapi", s: "tag", q: "index", order: "count", limit: 1000, pid: pid, _xml: true })
-                .catch(function () { return []; });
-            })).then(function (pages) {
-                var out = [];
-                pages.forEach(function (rows) {
-                  if (!Array.isArray(rows)) return;
-                  rows.forEach(function (r) {
-                    var val = r.name || r.value || "";
-                    if (!val) return;
-                    var cnt = parseInt(r.count, 10) || 0;
-                    var tp = dapiTagType(r.type);
-                    if (tp) tagTypeMap[normTag(val)] = tp;
-                    out.push({ value: val, count: cnt, popularity: cnt, type: tp });
-                  });
-                });
-                return out;
-              }).catch(function () { return []; });
-
             var acResults = [];
             var seedIdx = 0;
             function runAcBatch() {
@@ -2808,10 +2785,9 @@ function parseApiResponse(raw) {
               return Promise.all(workers);
             }
 
-            Promise.all([dapiTagPromise, runAcBatch()])
-              .then(function (resArr) {
-                var dapiTags = resArr[0] || [];
-                var groups = [dapiTags].concat(acResults);
+            runAcBatch()
+              .then(function () {
+                var groups = acResults;
                 var seen = new Map();
                 groups.forEach(function (arr) {
                   (arr || []).forEach(function (t) {
