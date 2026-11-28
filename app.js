@@ -2273,7 +2273,7 @@ function parseApiResponse(raw) {
             var toSave = {};
             Object.keys(alphaTagCache).forEach(function (k) {
               if (Array.isArray(alphaTagCache[k])) {
-                toSave[k] = alphaTagCache[k].slice(0, 150);
+                toSave[k] = alphaTagCache[k].slice(0, 500);
               }
             });
             lsSet("darknight_alpha_cache2", JSON.stringify(toSave));
@@ -2743,21 +2743,66 @@ function parseApiResponse(raw) {
           box.appendChild(el("div", "empty", tagFetching ? "Memuat tag bertahap…" : "Memuat tag…"));
           if (!tagFetching && !tagAlphaActive) {
             tagFetching = true;
-            var popSeeds = ["", "1", "a", "s", "c", "m", "b", "l", "h", "p"];
-            Promise.all(popSeeds.map(function (q) { return r34Autocomplete(q).catch(function () { return []; }); }))
-              .then(function (groups) {
+            var popSeeds = ["", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
+            function dapiTagType(rawType) {
+              var n = Number(rawType);
+              if (n === 1) return 8; // artist
+              if (n === 4) return 4; // character
+              if (n === 3) return 2; // copyright
+              if (n === 5) return 16; // metadata
+              if (n === 0) return 1; // general
+              return 0;
+            }
+            var dapiTagPromise = rule34ApiFetch({ page: "dapi", s: "tag", q: "index", order: "count", limit: 1000, _xml: true })
+              .then(function (rows) {
+                if (!Array.isArray(rows)) return [];
+                return rows.map(function (r) {
+                  var val = r.name || r.value || "";
+                  var cnt = parseInt(r.count, 10) || 0;
+                  var tp = dapiTagType(r.type);
+                  if (val && tp) tagTypeMap[normTag(val)] = tp;
+                  return val ? { value: val, count: cnt, popularity: cnt, type: tp } : null;
+                }).filter(Boolean);
+              }).catch(function () { return []; });
+
+            var acResults = [];
+            var seedIdx = 0;
+            function runAcBatch() {
+              var workers = [];
+              for (var w = 0; w < 6; w++) {
+                workers.push((async function () {
+                  while (seedIdx < popSeeds.length) {
+                    var q = popSeeds[seedIdx++];
+                    var arr = await r34Autocomplete(q).catch(function () { return []; });
+                    if (Array.isArray(arr) && arr.length) acResults.push(arr);
+                  }
+                })());
+              }
+              return Promise.all(workers);
+            }
+
+            Promise.all([dapiTagPromise, runAcBatch()])
+              .then(function (resArr) {
+                var dapiTags = resArr[0] || [];
+                var groups = [dapiTags].concat(acResults);
                 var seen = new Map();
                 groups.forEach(function (arr) {
                   (arr || []).forEach(function (t) {
                     if (!t || !t.value) return;
                     var nv = normTag(t.value);
                     var ex = seen.get(nv);
-                    if (!ex || (t.count || 0) > (ex.count || 0)) seen.set(nv, t);
+                    if (!ex || (t.count || 0) > (ex.count || 0)) {
+                      seen.set(nv, ex && ex.type && !t.type ? Object.assign({}, t, { type: ex.type }) : t);
+                    } else if (ex && !ex.type && t.type) {
+                      ex.type = t.type;
+                    }
                   });
                 });
                 popularTagsCache = Array.from(seen.values()).sort(function (a, b) {
                   return (b.count || 0) - (a.count || 0);
                 });
+                cacheAnyTags(popularTagsCache);
+                saveTagTypes();
                 if (!popularTagsCache.length) tagListErr = true;
               }).catch(function () { tagListErr = true; }).then(function () { tagFetching = false; renderTagList(); });
           }
