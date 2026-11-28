@@ -2160,6 +2160,20 @@ function parseApiResponse(raw) {
       var alphaRenderDebounce = null;
       // ===== Kategori tag: 1 General, 2 Seri, 4 Karakter, 8 Artist, 16 Meta =====
       var tagTypeMap = jget("darknight_tagtypes", {}), tagTypeMiss = {}, tagTypePending = {}, tagTypeSaveT = null, tagTypeRenderT = null;
+      var POPULAR_CAT_SEEDS = {
+        8: ["sakimichan", "wlop", "cutesexyrobutts", "derpixon", "dross", "nyantcha", "afrobull", "kinkymation", "sciamano240", "diives", "minus8", "hews", "ratatatat74", "khyle.", "speedosausage", "zone", "incase", "flick", "slugbox", "shindol", "krekk0v", "fumihiko", "personal_ami", "reiq", "yakovlev-vad"],
+        4: ["d.va_(overwatch)", "mercy_(overwatch)", "tracer_(overwatch)", "widowmaker_(overwatch)", "2b_(nier:automata)", "tifa_lockhart", "aerith_gainsborough", "raiden_shogun", "ganyu_(genshin_impact)", "hu_tao_(genshin_impact)", "yelan_(genshin_impact)", "furina_(genshin_impact)", "kafka_(honkai:_star_rail)", "nami_(one_piece)", "nico_robin", "hinata_hyuga", "tsunade", "zero_two_(darling_in_the_franxx)", "makima_(chainsaw_man)", "power_(chainsaw_man)", "yor_forger", "frieren", "fern_(sousou_no_frieren)", "gardevoir", "lopunny"],
+        2: ["genshin_impact", "overwatch", "honkai:_star_rail", "pokemon", "one_piece", "naruto", "bleach", "fate/grand_order", "blue_archive", "hololive", "league_of_legends", "final_fantasy", "nier:automata", "chainsaw_man", "my_hero_academia", "demon_slayer", "spy_x_family", "azur_lane", "arknights", "nikke:_goddess_of_victory", "resident_evil", "the_legend_of_zelda", "sonic_the_hedgehog", "undertale", "minecraft"]
+      };
+      (function seedPopularTypes() {
+        Object.keys(POPULAR_CAT_SEEDS).forEach(function (ty) {
+          var numTy = Number(ty);
+          POPULAR_CAT_SEEDS[ty].forEach(function (name) {
+            var k = normTag(name);
+            if (k && !tagTypeMap[k]) tagTypeMap[k] = numTy;
+          });
+        });
+      })();
       function dapiTypeToInternal(n) { n = Number(n); return n === 1 ? 8 : n === 3 ? 2 : n === 4 ? 4 : n === 5 ? 16 : 1; }
       function tagTypeOf(t) {
         var v = t && (t.value || t.name);
@@ -2670,10 +2684,47 @@ function parseApiResponse(raw) {
         }
 
         var src = tagCatFilter !== null ? rawSrc.filter(function (t) { return tagTypeOf(t) === tagCatFilter; }) : rawSrc;
+        // Saat di tab Populer (★) dengan kategori Artist/Karakter/Seri, gabungkan juga tag kategori tsb dari cache & seed populer
+        if (tagCatFilter !== null && !tagAlphaActive && !tagSearchTerm) {
+          var seenCat = {};
+          src.forEach(function (t) { seenCat[normTag(t.value)] = 1; });
+          var extraCat = [];
+          (POPULAR_CAT_SEEDS[tagCatFilter] || []).forEach(function (name) {
+            var k = normTag(name);
+            if (!seenCat[k] && (tagTypeMap[k] === tagCatFilter || !tagTypeMap[k])) {
+              seenCat[k] = 1;
+              extraCat.push({ value: name, count: 0, popularity: 0, type: tagCatFilter });
+            }
+          });
+          Object.keys(tagTypeMap).forEach(function (k) {
+            if (tagTypeMap[k] === tagCatFilter && !seenCat[k] && extraCat.length < 120) {
+              seenCat[k] = 1;
+              extraCat.push({ value: k, count: 0, popularity: 0, type: tagCatFilter });
+            }
+          });
+          if (extraCat.length) src = src.concat(extraCat);
+        }
+        // Saat user memilih filter kategori (Artist/Karakter/Seri/General) di A-Z atau Pencarian, kenali tag yang belum diketahui secara aman (maks 30)
+        var catTypesPending = false;
+        if (tagCatFilter !== null && (tagAlphaActive || tagSearchTerm) && rawSrc.length) {
+          var unknownCat = [];
+          for (var ui = 0; ui < rawSrc.length && unknownCat.length < 30; ui++) {
+            var uk = normTag(rawSrc[ui].value);
+            if (!tagTypeOf(rawSrc[ui]) && !tagTypeMiss[uk] && !tagTypePending[uk]) unknownCat.push(rawSrc[ui].value);
+          }
+          if (unknownCat.length) {
+            catTypesPending = true;
+            var expectCat = tagCatFilter, expectAlpha = tagAlphaActive, expectTerm = tagSearchTerm;
+            resolveTagTypes(unknownCat, function () {
+              return sheet && sheet.classList.contains("open") && sheetTab === "tags" && tagView === "list"
+                && tagCatFilter === expectCat && tagAlphaActive === expectAlpha && tagSearchTerm === expectTerm;
+            });
+          }
+        }
         if (!src.length) {
-          if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : "Tag tidak ditemukan")); return; }
+          if (tagSearchTerm) { box.appendChild(el("div", "empty", (tagSearching || catTypesPending) ? "Mengenali kategori tag…" : "Tag tidak ditemukan")); return; }
           if (tagCatFilter !== null && rawSrc.length && !tagFetching) {
-            box.appendChild(el("div", "empty", "Tidak ada tag kategori ini di daftar ini. Coba cari lewat kolom pencarian atau pilih huruf."));
+            box.appendChild(el("div", "empty", catTypesPending ? "Mengenali kategori tag…" : "Tidak ada tag kategori ini di daftar ini. Coba cari lewat kolom pencarian atau pilih huruf."));
             return;
           }
           if (tagListErr) {
