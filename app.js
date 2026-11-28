@@ -2201,7 +2201,7 @@ function parseApiResponse(raw) {
         tagTypeSaveT = setTimeout(function () {
           tagTypeSaveT = null;
           var keys = Object.keys(tagTypeMap);
-          if (keys.length > 6000) { keys.slice(0, keys.length - 6000).forEach(function (k) { delete tagTypeMap[k]; }); }
+          if (keys.length > 20000) { keys.slice(0, keys.length - 20000).forEach(function (k) { delete tagTypeMap[k]; }); }
           jset("darknight_tagtypes", tagTypeMap);
         }, 1500);
       }
@@ -2487,7 +2487,25 @@ function parseApiResponse(raw) {
           }
         }
 
-        var workers = [];
+        var dapiAlphaPromise = (key !== "0-9")
+          ? rule34ApiFetch({ page: "dapi", s: "tag", q: "index", name_pattern: lower + "%", order: "count", limit: 1000, _xml: true })
+              .then(function (rows) {
+                if (!Array.isArray(rows)) return;
+                var mapped = rows.map(function (r) {
+                  var val = r.name || r.value || "";
+                  var cnt = parseInt(r.count, 10) || 0;
+                  var tp = dapiTypeToInternal(r.type);
+                  if (val && tp) tagTypeMap[normTag(val)] = tp;
+                  return val ? { value: val, count: cnt, popularity: cnt, type: tp } : null;
+                }).filter(Boolean);
+                if (alphaFetchTokens[key] === token && mapped.length) {
+                  processTagList(mapped);
+                  saveTagTypes();
+                }
+              }).catch(function () { })
+          : Promise.resolve();
+
+        var workers = [dapiAlphaPromise];
         for (var w = 0; w < concurrency; w++) {
           workers.push(worker());
         }
@@ -2755,16 +2773,23 @@ function parseApiResponse(raw) {
               if (n === 0) return 1; // general
               return 0;
             }
-            var dapiTagPromise = rule34ApiFetch({ page: "dapi", s: "tag", q: "index", order: "count", limit: 1000, _xml: true })
-              .then(function (rows) {
-                if (!Array.isArray(rows)) return [];
-                return rows.map(function (r) {
-                  var val = r.name || r.value || "";
-                  var cnt = parseInt(r.count, 10) || 0;
-                  var tp = dapiTagType(r.type);
-                  if (val && tp) tagTypeMap[normTag(val)] = tp;
-                  return val ? { value: val, count: cnt, popularity: cnt, type: tp } : null;
-                }).filter(Boolean);
+            var dapiTagPromise = Promise.all([0, 1, 2].map(function (pid) {
+              return rule34ApiFetch({ page: "dapi", s: "tag", q: "index", order: "count", limit: 1000, pid: pid, _xml: true })
+                .catch(function () { return []; });
+            })).then(function (pages) {
+                var out = [];
+                pages.forEach(function (rows) {
+                  if (!Array.isArray(rows)) return;
+                  rows.forEach(function (r) {
+                    var val = r.name || r.value || "";
+                    if (!val) return;
+                    var cnt = parseInt(r.count, 10) || 0;
+                    var tp = dapiTagType(r.type);
+                    if (tp) tagTypeMap[normTag(val)] = tp;
+                    out.push({ value: val, count: cnt, popularity: cnt, type: tp });
+                  });
+                });
+                return out;
               }).catch(function () { return []; });
 
             var acResults = [];
