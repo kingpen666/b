@@ -2256,6 +2256,7 @@ function parseApiResponse(raw) {
       var onTagTypesResolved = null;
 
       var alphaTagCache = {};
+      var alphaDeepFetched = {};
       try {
         var savedAlpha = lsGet("darknight_alpha_cache2");
         if (savedAlpha) {
@@ -2273,7 +2274,7 @@ function parseApiResponse(raw) {
             var toSave = {};
             Object.keys(alphaTagCache).forEach(function (k) {
               if (Array.isArray(alphaTagCache[k])) {
-                toSave[k] = alphaTagCache[k].slice(0, 500);
+                toSave[k] = alphaTagCache[k].slice(0, 1000);
               }
             });
             lsSet("darknight_alpha_cache2", JSON.stringify(toSave));
@@ -2325,7 +2326,7 @@ function parseApiResponse(raw) {
         var token = (alphaFetchTokens[key] || 0) + 1;
         alphaFetchTokens[key] = token;
 
-        if (alphaTagCache[key] && alphaTagCache[key].length > 100 && !tagFetching) {
+        if (alphaDeepFetched[key] && alphaTagCache[key] && alphaTagCache[key].length && !tagFetching) {
           renderTagList();
           return alphaTagCache[key];
         }
@@ -2494,6 +2495,7 @@ function parseApiResponse(raw) {
         await Promise.all(workers);
 
         if (alphaFetchTokens[key] === token) {
+          alphaDeepFetched[key] = true;
           tagFetching = false;
           if (tagAlphaActive === key) {
             renderTagList();
@@ -3480,6 +3482,7 @@ function parseApiResponse(raw) {
         }));
         sActs.appendChild(ipill("tag", "Hapus Cache Tag", "", function () {
           alphaTagCache = {};
+          alphaDeepFetched = {};
           lsSet("darknight_alpha_cache2", "{}"); lsSet("darknight_tagtypes", "{}");
           toast("Cache tag dibersihkan", "ok");
           renderSettings();
