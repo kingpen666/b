@@ -361,28 +361,42 @@ function parseApiResponse(raw) {
 
       // Mengembalikan array post. Melempar error HANYA jika semua jalur gagal (jaringan / respons rusak).
       // Array kosong berarti benar-benar tidak ada hasil.
+      var rateLimitedUntil = 0;
       async function rule34ApiFetch(params) {
-        params = params || {};
+        if (Date.now() < rateLimitedUntil) throw new Error("Rate limited");
+        params = Object.assign({}, params || {});
+        var wantXml = !!params._xml;
+        delete params._xml;
         params.api_key = R34_API_KEY;
         params.user_id = R34_USER_ID;
-        params.json = "1";
+        if (!wantXml) params.json = "1";
         var qs = Object.keys(params).map(function (k) {
           return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
         }).join("&");
 
         var directUrl = "https://api.rule34.xxx/index.php?" + qs;
-        var tiers = [[directUrl, 8000]];
-        if (window.location.protocol === "http:" || window.location.protocol === "https:") tiers.push(["/api/dapi?" + qs, 10000]);
+        var isHttp = window.location.protocol === "http:" || window.location.protocol === "https:";
+        var isR34 = window.location.hostname.indexOf("rule34.xxx") !== -1;
+        var tiers = [];
+        if (isHttp && !isR34) tiers.push(["/api/dapi?" + qs, 10000]);
+        tiers.push([directUrl, 8000]);
+        if (!isHttp || isR34) tiers.push(["/api/dapi?" + qs, 10000]);
         tiers.push(["https://api.allorigins.win/raw?url=" + encodeURIComponent(directUrl), 10000]);
 
         for (var attempt = 0; attempt < 2; attempt++) {
           for (var i = 0; i < tiers.length; i++) {
             try {
               var res = await fetchT(tiers[i][0], tiers[i][1]);
+              if (res.status === 429) {
+                rateLimitedUntil = Date.now() + 8000;
+                throw new Error("HTTP 429");
+              }
               if (!res.ok) continue;
               var parsed = parseApiResponse(await res.text());
               if (parsed) return parsed;
-            } catch (e) { }
+            } catch (e) {
+              if (e && e.message === "HTTP 429") throw e;
+            }
           }
           if (attempt === 0) await sleep(500);
         }
@@ -1746,9 +1760,20 @@ function parseApiResponse(raw) {
             infoMetaEl.appendChild(rt);
           }
           var upTs = parseR34Date(post.created_at);
-          if (upTs) infoMetaEl.appendChild(el("span", "", "Diunggah " + fmtUpload(upTs)));
-          else if (post.change) infoMetaEl.appendChild(el("span", "", "Diubah " + fmtUpload(Number(post.change) * 1000)));
+          var dateSpan = el("span", "", upTs ? ("Diunggah " + fmtUpload(upTs)) : (post.change ? ("Diubah " + fmtUpload(Number(post.change) * 1000)) : ""));
+          if (dateSpan.textContent) infoMetaEl.appendChild(dateSpan);
           if (post.owner) infoMetaEl.appendChild(el("span", "", "Oleh " + post.owner));
+          if (!upTs) {
+            rule34ApiFetch({ page: "dapi", s: "post", q: "index", id: id, _xml: true }).then(function (xPosts) {
+              if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
+              if (Array.isArray(xPosts) && xPosts[0] && xPosts[0].created_at) {
+                post.created_at = xPosts[0].created_at;
+                metaCacheSet(id, post);
+                var ts2 = parseR34Date(post.created_at);
+                if (ts2) dateSpan.textContent = "Diunggah " + fmtUpload(ts2);
+              }
+            }).catch(function () { });
+          }
 
           var tagStr = (post.tags || "").trim();
           var tagTokens = tagStr ? tagStr.split(/\s+/).filter(Boolean) : [];
@@ -1806,9 +1831,13 @@ function parseApiResponse(raw) {
               });
             }
             paintGroups();
-            resolveTagTypes(tagTokens).then(function () {
+            fetchPostViewTags(id).then(function (okView) {
               if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
-              paintGroups();
+              if (okView) { paintGroups(); return; }
+              resolveTagTypes(tagTokens).then(function () {
+                if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
+                paintGroups();
+              });
             });
 
             // Post serupa berdasarkan tag yang menarik (pilih tag selain tag generik seperti 1girl/video jika ada)
@@ -2153,43 +2182,70 @@ function parseApiResponse(raw) {
       }
       function rememberTagType(name, type) { var k = normTag(name); if (k && type) { tagTypeMap[k] = type; saveTagTypes(); } }
       function dapiTagRow(t) { return { value: t.name, count: Number(t.count) || 0, type: dapiTypeToInternal(t.type) }; }
-      // Cari kategori sekumpulan nama tag lewat dapi (names=a b c). Mengembalikan Promise yang selesai saat semua batch tuntas.
-      function resolveTagTypes(names) {
+      // Ambil kategori tag (Artist/Karakter/Seri/Meta) sekaligus dari halaman post dalam 1 request (tanpa spam API)
+      async function fetchPostViewTags(postId) {
+        if (window.location.protocol !== "http:" && window.location.protocol !== "https:") return false;
+        try {
+          var res = await fetchT("/api/postview?page=post&s=view&id=" + encodeURIComponent(postId), 7000);
+          if (!res.ok) return false;
+          var html = await res.text();
+          if (!html || html.indexOf("tag-type-") === -1) return false;
+          var doc = new DOMParser().parseFromString(html, "text/html");
+          var clsMap = { "tag-type-artist": 8, "tag-type-character": 4, "tag-type-copyright": 2, "tag-type-metadata": 16, "tag-type-general": 1 };
+          var foundAny = false;
+          Object.keys(clsMap).forEach(function (cls) {
+            var nodes = doc.querySelectorAll("li." + cls);
+            for (var i = 0; i < nodes.length; i++) {
+              var li = nodes[i];
+              var links = li.querySelectorAll("a");
+              var a = links.length ? links[links.length - 1] : null;
+              var rawName = (li.getAttribute("data-name") || (a ? a.textContent : "") || "").trim().replace(/\s+/g, "_");
+              var k = normTag(rawName);
+              if (k && rawName !== "?" && rawName !== "+" && rawName !== "-") {
+                tagTypeMap[k] = clsMap[cls];
+                foundAny = true;
+              }
+            }
+          });
+          if (foundAny) saveTagTypes();
+          return foundAny;
+        } catch (e) {
+          return false;
+        }
+      }
+      // Cari kategori sekumpulan nama tag secara aman & berurutan (maks 15 tag, anti-429).
+      async function resolveTagTypes(names) {
+        if (Date.now() < rateLimitedUntil) return 0;
         var todo = [];
         (names || []).forEach(function (n) {
           var k = normTag(n);
           if (k && !tagTypeMap[k] && !tagTypeMiss[k] && !tagTypePending[k] && todo.indexOf(k) === -1) todo.push(k);
         });
-        if (!todo.length) return Promise.resolve(0);
+        if (!todo.length) return 0;
+        todo = todo.slice(0, 15);
         todo.forEach(function (k) { tagTypePending[k] = 1; });
-        var batches = [];
-        for (var i = 0; i < todo.length; i += 80) batches.push(todo.slice(i, i + 80));
-        var bi = 0, found = 0;
-        async function runner() {
-          while (bi < batches.length) {
-            var batch = batches[bi++], got = {};
-            try {
-              var rows = await rule34ApiFetch({ page: "dapi", s: "tag", q: "index", names: batch.join(" "), limit: 100 });
-              (rows || []).forEach(function (r) { if (r && r.name) { var row = dapiTagRow(r); got[normTag(row.value)] = row.type; } });
-            } catch (e) { }
-            if (!Object.keys(got).length && batch.length > 1) {
-              // names= tidak didukung / gagal: coba satu-satu (dibatasi)
-              for (var j = 0; j < Math.min(batch.length, 25); j++) {
-                try {
-                  var one = await rule34ApiFetch({ page: "dapi", s: "tag", q: "index", name: batch[j], limit: 1 });
-                  if (one && one[0] && one[0].name) got[normTag(one[0].name)] = dapiTypeToInternal(one[0].type);
-                } catch (e2) { }
-              }
+        var found = 0;
+        for (var j = 0; j < todo.length; j++) {
+          var k = todo[j];
+          if (Date.now() < rateLimitedUntil) { delete tagTypePending[k]; continue; }
+          try {
+            var one = await rule34ApiFetch({ page: "dapi", s: "tag", q: "index", name: k, limit: 1 });
+            if (one && one[0] && one[0].name) {
+              tagTypeMap[k] = dapiTypeToInternal(one[0].type);
+              found++;
+            } else {
+              tagTypeMiss[k] = 1;
             }
-            batch.forEach(function (k) {
-              delete tagTypePending[k];
-              if (got[k]) { tagTypeMap[k] = got[k]; found++; } else tagTypeMiss[k] = 1;
-            });
-            saveTagTypes();
-            if (typeof onTagTypesResolved === "function") onTagTypesResolved();
+          } catch (e) {
+            delete tagTypePending[k];
+            if (e && e.message === "HTTP 429") break;
           }
+          delete tagTypePending[k];
+          if (j + 1 < todo.length) await sleep(140);
         }
-        return Promise.all([runner(), runner(), runner()]).then(function () { return found; });
+        saveTagTypes();
+        if (found && typeof onTagTypesResolved === "function") onTagTypesResolved();
+        return found;
       }
       var onTagTypesResolved = null;
 
@@ -2636,17 +2692,10 @@ function parseApiResponse(raw) {
         }
 
         var src = tagCatFilter !== null ? rawSrc.filter(function (t) { return tagTypeOf(t) === tagCatFilter; }) : rawSrc;
-        // Cari kategori tag yang belum diketahui (untuk filter Artist/Karakter/Seri dan lencana)
-        var unknownNames = [];
-        for (var ui = 0; ui < rawSrc.length && unknownNames.length < (tagCatFilter !== null ? 3000 : 150); ui++) {
-          if (!tagTypeOf(rawSrc[ui])) unknownNames.push(rawSrc[ui].value);
-        }
-        var typesPending = unknownNames.some(function (n) { var k = normTag(n); return !tagTypeMiss[k]; });
-        if (unknownNames.length) resolveTagTypes(unknownNames);
         if (!src.length) {
-          if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : (tagCatFilter !== null && typesPending ? "Mengenali kategori tag…" : "Tag tidak ditemukan"))); return; }
+          if (tagSearchTerm) { box.appendChild(el("div", "empty", tagSearching ? "Mencari…" : "Tag tidak ditemukan")); return; }
           if (tagCatFilter !== null && rawSrc.length && !tagFetching) {
-            box.appendChild(el("div", "empty", typesPending ? "Mengenali kategori tag…" : "Tidak ada tag kategori ini di daftar ini. Coba cari lewat kolom pencarian atau pilih huruf."));
+            box.appendChild(el("div", "empty", "Tidak ada tag kategori ini di daftar ini. Coba cari lewat kolom pencarian atau pilih huruf."));
             return;
           }
           if (tagListErr) {
@@ -2678,38 +2727,53 @@ function parseApiResponse(raw) {
           return;
         }
         box.appendChild(el("div", "tlabel", listTitle + " (" + src.length + " tag)"));
-        src.forEach(function (t) {
-          var val = t.value;
-          var normVal = normTag(val);
-          var blockMode = tagPickMode === "block";
-          var isSel = !blockMode && selectedTags.indexOf(normVal) !== -1;
-          var isBlk = blacklistTags.indexOf(normVal) !== -1;
-          var row = el("div", "trow" + (isSel ? " sel" : "") + (isBlk ? " blk" : ""));
-          var ck = el("span", "tck");
-          if (isSel) ck.innerHTML = ic("check");
-          else if (blockMode && isBlk) ck.innerHTML = ic("ban");
-          row.appendChild(ck);
-          row.appendChild(el("span", "tnm", val));
-          var tt = tagTypeOf(t);
-          var kind = tt === 8 ? ["artist", "Artist"] : tt === 4 ? ["character", "Karakter"] : tt === 2 ? ["copyright", "Seri"] : null;
-          if (isBlk) row.appendChild(el("span", "tkind", "disembunyikan"));
-          else if (kind) row.appendChild(el("span", "tkind " + kind[0], kind[1]));
-          if (t.count) row.appendChild(el("span", "tcnt", fmtN(t.count)));
-          var go = el("button", "tgo"); go.innerHTML = ic("play"); go.title = "Lihat post";
-          go.onclick = function (e) {
-            e.stopPropagation();
-            selectedTags = [normVal];
-            tagView = "detail";
-            refreshBadges();
-            loadTagDetail([normVal], true);
-          };
-          if (!blockMode) row.appendChild(go);
-          row.onclick = function () {
-            if (blockMode) toggleTagBlock(normVal);
-            else toggleTagWant(normVal);
-          };
-          box.appendChild(row);
-        });
+        var renderedCount = 0;
+        var PAGE_SZ = 120;
+        function renderTagChunk() {
+          var slice = src.slice(renderedCount, renderedCount + PAGE_SZ);
+          renderedCount += slice.length;
+          var frag = document.createDocumentFragment();
+          slice.forEach(function (t) {
+            var val = t.value;
+            var normVal = normTag(val);
+            var blockMode = tagPickMode === "block";
+            var isSel = !blockMode && selectedTags.indexOf(normVal) !== -1;
+            var isBlk = blacklistTags.indexOf(normVal) !== -1;
+            var row = el("div", "trow" + (isSel ? " sel" : "") + (isBlk ? " blk" : ""));
+            var ck = el("span", "tck");
+            if (isSel) ck.innerHTML = ic("check");
+            else if (blockMode && isBlk) ck.innerHTML = ic("ban");
+            row.appendChild(ck);
+            row.appendChild(el("span", "tnm", val));
+            var tt = tagTypeOf(t);
+            var kind = tt === 8 ? ["artist", "Artist"] : tt === 4 ? ["character", "Karakter"] : tt === 2 ? ["copyright", "Seri"] : null;
+            if (isBlk) row.appendChild(el("span", "tkind", "disembunyikan"));
+            else if (kind) row.appendChild(el("span", "tkind " + kind[0], kind[1]));
+            if (t.count) row.appendChild(el("span", "tcnt", fmtN(t.count)));
+            var go = el("button", "tgo"); go.innerHTML = ic("play"); go.title = "Lihat post";
+            go.onclick = function (e) {
+              e.stopPropagation();
+              selectedTags = [normVal];
+              tagView = "detail";
+              refreshBadges();
+              loadTagDetail([normVal], true);
+            };
+            if (!blockMode) row.appendChild(go);
+            row.onclick = function () {
+              if (blockMode) toggleTagBlock(normVal);
+              else toggleTagWant(normVal);
+            };
+            frag.appendChild(row);
+          });
+          box.appendChild(frag);
+          if (renderedCount < src.length) {
+            var mb = el("button", "bwide b-sec", "Muat " + Math.min(PAGE_SZ, src.length - renderedCount) + " tag lagi (" + renderedCount + "/" + src.length + ")");
+            mb.style.marginTop = "8px";
+            mb.onclick = function () { mb.remove(); renderTagChunk(); };
+            box.appendChild(mb);
+          }
+        }
+        renderTagChunk();
       }
       onTagTypesResolved = function () {
         clearTimeout(tagTypeRenderT);
@@ -2967,7 +3031,9 @@ function parseApiResponse(raw) {
         var bns = { stream: $("bnStream"), tags: $("tagBtn"), playlist: $("bnPlaylist"), filter: $("filterBtn"), settings: $("bnSettings") };
         for (var k in bns) { if (bns[k]) bns[k].classList.toggle("active", k === cur); }
       }
+      var sheetClearT = null;
       function openSheet(tab, mode) {
+        clearTimeout(sheetClearT);
         closeOverlays("sheet");
         if (tab) sheetTab = tab;
         if (tab === "playlist") { plView = "list"; plDetailId = null; resetSel(); }
@@ -2975,7 +3041,13 @@ function parseApiResponse(raw) {
         renderSheet(); sheet.classList.add("open"); sheetBackdrop.classList.add("open");
         syncNavActive();
       }
-      function closeSheet() { sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel(); if (tagPickMode === "block") tagPickMode = "want"; syncNavActive(); }
+      function closeSheet() {
+        sheet.classList.remove("open"); sheetBackdrop.classList.remove("open"); resetSel();
+        if (tagPickMode === "block") tagPickMode = "want";
+        syncNavActive();
+        clearTimeout(sheetClearT);
+        sheetClearT = setTimeout(function () { if (!sheet.classList.contains("open") && sheetBody) sheetBody.innerHTML = ""; }, 380);
+      }
       function navTo(tab) {
         var open = sheet.classList.contains("open");
         if (open && (sheetTab === tab || (tab === "playlist" && sheetTab === "history"))) closeSheet(); else openSheet(tab);
