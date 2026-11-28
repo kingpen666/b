@@ -1831,14 +1831,11 @@ function parseApiResponse(raw) {
               });
             }
             paintGroups();
-            fetchPostViewTags(id).then(function (okView) {
-              if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
-              if (okView) { paintGroups(); return; }
-              resolveTagTypes(tagTokens).then(function () {
-                if (infoToken !== infoRequestToken || !infoBackdrop.classList.contains("open")) return;
-                paintGroups();
-              });
-            });
+            resolveTagTypes(
+              tagTokens,
+              function () { return infoToken === infoRequestToken && infoBackdrop.classList.contains("open"); },
+              function () { if (infoToken === infoRequestToken && infoBackdrop.classList.contains("open")) paintGroups(); }
+            );
 
             // Post serupa berdasarkan tag yang menarik (pilih tag selain tag generik seperti 1girl/video jika ada)
             var chosenTag = tagTokens[0];
@@ -1929,8 +1926,8 @@ function parseApiResponse(raw) {
       }
 
       async function r34Autocomplete(q) {
-        if (!q) return [];
-        var targetParam = "?q=" + encodeURIComponent(q);
+        if (q === null || q === undefined) return [];
+        var targetParam = "?q=" + encodeURIComponent(String(q));
         var directUrl = "https://api.rule34.xxx/autocomplete.php" + targetParam;
         var proxyUrl = "/api/autocomplete" + targetParam;
         try {
@@ -2182,39 +2179,8 @@ function parseApiResponse(raw) {
       }
       function rememberTagType(name, type) { var k = normTag(name); if (k && type) { tagTypeMap[k] = type; saveTagTypes(); } }
       function dapiTagRow(t) { return { value: t.name, count: Number(t.count) || 0, type: dapiTypeToInternal(t.type) }; }
-      // Ambil kategori tag (Artist/Karakter/Seri/Meta) sekaligus dari halaman post dalam 1 request (tanpa spam API)
-      async function fetchPostViewTags(postId) {
-        if (window.location.protocol !== "http:" && window.location.protocol !== "https:") return false;
-        try {
-          var res = await fetchT("/api/postview?page=post&s=view&id=" + encodeURIComponent(postId), 7000);
-          if (!res.ok) return false;
-          var html = await res.text();
-          if (!html || html.indexOf("tag-type-") === -1) return false;
-          var doc = new DOMParser().parseFromString(html, "text/html");
-          var clsMap = { "tag-type-artist": 8, "tag-type-character": 4, "tag-type-copyright": 2, "tag-type-metadata": 16, "tag-type-general": 1 };
-          var foundAny = false;
-          Object.keys(clsMap).forEach(function (cls) {
-            var nodes = doc.querySelectorAll("li." + cls);
-            for (var i = 0; i < nodes.length; i++) {
-              var li = nodes[i];
-              var links = li.querySelectorAll("a");
-              var a = links.length ? links[links.length - 1] : null;
-              var rawName = (li.getAttribute("data-name") || (a ? a.textContent : "") || "").trim().replace(/\s+/g, "_");
-              var k = normTag(rawName);
-              if (k && rawName !== "?" && rawName !== "+" && rawName !== "-") {
-                tagTypeMap[k] = clsMap[cls];
-                foundAny = true;
-              }
-            }
-          });
-          if (foundAny) saveTagTypes();
-          return foundAny;
-        } catch (e) {
-          return false;
-        }
-      }
-      // Cari kategori sekumpulan nama tag secara aman & berurutan (maks 15 tag, anti-429).
-      async function resolveTagTypes(names) {
+      // Cari kategori sekumpulan nama tag secara aman & berurutan (1 per 1, anti-429).
+      async function resolveTagTypes(names, shouldContinue, onBatch) {
         if (Date.now() < rateLimitedUntil) return 0;
         var todo = [];
         (names || []).forEach(function (n) {
@@ -2222,28 +2188,40 @@ function parseApiResponse(raw) {
           if (k && !tagTypeMap[k] && !tagTypeMiss[k] && !tagTypePending[k] && todo.indexOf(k) === -1) todo.push(k);
         });
         if (!todo.length) return 0;
-        todo = todo.slice(0, 15);
+        todo = todo.slice(0, 60);
         todo.forEach(function (k) { tagTypePending[k] = 1; });
-        var found = 0;
+        var found = 0, sincePaint = 0;
         for (var j = 0; j < todo.length; j++) {
           var k = todo[j];
-          if (Date.now() < rateLimitedUntil) { delete tagTypePending[k]; continue; }
+          if ((shouldContinue && !shouldContinue()) || Date.now() < rateLimitedUntil) {
+            for (var rem = j; rem < todo.length; rem++) delete tagTypePending[todo[rem]];
+            break;
+          }
           try {
             var one = await rule34ApiFetch({ page: "dapi", s: "tag", q: "index", name: k, limit: 1 });
             if (one && one[0] && one[0].name) {
               tagTypeMap[k] = dapiTypeToInternal(one[0].type);
               found++;
+              sincePaint++;
             } else {
               tagTypeMiss[k] = 1;
             }
           } catch (e) {
             delete tagTypePending[k];
-            if (e && e.message === "HTTP 429") break;
+            if (e && e.message === "HTTP 429") {
+              for (var rem2 = j + 1; rem2 < todo.length; rem2++) delete tagTypePending[todo[rem2]];
+              break;
+            }
           }
           delete tagTypePending[k];
-          if (j + 1 < todo.length) await sleep(140);
+          if (sincePaint >= 4 && typeof onBatch === "function") {
+            sincePaint = 0;
+            onBatch();
+          }
+          if (j + 1 < todo.length) await sleep(120);
         }
         saveTagTypes();
+        if (sincePaint > 0 && typeof onBatch === "function") onBatch();
         if (found && typeof onTagTypesResolved === "function") onTagTypesResolved();
         return found;
       }
@@ -2708,19 +2686,21 @@ function parseApiResponse(raw) {
           box.appendChild(el("div", "empty", tagFetching ? "Memuat tag bertahap…" : "Memuat tag…"));
           if (!tagFetching && !tagAlphaActive) {
             tagFetching = true;
-            rule34ApiFetch({ page: "dapi", s: "tag", q: "index", limit: 1000, orderby: "count", order: "DESC" })
-              .catch(function () { return rule34ApiFetch({ page: "dapi", s: "tag", q: "index", limit: 100, orderby: "count" }); })
-              .then(function (tags) {
-                if (Array.isArray(tags)) {
-                  popularTagsCache = tags.filter(function (t) { return t && t.name; }).map(function (t) {
-                    var row = dapiTagRow(t);
-                    tagTypeMap[normTag(row.value)] = row.type;
-                    return row;
+            var popSeeds = ["", "1", "a", "s", "c", "m", "b", "l", "h", "p"];
+            Promise.all(popSeeds.map(function (q) { return r34Autocomplete(q).catch(function () { return []; }); }))
+              .then(function (groups) {
+                var seen = new Map();
+                groups.forEach(function (arr) {
+                  (arr || []).forEach(function (t) {
+                    if (!t || !t.value) return;
+                    var nv = normTag(t.value);
+                    var ex = seen.get(nv);
+                    if (!ex || (t.count || 0) > (ex.count || 0)) seen.set(nv, t);
                   });
-                  saveTagTypes();
-                } else {
-                  popularTagsCache = [];
-                }
+                });
+                popularTagsCache = Array.from(seen.values()).sort(function (a, b) {
+                  return (b.count || 0) - (a.count || 0);
+                });
                 if (!popularTagsCache.length) tagListErr = true;
               }).catch(function () { tagListErr = true; }).then(function () { tagFetching = false; renderTagList(); });
           }

@@ -10,10 +10,6 @@
       "destination": "https://api.rule34.xxx/autocomplete.php$1"
     },
     {
-      "source": "/api/postview(.*)",
-      "destination": "https://rule34.xxx/index.php$1"
-    },
-    {
       "source": "/media/:host([a-z0-9-]+)/:path*",
       "destination": "https://:host.rule34.xxx/:path*"
     },

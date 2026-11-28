@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pe-cache-v5';
+const CACHE_NAME = 'pe-cache-v6';
 const STATIC_ASSETS = [
   './',
   './index.html',
